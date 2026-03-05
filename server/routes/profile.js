@@ -33,7 +33,7 @@ router.get('/me', auth, async (req, res) => {
 
 // CREATE or UPDATE profile
 router.put('/me', auth, upload.single('photo'), async (req, res) => {
-  const { display_name, pronouns, radius_meters, always_visible } = req.body;
+  const { display_name, pronouns, radius_meters, always_visible, tag_color, stickers } = req.body;
   if (!display_name || !pronouns) {
     return res.status(400).json({ error: 'Name and pronouns required' });
   }
@@ -41,15 +41,18 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
   const photo_path = req.file ? `/uploads/${req.file.filename}` : undefined;
   const radius = parseInt(radius_meters) || 100;
   const alwaysVisible = always_visible !== 'false' && always_visible !== false;
+  const tagColor = tag_color || null;
+  // stickers arrives as a JSON string from FormData
+  const stickersVal = stickers || null;
 
   try {
     const existing = await db.query('SELECT id FROM profiles WHERE user_id = $1', [req.user.userId]);
 
     if (existing.rows.length === 0) {
       await db.query(
-        `INSERT INTO profiles (user_id, display_name, pronouns, photo_path, radius_meters, always_visible)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [req.user.userId, display_name, pronouns, photo_path || null, radius, alwaysVisible]
+        `INSERT INTO profiles (user_id, display_name, pronouns, photo_path, radius_meters, always_visible, tag_color, stickers)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [req.user.userId, display_name, pronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal]
       );
     } else {
       await db.query(
@@ -59,9 +62,11 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
           photo_path = COALESCE($4, photo_path),
           radius_meters = $5,
           always_visible = $6,
+          tag_color = $7,
+          stickers = $8,
           updated_at = NOW()
          WHERE user_id = $1`,
-        [req.user.userId, display_name, pronouns, photo_path || null, radius, alwaysVisible]
+        [req.user.userId, display_name, pronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal]
       );
     }
 
@@ -134,6 +139,8 @@ router.get('/nearby', auth, async (req, res) => {
            p.display_name,
            p.pronouns,
            p.photo_path,
+           p.tag_color,
+           p.stickers,
            6371000 * 2 * ASIN(SQRT(
              POWER(SIN(RADIANS((p.lat - $1) / 2)), 2) +
              COS(RADIANS($1)) * COS(RADIANS(p.lat)) *

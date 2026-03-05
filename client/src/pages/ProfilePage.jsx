@@ -1,6 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { getMyProfile, updateProfile } from '../api';
 
+const BANNER_COLORS = [
+  { hex: '#E63946', label: 'Red' },
+  { hex: '#2563EB', label: 'Blue' },
+  { hex: '#16A34A', label: 'Green' },
+  { hex: '#D97706', label: 'Amber' },
+  { hex: '#7C3AED', label: 'Purple' },
+  { hex: '#0891B2', label: 'Cyan' },
+];
+
+const STICKER_OPTIONS = [
+  '👋', '🌟', '🎉', '🌈', '🦄', '🐉', '🌸', '🍕',
+  '🎸', '📚', '🎨', '🏳️‍🌈', '🏳️‍⚧️', '🌍', '☕', '🤖',
+];
+
 const PRONOUN_OPTIONS = [
   'she/her',
   'he/him',
@@ -26,6 +40,8 @@ export default function ProfilePage({ onSaved }) {
   const [alwaysVisible, setAlwaysVisible] = useState(true);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
+  const [tagColor, setTagColor] = useState('');
+  const [selectedStickers, setSelectedStickers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -45,8 +61,18 @@ export default function ProfilePage({ onSaved }) {
       setRadius(profile.radius_meters || 100);
       setAlwaysVisible(profile.always_visible !== false);
       if (profile.photo_path) setPhotoPreview(profile.photo_path);
+      if (profile.tag_color) setTagColor(profile.tag_color);
+      if (profile.stickers) setSelectedStickers(JSON.parse(profile.stickers));
     }).catch(() => {});
   }, []);
+
+  function toggleSticker(sticker) {
+    setSelectedStickers(prev =>
+      prev.includes(sticker)
+        ? prev.filter(s => s !== sticker)
+        : prev.length < 3 ? [...prev, sticker] : prev
+    );
+  }
 
   function handlePhotoChange(e) {
     const file = e.target.files[0];
@@ -73,6 +99,8 @@ export default function ProfilePage({ onSaved }) {
     fd.append('pronouns', pronouns.trim());
     fd.append('radius_meters', radius);
     fd.append('always_visible', alwaysVisible);
+    fd.append('tag_color', tagColor);
+    fd.append('stickers', JSON.stringify(selectedStickers));
     if (photoFile) fd.append('photo', photoFile);
 
     try {
@@ -193,6 +221,50 @@ export default function ProfilePage({ onSaved }) {
                   : 'You are hidden by default. Use the grid screen to turn visibility on when you want to be seen.'}
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Tag color */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Nametag color</label>
+          <div className="flex gap-3 flex-wrap">
+            {BANNER_COLORS.map(({ hex, label }) => (
+              <button
+                key={hex}
+                type="button"
+                title={label}
+                onClick={() => setTagColor(hex)}
+                className="w-8 h-8 rounded-full border-4 transition-all"
+                style={{
+                  backgroundColor: hex,
+                  borderColor: tagColor === hex ? '#1a1a1a' : 'transparent',
+                  boxShadow: tagColor === hex ? '0 0 0 2px #fff inset' : 'none',
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Stickers */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            Stickers <span className="text-slate-400 font-normal">(pick up to 3)</span>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {STICKER_OPTIONS.map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => toggleSticker(s)}
+                className="w-10 h-10 rounded-xl text-xl flex items-center justify-center border-2 transition-all"
+                style={{
+                  borderColor: selectedStickers.includes(s) ? '#E63946' : '#e2e8f0',
+                  backgroundColor: selectedStickers.includes(s) ? '#E6394615' : '#fff',
+                }}
+              >
+                {s}
+              </button>
+            ))}
           </div>
         </div>
 
