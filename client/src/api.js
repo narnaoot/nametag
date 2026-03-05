@@ -1,0 +1,63 @@
+const BASE = '/api';
+
+function getToken() {
+  return localStorage.getItem('nametag_token');
+}
+
+async function request(path, options = {}) {
+  const token = getToken();
+  const res = await fetch(`${BASE}${path}`, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+export async function register(email, password) {
+  return request('/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function login(email, password) {
+  return request('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function getMyProfile() {
+  return request('/profiles/me');
+}
+
+export async function updateProfile(formData) {
+  return request('/profiles/me', { method: 'PUT', body: formData });
+}
+
+export async function updateLocation(latitude, longitude) {
+  return request('/profiles/me/location', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ latitude, longitude }),
+  });
+}
+
+export async function setVisibility(is_active) {
+  return request('/profiles/me/visibility', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_active }),
+  });
+}
+
+export async function getNearby() {
+  return request('/profiles/nearby');
+}

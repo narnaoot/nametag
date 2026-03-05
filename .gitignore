@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+server/.env
+
+# Uploaded photos
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Build output
+client/dist/
+
+# Editor/OS
+.DS_Store
+*.log
