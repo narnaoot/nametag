@@ -11,9 +11,10 @@ const BANNER_COLORS = [
   '#0891B2', // cyan
 ];
 
-export function PersonCard({ display_name, pronouns, photo_path, distance_meters, index = 0 }) {
-  const bannerColor = BANNER_COLORS[index % BANNER_COLORS.length];
+export function PersonCard({ display_name, pronouns, photo_path, distance_meters, tag_color, stickers, index = 0 }) {
+  const bannerColor = tag_color || BANNER_COLORS[index % BANNER_COLORS.length];
   const rotation = (index % 2 === 0 ? -1 : 1) * (0.8 + (index % 3) * 0.4);
+  const stickerList = stickers ? JSON.parse(stickers) : [];
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -76,6 +77,15 @@ export function PersonCard({ display_name, pronouns, photo_path, distance_meters
             {display_name}
           </p>
         </div>
+
+        {/* Stickers row */}
+        {stickerList.length > 0 && (
+          <div className="px-3 pb-1 flex gap-1 justify-center">
+            {stickerList.map((s, i) => (
+              <span key={i} style={{ fontSize: 16 }}>{s}</span>
+            ))}
+          </div>
+        )}
 
         {/* Pronouns strip */}
         <div
