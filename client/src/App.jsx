@@ -4,6 +4,7 @@ import AuthPage from './pages/AuthPage';
 import ProfilePage from './pages/ProfilePage';
 import GridPage from './pages/GridPage';
 import DesignPreview from './designs/DesignPreview';
+import { NavBar } from './designs/DesignE';
 import './index.css';
 
 function AppShell() {
@@ -13,12 +14,21 @@ function AppShell() {
   if (!isLoggedIn) return <AuthPage />;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ backgroundColor: '#f5f5f0' }}>
       {/* Top nav */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <header className="bg-white sticky top-0 z-10" style={{ borderBottom: '2px solid #f0f0ec' }}>
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          <span className="font-bold text-slate-800 text-lg">🏷️ Nametag</span>
-          <button onClick={signOut} className="text-sm text-slate-400 hover:text-slate-600">
+          <span
+            className="font-bold"
+            style={{ fontFamily: "'Caveat', cursive", fontSize: 24, color: '#E63946' }}
+          >
+            🏷️ Nametag
+          </span>
+          <button
+            onClick={signOut}
+            className="text-sm font-semibold"
+            style={{ color: '#aaa', fontFamily: "'Caveat', cursive", fontSize: 15 }}
+          >
             Sign out
           </button>
         </div>
@@ -30,29 +40,8 @@ function AppShell() {
         {tab === 'profile' && <ProfilePage onSaved={() => setTab('grid')} />}
       </main>
 
-      {/* Bottom tab bar */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200">
-        <div className="max-w-2xl mx-auto flex">
-          <button
-            className={`flex-1 py-3 text-sm font-medium flex flex-col items-center gap-0.5 transition-colors ${
-              tab === 'grid' ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
-            }`}
-            onClick={() => setTab('grid')}
-          >
-            <span className="text-xl">👥</span>
-            <span>Nearby</span>
-          </button>
-          <button
-            className={`flex-1 py-3 text-sm font-medium flex flex-col items-center gap-0.5 transition-colors ${
-              tab === 'profile' ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'
-            }`}
-            onClick={() => setTab('profile')}
-          >
-            <span className="text-xl">🏷️</span>
-            <span>My profile</span>
-          </button>
-        </div>
-      </nav>
+      {/* Design E bottom tab bar */}
+      <NavBar tab={tab} onTabChange={setTab} />
     </div>
   );
 }

@@ -88,7 +88,12 @@ export default function ProfilePage({ onSaved }) {
 
   return (
     <div className="max-w-md mx-auto px-4 py-8">
-      <h2 className="text-xl font-bold text-slate-800 mb-6">Your Profile</h2>
+      <h2
+        className="font-bold mb-6"
+        style={{ fontFamily: "'Caveat', cursive", fontSize: 28, color: '#1a1a1a' }}
+      >
+        Your Profile
+      </h2>
       <form onSubmit={handleSubmit} className="space-y-5">
 
         {/* Photo */}
@@ -102,7 +107,7 @@ export default function ProfilePage({ onSaved }) {
               : <span className="text-4xl">📷</span>
             }
           </div>
-          <button type="button" onClick={() => fileRef.current.click()} className="text-indigo-600 text-sm font-medium hover:underline">
+          <button type="button" onClick={() => fileRef.current.click()} className="text-sm font-semibold hover:underline" style={{ color: '#E63946', fontFamily: "'Caveat', cursive", fontSize: 16 }}>
             {photoPreview ? 'Change photo' : 'Add a photo'}
           </button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
@@ -130,11 +135,12 @@ export default function ProfilePage({ onSaved }) {
                 key={opt}
                 type="button"
                 onClick={() => setPronounSelect(opt)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                className="px-3 py-1.5 rounded-full text-sm font-medium border transition-all"
+                style={
                   pronounSelect === opt
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-400'
-                }`}
+                    ? { backgroundColor: '#E63946', color: '#fff', borderColor: '#E63946', fontFamily: "'Caveat', cursive", fontSize: 15 }
+                    : { backgroundColor: '#fff', color: '#555', borderColor: '#e2e8f0', fontFamily: "'Caveat', cursive", fontSize: 15 }
+                }
               >
                 {opt === 'custom' ? '+ custom' : opt}
               </button>
@@ -166,11 +172,12 @@ export default function ProfilePage({ onSaved }) {
         </div>
 
         {/* Visibility */}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <div className="rounded-xl p-4 border" style={{ backgroundColor: '#E6394610', borderColor: '#E6394630' }}>
           <div className="flex items-start gap-3">
             <div className="mt-0.5">
               <div
-                className={`w-10 h-6 rounded-full cursor-pointer transition-colors ${alwaysVisible ? 'bg-indigo-600' : 'bg-slate-300'} relative`}
+                className="w-10 h-6 rounded-full cursor-pointer transition-colors relative"
+                style={{ backgroundColor: alwaysVisible ? '#E63946' : '#cbd5e1' }}
                 onClick={() => setAlwaysVisible(v => !v)}
               >
                 <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${alwaysVisible ? 'left-5' : 'left-1'}`} />
@@ -195,7 +202,8 @@ export default function ProfilePage({ onSaved }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
+          className="w-full py-3 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+          style={{ backgroundColor: '#E63946', fontFamily: "'Caveat', cursive", fontSize: 18 }}
         >
           {loading ? 'Saving…' : 'Save profile'}
         </button>
