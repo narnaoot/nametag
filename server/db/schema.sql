@@ -1,5 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS postgis;
-
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
@@ -16,9 +14,12 @@ CREATE TABLE IF NOT EXISTS profiles (
   radius_meters INTEGER DEFAULT 100,
   always_visible BOOLEAN DEFAULT TRUE,
   is_active BOOLEAN DEFAULT FALSE,
-  location GEOGRAPHY(Point, 4326),
+  lat DOUBLE PRECISION,
+  lng DOUBLE PRECISION,
   location_updated_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS profiles_location_idx ON profiles USING GIST(location);
+-- Bounding-box pre-filter index (no PostGIS extension needed)
+CREATE INDEX IF NOT EXISTS profiles_lat_idx ON profiles (lat);
+CREATE INDEX IF NOT EXISTS profiles_lng_idx ON profiles (lng);

@@ -43,7 +43,7 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
   const alwaysVisible = always_visible !== 'false' && always_visible !== false;
 
   try {
-    const existing = await db.query('SELECT id, photo_path FROM profiles WHERE user_id = $1', [req.user.userId]);
+    const existing = await db.query('SELECT id FROM profiles WHERE user_id = $1', [req.user.userId]);
 
     if (existing.rows.length === 0) {
       await db.query(
@@ -52,7 +52,6 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
         [req.user.userId, display_name, pronouns, photo_path || null, radius, alwaysVisible]
       );
     } else {
-      const currentPhoto = existing.rows[0].photo_path;
       await db.query(
         `UPDATE profiles SET
           display_name = $2,
@@ -74,7 +73,7 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
   }
 });
 
-// Update location
+// Update location (stores plain lat/lng — no PostGIS needed)
 router.post('/me/location', auth, async (req, res) => {
   const { latitude, longitude } = req.body;
   if (latitude == null || longitude == null) {
@@ -84,11 +83,11 @@ router.post('/me/location', auth, async (req, res) => {
   try {
     await db.query(
       `UPDATE profiles
-       SET location = ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography,
+       SET lat = $2, lng = $3,
            location_updated_at = NOW(),
            is_active = TRUE
        WHERE user_id = $1`,
-      [req.user.userId, longitude, latitude]
+      [req.user.userId, latitude, longitude]
     );
     res.json({ ok: true });
   } catch (err) {
@@ -109,34 +108,55 @@ router.post('/me/visibility', auth, async (req, res) => {
   }
 });
 
-// GET nearby profiles
+// GET nearby profiles — Haversine distance, no PostGIS
 router.get('/nearby', auth, async (req, res) => {
   try {
     const myProfile = await db.query(
-      'SELECT location, radius_meters FROM profiles WHERE user_id = $1',
+      'SELECT lat, lng, radius_meters FROM profiles WHERE user_id = $1',
       [req.user.userId]
     );
-    if (!myProfile.rows[0]?.location) {
+    const me = myProfile.rows[0];
+    if (!me?.lat || !me?.lng) {
       return res.status(400).json({ error: 'Share your location first' });
     }
 
-    const { location, radius_meters } = myProfile.rows[0];
+    const { lat, lng, radius_meters } = me;
 
+    // Bounding box in degrees (rough pre-filter, fast index scan)
+    const latDelta = radius_meters / 111320.0;
+    const lngDelta = radius_meters / (111320.0 * Math.cos((lat * Math.PI) / 180));
+
+    // Haversine formula in SQL — exact distance in metres
     const result = await db.query(
-      `SELECT
-         p.id,
-         p.display_name,
-         p.pronouns,
-         p.photo_path,
-         ST_Distance(p.location, $1::geography) AS distance_meters
-       FROM profiles p
-       WHERE p.user_id != $2
-         AND p.location IS NOT NULL
-         AND (p.always_visible = TRUE OR p.is_active = TRUE)
-         AND p.location_updated_at > NOW() - INTERVAL '30 minutes'
-         AND ST_DWithin(p.location, $1::geography, $3)
+      `SELECT * FROM (
+         SELECT
+           p.id,
+           p.display_name,
+           p.pronouns,
+           p.photo_path,
+           6371000 * 2 * ASIN(SQRT(
+             POWER(SIN(RADIANS((p.lat - $1) / 2)), 2) +
+             COS(RADIANS($1)) * COS(RADIANS(p.lat)) *
+             POWER(SIN(RADIANS((p.lng - $2) / 2)), 2)
+           )) AS distance_meters
+         FROM profiles p
+         WHERE p.user_id != $3
+           AND p.lat IS NOT NULL
+           AND p.lng IS NOT NULL
+           AND (p.always_visible = TRUE OR p.is_active = TRUE)
+           AND p.location_updated_at > NOW() - INTERVAL '30 minutes'
+           AND p.lat BETWEEN $4 AND $5
+           AND p.lng BETWEEN $6 AND $7
+       ) sub
+       WHERE distance_meters <= $8
        ORDER BY distance_meters ASC`,
-      [location, req.user.userId, radius_meters]
+      [
+        lat, lng,
+        req.user.userId,
+        lat - latDelta, lat + latDelta,
+        lng - lngDelta, lng + lngDelta,
+        radius_meters,
+      ]
     );
 
     res.json(result.rows);
