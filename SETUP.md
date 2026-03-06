@@ -2,13 +2,12 @@
 
 ## Prerequisites
 - Node.js 18+
-- PostgreSQL with the PostGIS extension
+- PostgreSQL (any standard install — PostGIS not required)
 
 ## 1. Database setup
 
 ```bash
 createdb nametag
-psql nametag -c "CREATE EXTENSION postgis;"
 psql nametag -f server/db/schema.sql
 ```
 
