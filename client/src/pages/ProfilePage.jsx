@@ -36,6 +36,7 @@ export default function ProfilePage({ onSaved }) {
   const [displayName, setDisplayName] = useState('');
   const [pronounSelect, setPronounSelect] = useState('they/them');
   const [customPronouns, setCustomPronouns] = useState('');
+  const [tagline, setTagline] = useState('');
   const [radius, setRadius] = useState(100);
   const [alwaysVisible, setAlwaysVisible] = useState(true);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -58,6 +59,7 @@ export default function ProfilePage({ onSaved }) {
         setPronounSelect('custom');
         setCustomPronouns(profile.pronouns || '');
       }
+      setTagline(profile.tagline || '');
       setRadius(profile.radius_meters || 100);
       setAlwaysVisible(profile.always_visible !== false);
       if (profile.photo_path) setPhotoPreview(profile.photo_path);
@@ -97,6 +99,7 @@ export default function ProfilePage({ onSaved }) {
     const fd = new FormData();
     fd.append('display_name', displayName.trim());
     fd.append('pronouns', pronouns.trim());
+    fd.append('tagline', tagline.trim());
     fd.append('radius_meters', radius);
     fd.append('always_visible', alwaysVisible);
     fd.append('tag_color', tagColor);
@@ -183,6 +186,19 @@ export default function ProfilePage({ onSaved }) {
               className="w-full px-4 py-3 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
           )}
+        </div>
+
+        {/* Tagline */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Tagline <span className="text-slate-400 font-normal">(optional)</span></label>
+          <input
+            type="text"
+            value={tagline}
+            onChange={e => setTagline(e.target.value)}
+            placeholder="A short line about you…"
+            maxLength={60}
+            className="w-full px-4 py-3 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          />
         </div>
 
         {/* Radius */}

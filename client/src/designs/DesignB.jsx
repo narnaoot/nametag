@@ -7,7 +7,7 @@ function getAccent(index) {
   return ACCENT_COLORS[index % ACCENT_COLORS.length];
 }
 
-export function PersonCard({ display_name, pronouns, photo_path, distance_meters, index = 0 }) {
+export function PersonCard({ display_name, pronouns, tagline, photo_path, distance_meters, index = 0 }) {
   const accent = getAccent(index);
 
   const formatDistance = (m) => {
@@ -73,6 +73,13 @@ export function PersonCard({ display_name, pronouns, photo_path, distance_meters
       >
         {pronouns}
       </span>
+
+      {/* Tagline */}
+      {tagline && (
+        <p style={{ fontSize: '0.72rem', color: '#6b7280', margin: 0, fontWeight: 500 }}>
+          {tagline}
+        </p>
+      )}
 
       {/* Distance */}
       {distance_meters != null && (
@@ -262,10 +269,10 @@ export function AuthForm({ mode, onModeChange, onSubmit, loading, error }) {
 }
 
 const FAKE_PEOPLE = [
-  { display_name: 'Alex', pronouns: 'they/them', distance_meters: 12 },
-  { display_name: 'Jordan', pronouns: 'she/her', distance_meters: 47 },
+  { display_name: 'Alex', pronouns: 'they/them', tagline: 'coffee & code', distance_meters: 12 },
+  { display_name: 'Jordan', pronouns: 'she/her', tagline: 'always vibing', distance_meters: 47 },
   { display_name: 'Sam', pronouns: 'he/him', distance_meters: 103 },
-  { display_name: 'Riley', pronouns: 'ze/zir', distance_meters: 8 },
+  { display_name: 'Riley', pronouns: 'ze/zir', tagline: 'ask me about plants', distance_meters: 8 },
 ];
 
 export function DesignBPreview() {
