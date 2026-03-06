@@ -11,7 +11,7 @@ const BANNER_COLORS = [
   '#0891B2', // cyan
 ];
 
-export function PersonCard({ display_name, pronouns, photo_path, distance_meters, tag_color, stickers, index = 0 }) {
+export function PersonCard({ display_name, pronouns, tagline, photo_path, distance_meters, tag_color, stickers, index = 0 }) {
   const bannerColor = tag_color || BANNER_COLORS[index % BANNER_COLORS.length];
   const rotation = (index % 2 === 0 ? -1 : 1) * (0.8 + (index % 3) * 0.4);
   const stickerList = stickers ? JSON.parse(stickers) : [];
@@ -77,6 +77,23 @@ export function PersonCard({ display_name, pronouns, photo_path, distance_meters
             {display_name}
           </p>
         </div>
+
+        {/* Tagline */}
+        {tagline && (
+          <div className="px-3 pb-1 text-center">
+            <p
+              style={{
+                fontFamily: "'Caveat', cursive",
+                fontSize: 12,
+                color: '#555',
+                fontStyle: 'italic',
+                lineHeight: 1.2,
+              }}
+            >
+              {tagline}
+            </p>
+          </div>
+        )}
 
         {/* Stickers row */}
         {stickerList.length > 0 && (
@@ -202,12 +219,12 @@ export function AuthForm({ mode, onModeChange, onSubmit, loading, error }) {
 }
 
 const FAKE_PEOPLE = [
-  { display_name: 'Alex', pronouns: 'they/them', distance_meters: 8 },
-  { display_name: 'Jordan', pronouns: 'she/her', distance_meters: 47 },
+  { display_name: 'Alex', pronouns: 'they/them', tagline: 'coffee & code', distance_meters: 8 },
+  { display_name: 'Jordan', pronouns: 'she/her', tagline: 'always vibing', distance_meters: 47 },
   { display_name: 'Sam', pronouns: 'he/him', distance_meters: 103 },
-  { display_name: 'Riley', pronouns: 'ze/zir', distance_meters: 22 },
+  { display_name: 'Riley', pronouns: 'ze/zir', tagline: 'ask me about plants', distance_meters: 22 },
   { display_name: 'Morgan', pronouns: 'she/they', distance_meters: 65 },
-  { display_name: 'Avery', pronouns: 'he/him', distance_meters: 134 },
+  { display_name: 'Avery', pronouns: 'he/him', tagline: 'making music', distance_meters: 134 },
 ];
 
 export function DesignEPreview() {

@@ -22,7 +22,7 @@ function getBadgeColor(index) {
   return BADGE_COLORS[index % BADGE_COLORS.length];
 }
 
-export function PersonCard({ display_name, pronouns, photo_path, distance_meters, index = 0 }) {
+export function PersonCard({ display_name, pronouns, tagline, photo_path, distance_meters, index = 0 }) {
   const gradientBorder = getGradientBorder(index);
   const avatarColor = getAvatarColor(index);
   const badgeColor = getBadgeColor(index);
@@ -105,6 +105,20 @@ export function PersonCard({ display_name, pronouns, photo_path, distance_meters
       >
         {pronouns}
       </span>
+
+      {/* Tagline */}
+      {tagline && (
+        <p
+          style={{
+            fontSize: '0.65rem',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+            color: '#6b7280',
+            margin: 0,
+          }}
+        >
+          // {tagline}
+        </p>
+      )}
 
       {/* Distance badge */}
       {distance_meters != null && (
@@ -316,10 +330,10 @@ export function AuthForm({ mode, onModeChange, onSubmit, loading, error }) {
 }
 
 const FAKE_PEOPLE = [
-  { display_name: 'Alex', pronouns: 'they/them', distance_meters: 12 },
-  { display_name: 'Jordan', pronouns: 'she/her', distance_meters: 47 },
+  { display_name: 'Alex', pronouns: 'they/them', tagline: 'coffee & code', distance_meters: 12 },
+  { display_name: 'Jordan', pronouns: 'she/her', tagline: 'always vibing', distance_meters: 47 },
   { display_name: 'Sam', pronouns: 'he/him', distance_meters: 103 },
-  { display_name: 'Riley', pronouns: 'ze/zir', distance_meters: 8 },
+  { display_name: 'Riley', pronouns: 'ze/zir', tagline: 'ask me about plants', distance_meters: 8 },
 ];
 
 export function DesignDPreview() {

@@ -17,9 +17,11 @@ CREATE TABLE IF NOT EXISTS profiles (
   lat DOUBLE PRECISION,
   lng DOUBLE PRECISION,
   location_updated_at TIMESTAMPTZ,
+  tag_color TEXT,
+  stickers TEXT,
+  tagline TEXT,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Bounding-box pre-filter index (no PostGIS extension needed)
 CREATE INDEX IF NOT EXISTS profiles_lat_idx ON profiles (lat);
 CREATE INDEX IF NOT EXISTS profiles_lng_idx ON profiles (lng);
