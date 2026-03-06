@@ -1,4 +1,6 @@
-const BASE = '/api';
+// In native Capacitor builds, there's no dev-server proxy, so we need the full URL.
+// Set VITE_API_URL in .env.production to your Render backend URL.
+const BASE = import.meta.env.VITE_API_URL || '/api';
 
 function getToken() {
   return localStorage.getItem('nametag_token');

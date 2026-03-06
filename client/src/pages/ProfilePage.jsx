@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { getMyProfile, updateProfile } from '../api';
 
 const BANNER_COLORS = [
@@ -46,7 +47,6 @@ export default function ProfilePage({ onSaved }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const fileRef = useRef();
 
   useEffect(() => {
     getMyProfile().then(profile => {
@@ -78,11 +78,22 @@ export default function ProfilePage({ onSaved }) {
     );
   }
 
-  function handlePhotoChange(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
+  async function handlePickPhoto() {
+    try {
+      const photo = await Camera.getPhoto({
+        quality: 85,
+        allowEditing: true,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Prompt, // shows "Camera / Photo Library" action sheet on iOS
+      });
+      setPhotoPreview(photo.dataUrl);
+      // Convert data URL → File for FormData upload
+      const res = await fetch(photo.dataUrl);
+      const blob = await res.blob();
+      setPhotoFile(new File([blob], 'photo.jpg', { type: blob.type }));
+    } catch {
+      // User cancelled — do nothing
+    }
   }
 
   async function handleSubmit(e) {
@@ -133,17 +144,16 @@ export default function ProfilePage({ onSaved }) {
         <div className="flex flex-col items-center gap-3">
           <div
             className="w-28 h-28 rounded-full bg-slate-100 border-2 border-slate-200 overflow-hidden cursor-pointer flex items-center justify-center"
-            onClick={() => fileRef.current.click()}
+            onClick={handlePickPhoto}
           >
             {photoPreview
               ? <img src={photoPreview} alt="Your photo" className="w-full h-full object-cover" />
               : <span className="text-4xl">📷</span>
             }
           </div>
-          <button type="button" onClick={() => fileRef.current.click()} className="text-sm font-semibold hover:underline" style={{ color: '#E63946', fontFamily: "'Caveat', cursive", fontSize: 16 }}>
+          <button type="button" onClick={handlePickPhoto} className="text-sm font-semibold hover:underline" style={{ color: '#E63946', fontFamily: "'Caveat', cursive", fontSize: 16 }}>
             {photoPreview ? 'Change photo' : 'Add a photo'}
           </button>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
         </div>
 
         {/* Name */}

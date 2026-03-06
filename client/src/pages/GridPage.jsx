@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Geolocation } from '@capacitor/geolocation';
 import { getNearby, updateLocation, setVisibility, getMyProfile } from '../api';
 import { PersonCard } from '../designs/DesignE';
 
@@ -20,28 +21,15 @@ export default function GridPage() {
     } catch {}
   }, []);
 
-  const shareLocation = useCallback(() => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocation is not supported by your browser.'));
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(
-        async pos => {
-          try {
-            await updateLocation(pos.coords.latitude, pos.coords.longitude);
-            setLastUpdated(new Date());
-            resolve();
-          } catch (err) {
-            reject(err);
-          }
-        },
-        err => {
-          reject(new Error('Location access denied. Please allow location access and refresh.'));
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    });
+  const shareLocation = useCallback(async () => {
+    // Request permission first — on iOS this triggers the native permission dialog
+    const perm = await Geolocation.requestPermissions();
+    if (perm.location === 'denied') {
+      throw new Error('Location access denied. Please allow location access in Settings.');
+    }
+    const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+    await updateLocation(pos.coords.latitude, pos.coords.longitude);
+    setLastUpdated(new Date());
   }, []);
 
   const loadNearby = useCallback(async () => {
