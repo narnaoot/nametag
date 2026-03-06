@@ -257,6 +257,114 @@ describe('PUT /api/profiles/me', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Persistence — photo and profile fields survive across sessions
+// ---------------------------------------------------------------------------
+describe('Profile persistence across sessions', () => {
+  it('preserves existing photo when updating profile without a new upload', async () => {
+    const existingPhotoPath = '/uploads/user_42_1700000000000.jpg';
+
+    // SELECT existing profile — has a photo
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'profile-persist', photo_path: existingPhotoPath }] });
+    // UPDATE
+    db.query.mockResolvedValueOnce({ rows: [] });
+    // SELECT result — photo still there
+    db.query.mockResolvedValueOnce({ rows: [{ display_name: 'Sam', pronouns: 'they/them', photo_path: existingPhotoPath }] });
+
+    const res = await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', 'Sam')
+      .field('pronouns', 'they/them');
+
+    expect(res.status).toBe(200);
+
+    // The UPDATE query receives null for photo_path ($4), so COALESCE keeps the original
+    const updateArgs = db.query.mock.calls[1][1];
+    expect(updateArgs[3]).toBeNull(); // no new file → null passed to COALESCE
+    expect(res.body.photo_path).toBe(existingPhotoPath);
+  });
+
+  it('replaces photo when a new file is uploaded', async () => {
+    const oldPhoto = '/uploads/user_42_old.jpg';
+    const smallImage = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      'base64'
+    ); // 1×1 transparent PNG
+
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'profile-photo', photo_path: oldPhoto }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+    db.query.mockResolvedValueOnce({ rows: [{ display_name: 'Sam', pronouns: 'they/them', photo_path: '/uploads/user_new.png' }] });
+
+    const res = await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', 'Sam')
+      .field('pronouns', 'they/them')
+      .attach('photo', smallImage, { filename: 'avatar.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(200);
+
+    // A new file was uploaded, so photo_path arg should be non-null
+    const updateArgs = db.query.mock.calls[1][1];
+    expect(updateArgs[3]).not.toBeNull();
+    expect(updateArgs[3]).toMatch(/^\/uploads\//);
+  });
+
+  it('returns all saved profile fields when loading a new session (GET /me)', async () => {
+    const fullProfile = {
+      id: 'profile-full',
+      user_id: 'user-session',
+      display_name: 'Jordan',
+      pronouns: 'she/her',
+      tagline: 'coffee & code',
+      photo_path: '/uploads/user_7_1700000000000.jpg',
+      radius_meters: 200,
+      always_visible: false,
+      is_active: true,
+      tag_color: '#7C3AED',
+      stickers: JSON.stringify(['🌟', '🎸']),
+      lat: 51.5074,
+      lng: -0.1278,
+    };
+    db.query.mockResolvedValueOnce({ rows: [fullProfile] });
+
+    const res = await request(app)
+      .get('/api/profiles/me')
+      .set('Authorization', authHeader('user-session'));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      display_name: 'Jordan',
+      pronouns: 'she/her',
+      tagline: 'coffee & code',
+      photo_path: '/uploads/user_7_1700000000000.jpg',
+      radius_meters: 200,
+      always_visible: false,
+      tag_color: '#7C3AED',
+      stickers: JSON.stringify(['🌟', '🎸']),
+    });
+  });
+
+  it('tagline is capped at 60 characters server-side regardless of what is sent', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] }); // SELECT existing
+    db.query.mockResolvedValueOnce({ rows: [] }); // INSERT
+    db.query.mockResolvedValueOnce({ rows: [{}] }); // SELECT result
+
+    const longTagline = 'a'.repeat(100);
+
+    await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', 'Test')
+      .field('pronouns', 'they/them')
+      .field('tagline', longTagline);
+
+    const insertArgs = db.query.mock.calls[1][1];
+    expect(insertArgs[8].length).toBe(60); // tagline is 9th param ($9)
+  });
+});
+
+// ---------------------------------------------------------------------------
 // POST /api/profiles/me/location
 // ---------------------------------------------------------------------------
 describe('POST /api/profiles/me/location', () => {
