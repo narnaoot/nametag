@@ -153,6 +153,76 @@ describe('PUT /api/profiles/me', () => {
     expect(res.status).toBe(401);
   });
 
+  it('returns 400 when display_name is only whitespace', async () => {
+    const res = await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', '   ')
+      .field('pronouns', 'they/them');
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('error', 'Name and pronouns required');
+  });
+
+  it('returns 400 when pronouns is only whitespace', async () => {
+    const res = await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', 'Test')
+      .field('pronouns', '   ');
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('error', 'Name and pronouns required');
+  });
+
+  it('stores trimmed display_name and pronouns', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] }); // SELECT existing
+    db.query.mockResolvedValueOnce({ rows: [] }); // INSERT
+    db.query.mockResolvedValueOnce({ rows: [{ display_name: 'Alex', pronouns: 'they/them' }] });
+
+    await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', '  Alex  ')
+      .field('pronouns', '  they/them  ');
+
+    const insertArgs = db.query.mock.calls[1][1];
+    expect(insertArgs[1]).toBe('Alex');
+    expect(insertArgs[2]).toBe('they/them');
+  });
+
+  it('returns 400 when photo is not an image', async () => {
+    const res = await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', 'Test')
+      .field('pronouns', 'they/them')
+      .attach('photo', Buffer.from('not an image'), {
+        filename: 'doc.txt',
+        contentType: 'text/plain',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('error', 'Only image files are allowed');
+  });
+
+  it('returns 400 when photo exceeds 5 MB', async () => {
+    const bigBuffer = Buffer.alloc(6 * 1024 * 1024, 'x');
+
+    const res = await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', 'Test')
+      .field('pronouns', 'they/them')
+      .attach('photo', bigBuffer, {
+        filename: 'big.jpg',
+        contentType: 'image/jpeg',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('error', 'Photo must be under 5 MB');
+  });
+
   it('defaults radius_meters to 100 when not provided', async () => {
     db.query.mockResolvedValueOnce({ rows: [] }); // SELECT existing
     db.query.mockResolvedValueOnce({ rows: [] }); // INSERT
@@ -340,6 +410,20 @@ describe('GET /api/profiles/nearby', () => {
   it('returns an empty array when no profiles are nearby', async () => {
     db.query.mockResolvedValueOnce({
       rows: [{ lat: 37.7749, lng: -122.4194, radius_meters: 100 }],
+    });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .get('/api/profiles/nearby')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it('returns 200 when user is at lat=0, lng=0 (valid coordinates, not treated as missing)', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{ lat: 0, lng: 0, radius_meters: 100 }],
     });
     db.query.mockResolvedValueOnce({ rows: [] });
 

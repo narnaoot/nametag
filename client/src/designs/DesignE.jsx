@@ -14,7 +14,8 @@ const BANNER_COLORS = [
 export function PersonCard({ display_name, pronouns, tagline, photo_path, distance_meters, tag_color, stickers, index = 0 }) {
   const bannerColor = tag_color || BANNER_COLORS[index % BANNER_COLORS.length];
   const rotation = (index % 2 === 0 ? -1 : 1) * (0.8 + (index % 3) * 0.4);
-  const stickerList = stickers ? JSON.parse(stickers) : [];
+  let stickerList = [];
+  try { stickerList = stickers ? JSON.parse(stickers) : []; } catch {}
 
   return (
     <div className="flex flex-col items-center gap-2">

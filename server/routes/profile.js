@@ -34,7 +34,9 @@ router.get('/me', auth, async (req, res) => {
 // CREATE or UPDATE profile
 router.put('/me', auth, upload.single('photo'), async (req, res) => {
   const { display_name, pronouns, radius_meters, always_visible, tag_color, stickers, tagline } = req.body;
-  if (!display_name || !pronouns) {
+  const cleanName = display_name?.trim();
+  const cleanPronouns = pronouns?.trim();
+  if (!cleanName || !cleanPronouns) {
     return res.status(400).json({ error: 'Name and pronouns required' });
   }
 
@@ -43,7 +45,7 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
   const alwaysVisible = always_visible !== 'false' && always_visible !== false;
   const tagColor = tag_color || null;
   const stickersVal = stickers || null;
-  const taglineVal = tagline || null;
+  const taglineVal = tagline ? tagline.slice(0, 60) : null;
 
   try {
     const existing = await db.query('SELECT id FROM profiles WHERE user_id = $1', [req.user.userId]);
@@ -52,7 +54,7 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
       await db.query(
         `INSERT INTO profiles (user_id, display_name, pronouns, photo_path, radius_meters, always_visible, tag_color, stickers, tagline)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [req.user.userId, display_name, pronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal, taglineVal]
+        [req.user.userId, cleanName, cleanPronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal, taglineVal]
       );
     } else {
       await db.query(
@@ -67,7 +69,7 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
           tagline = $9,
           updated_at = NOW()
          WHERE user_id = $1`,
-        [req.user.userId, display_name, pronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal, taglineVal]
+        [req.user.userId, cleanName, cleanPronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal, taglineVal]
       );
     }
 
@@ -122,7 +124,7 @@ router.get('/nearby', auth, async (req, res) => {
       [req.user.userId]
     );
     const me = myProfile.rows[0];
-    if (!me?.lat || !me?.lng) {
+    if (me?.lat == null || me?.lng == null) {
       return res.status(400).json({ error: 'Share your location first' });
     }
 

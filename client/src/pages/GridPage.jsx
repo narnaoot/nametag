@@ -186,7 +186,10 @@ export default function GridPage() {
               key={person.id}
               display_name={person.display_name}
               pronouns={person.pronouns}
+              tagline={person.tagline}
               photo_path={person.photo_path}
+              tag_color={person.tag_color}
+              stickers={person.stickers}
               distance_meters={person.distance_meters}
               index={i}
             />

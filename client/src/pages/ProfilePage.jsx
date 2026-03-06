@@ -64,7 +64,9 @@ export default function ProfilePage({ onSaved }) {
       setAlwaysVisible(profile.always_visible !== false);
       if (profile.photo_path) setPhotoPreview(profile.photo_path);
       if (profile.tag_color) setTagColor(profile.tag_color);
-      if (profile.stickers) setSelectedStickers(JSON.parse(profile.stickers));
+      if (profile.stickers) {
+        try { setSelectedStickers(JSON.parse(profile.stickers)); } catch {}
+      }
     }).catch(() => {});
   }, []);
 
