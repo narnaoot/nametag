@@ -2,17 +2,10 @@
 // Physical hello-my-name-is badge: photo on top, sticker below with
 // colored header band, handwritten name, pronouns strip at the bottom.
 
-const BANNER_COLORS = [
-  '#E63946', // red
-  '#2563EB', // blue
-  '#16A34A', // green
-  '#D97706', // amber
-  '#7C3AED', // purple
-  '#0891B2', // cyan
-];
+import { BANNER_COLOR_HEXES } from '../constants';
 
 export function PersonCard({ display_name, pronouns, tagline, photo_path, distance_meters, tag_color, stickers, index = 0 }) {
-  const bannerColor = tag_color || BANNER_COLORS[index % BANNER_COLORS.length];
+  const bannerColor = tag_color || BANNER_COLOR_HEXES[index % BANNER_COLOR_HEXES.length];
   const rotation = (index % 2 === 0 ? -1 : 1) * (0.8 + (index % 3) * 0.4);
   let stickerList = [];
   try { stickerList = stickers ? JSON.parse(stickers) : []; } catch {}

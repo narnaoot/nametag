@@ -1,37 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { getMyProfile, updateProfile } from '../api';
-
-const BANNER_COLORS = [
-  { hex: '#E63946', label: 'Red' },
-  { hex: '#2563EB', label: 'Blue' },
-  { hex: '#16A34A', label: 'Green' },
-  { hex: '#D97706', label: 'Amber' },
-  { hex: '#7C3AED', label: 'Purple' },
-  { hex: '#0891B2', label: 'Cyan' },
-];
-
-const STICKER_OPTIONS = [
-  '👋', '🌟', '🎉', '🌈', '🦄', '🐉', '🌸', '🍕',
-  '🎸', '📚', '🎨', '🏳️‍🌈', '🏳️‍⚧️', '🌍', '☕', '🤖',
-];
-
-const PRONOUN_OPTIONS = [
-  'she/her',
-  'he/him',
-  'they/them',
-  'she/they',
-  'he/they',
-  'custom',
-];
-
-const RADIUS_OPTIONS = [
-  { label: '50 m (same floor)', value: 50 },
-  { label: '100 m (city block) — default', value: 100 },
-  { label: '200 m (nearby block)', value: 200 },
-  { label: '500 m (neighborhood)', value: 500 },
-  { label: '1 km (wider area)', value: 1000 },
-];
+import { BANNER_COLORS, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS } from '../constants';
 
 export default function ProfilePage({ onSaved }) {
   const [displayName, setDisplayName] = useState('');
@@ -67,7 +37,7 @@ export default function ProfilePage({ onSaved }) {
       if (profile.stickers) {
         try { setSelectedStickers(JSON.parse(profile.stickers)); } catch {}
       }
-    }).catch(() => {});
+    }).catch(err => console.error('[ProfilePage] load profile:', err));
   }, []);
 
   function toggleSticker(sticker) {
