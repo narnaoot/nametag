@@ -2,9 +2,11 @@
 // Set VITE_API_URL in .env.production to your Render backend URL.
 const BASE = import.meta.env.VITE_API_URL || '/api';
 
-function getToken() {
-  return localStorage.getItem('nametag_token');
-}
+// Token is kept in sync by AuthContext via setToken() below.
+// Do NOT read from localStorage — on iOS, AuthContext uses @capacitor/preferences.
+let _token = null;
+export function setToken(t) { _token = t; }
+function getToken() { return _token; }
 
 async function request(path, options = {}) {
   const token = getToken();
@@ -62,4 +64,20 @@ export async function setVisibility(is_active) {
 
 export async function getNearby() {
   return request('/profiles/nearby');
+}
+
+export async function forgotPassword(email) {
+  return request('/auth/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(token, password) {
+  return request('/auth/reset-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password }),
+  });
 }
