@@ -3,6 +3,8 @@
 Things that require you (not Claude) to act — accounts, hardware, credentials, decisions.
 Updated at the end of every session.
 
+> **Codebase status (March 2026):** Web app is feature-complete and cleaned up — consistent theme system, no magic values, proper error handling. Ready for native iOS work whenever you have a Mac + Apple Developer account.
+
 ---
 
 ## 🍎 Turn this into an iPhone app

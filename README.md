@@ -25,7 +25,7 @@ A location-based social discovery app — a digital "Hello, My Name Is" badge. S
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 19, Vite, Tailwind CSS |
+| Frontend | React 19, Vite, Tailwind CSS v4 |
 | Backend | Node.js, Express 5 |
 | Database | PostgreSQL (Neon) |
 | Auth | JWT (30-day tokens, bcrypt passwords) |
@@ -46,7 +46,8 @@ nametag/
 │       ├── App.jsx           # App shell + tab navigation
 │       ├── AuthContext.jsx   # JWT token state (@capacitor/preferences)
 │       ├── api.js            # Fetch wrapper + photoUrl() helper
-│       ├── constants.js      # Shared colors, options, field limits
+│       ├── constants.js      # Brand tokens, shared colors, options, field limits
+│       ├── index.css         # Tailwind v4 @theme tokens (color-brand, font-caveat, …)
 │       ├── pages/
 │       │   ├── AuthPage.jsx     # Login / register / forgot / reset password
 │       │   ├── ProfilePage.jsx  # Edit profile
