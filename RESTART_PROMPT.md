@@ -91,6 +91,22 @@ server/
 
 ---
 
+## iPhone app plans
+
+The Capacitor scaffolding exists (`client/ios/`) but the native app isn't fully built out yet. Key design decision: **user photos and profile data should be stored on-device** (not just fetched from the server each time), so the app feels instant and works with poor connectivity.
+
+Things to build / decide:
+
+- [ ] **On-device storage** — cache own profile (name, pronouns, photo, stickers, colors) in `@capacitor/preferences` or SQLite so it loads instantly without a network round-trip
+- [ ] **On-device photo storage** — when user picks a profile photo, store a local copy on the device (Capacitor Filesystem) in addition to uploading to the server; use the local copy for display to avoid a network load
+- [ ] **First iOS build** — needs Mac + Xcode; run `cd client && npx cap sync && npx cap open ios`; test on a real device
+- [ ] **Push notifications** — notify users when someone new shows up nearby (requires APNs setup)
+- [ ] **Background location** — decide whether to update location in the background or only when the app is open (privacy + battery tradeoff)
+- [ ] **App Store submission** — bundle ID, signing, privacy manifest (required for location + camera permissions)
+- [ ] **Deep link for password reset** — currently the reset link opens the web app in Safari; wire up a custom URL scheme or Universal Link so it opens the native app instead
+
+---
+
 ## Deployment
 
 Push to `main` → Render auto-deploys backend, Vercel auto-deploys frontend.
