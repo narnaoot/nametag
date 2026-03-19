@@ -2,6 +2,17 @@
 // Set VITE_API_URL in .env.production to your Render backend URL.
 const BASE = import.meta.env.VITE_API_URL || '/api';
 
+// On native iOS, /uploads/... paths must be absolute Render URLs.
+// On web, Vercel rewrites /uploads/... to Render for us.
+const UPLOAD_BASE = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace('/api', '')
+  : '';
+export function photoUrl(path) {
+  if (!path) return null;
+  if (path.startsWith('http')) return path;
+  return `${UPLOAD_BASE}${path}`;
+}
+
 // Token is kept in sync by AuthContext via setToken() below.
 // Do NOT read from localStorage — on iOS, AuthContext uses @capacitor/preferences.
 let _token = null;

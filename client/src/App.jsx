@@ -1,14 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './AuthContext';
 import AuthPage from './pages/AuthPage';
 import ProfilePage from './pages/ProfilePage';
 import GridPage from './pages/GridPage';
 import { NavBar } from './designs/DesignE';
+import { getMyProfile } from './api';
 import './index.css';
 
 function AppShell() {
   const { isLoggedIn, signOut } = useAuth();
   const [tab, setTab] = useState('grid');
+
+  // Send first-time users straight to the profile tab so they can set up
+  // their name and pronouns before seeing the (empty) grid.
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    getMyProfile().then(profile => {
+      if (!profile) setTab('profile');
+    }).catch(() => {});
+  }, [isLoggedIn]);
 
   if (!isLoggedIn) return <AuthPage />;
 
