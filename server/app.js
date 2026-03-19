@@ -11,7 +11,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/profiles', require('./routes/profile'));
-app.use('/api/admin', require('./routes/admin'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 

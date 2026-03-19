@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { getMyProfile, updateProfile } from '../api';
+import { getMyProfile, updateProfile, photoUrl } from '../api';
 import { BANNER_COLORS, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS } from '../constants';
 
 export default function ProfilePage({ onSaved }) {
@@ -32,7 +32,7 @@ export default function ProfilePage({ onSaved }) {
       setTagline(profile.tagline || '');
       setRadius(profile.radius_meters || 100);
       setAlwaysVisible(profile.always_visible !== false);
-      if (profile.photo_path) setPhotoPreview(profile.photo_path);
+      if (profile.photo_path) setPhotoPreview(photoUrl(profile.photo_path));
       if (profile.tag_color) setTagColor(profile.tag_color);
       if (profile.stickers) {
         try { setSelectedStickers(JSON.parse(profile.stickers)); } catch {}

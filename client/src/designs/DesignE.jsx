@@ -3,6 +3,7 @@
 // colored header band, handwritten name, pronouns strip at the bottom.
 
 import { BANNER_COLOR_HEXES } from '../constants';
+import { photoUrl } from '../api';
 
 export function PersonCard({ display_name, pronouns, tagline, photo_path, distance_meters, tag_color, stickers, index = 0 }) {
   const bannerColor = tag_color || BANNER_COLOR_HEXES[index % BANNER_COLOR_HEXES.length];
@@ -18,7 +19,7 @@ export function PersonCard({ display_name, pronouns, tagline, photo_path, distan
         style={{ zIndex: 1 }}
       >
         {photo_path
-          ? <img src={photo_path} alt={display_name} className="w-full h-full object-cover" />
+          ? <img src={photoUrl(photo_path)} alt={display_name} className="w-full h-full object-cover" />
           : <span className="text-4xl">👤</span>
         }
       </div>
