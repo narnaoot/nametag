@@ -15,7 +15,7 @@ export function useNearbyPeople() {
       const profile = await getMyProfile();
       setMyProfile(profile);
       if (profile) {
-        setIsActive(profile.always_visible ? true : profile.is_active);
+        setIsActive(profile.always_visible || profile.is_active);
       }
     } catch (err) {
       console.error('[useNearbyPeople] loadMyProfile:', err);
