@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './AuthContext';
 import AuthPage from './pages/AuthPage';
 import ProfilePage from './pages/ProfilePage';
 import GridPage from './pages/GridPage';
-import DesignPreview from './designs/DesignPreview';
 import { NavBar } from './designs/DesignE';
 import './index.css';
 
@@ -47,9 +46,6 @@ function AppShell() {
 }
 
 export default function App() {
-  if (window.location.hash === '#designs') {
-    return <DesignPreview />;
-  }
   return (
     <AuthProvider>
       <AppShell />

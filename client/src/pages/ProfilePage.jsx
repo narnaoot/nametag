@@ -72,9 +72,31 @@ export default function ProfilePage({ onSaved }) {
     setSuccess('');
     setLoading(true);
 
+    if (!displayName.trim()) {
+      setError('Please enter your name.');
+      setLoading(false);
+      return;
+    }
+    if (displayName.trim().length > 40) {
+      setError('Name must be 40 characters or fewer.');
+      setLoading(false);
+      return;
+    }
+
     const pronouns = pronounSelect === 'custom' ? customPronouns : pronounSelect;
     if (!pronouns.trim()) {
       setError('Please enter your pronouns.');
+      setLoading(false);
+      return;
+    }
+    if (pronouns.trim().length > 30) {
+      setError('Pronouns must be 30 characters or fewer.');
+      setLoading(false);
+      return;
+    }
+
+    if (tagline.trim().length > 60) {
+      setError('Tagline must be 60 characters or fewer.');
       setLoading(false);
       return;
     }
@@ -128,13 +150,19 @@ export default function ProfilePage({ onSaved }) {
 
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Your name</label>
+          <div className="flex justify-between mb-1">
+            <label className="text-sm font-medium text-slate-700">Your name</label>
+            <span className="text-xs" style={{ color: displayName.length > 36 ? '#E63946' : '#aaa' }}>
+              {displayName.length}/40
+            </span>
+          </div>
           <input
             type="text"
             value={displayName}
             onChange={e => setDisplayName(e.target.value)}
             placeholder="What should people call you?"
             required
+            maxLength={40}
             className="w-full px-4 py-3 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
         </div>
@@ -172,7 +200,14 @@ export default function ProfilePage({ onSaved }) {
 
         {/* Tagline */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Tagline <span className="text-slate-400 font-normal">(optional)</span></label>
+          <div className="flex justify-between mb-1">
+            <label className="text-sm font-medium text-slate-700">
+              Tagline <span className="text-slate-400 font-normal">(optional)</span>
+            </label>
+            <span className="text-xs" style={{ color: tagline.length > 50 ? '#E63946' : '#aaa' }}>
+              {tagline.length}/60
+            </span>
+          </div>
           <input
             type="text"
             value={tagline}

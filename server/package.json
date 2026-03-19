@@ -10,8 +10,13 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "setupFiles": ["./__tests__/setup.js"],
-    "testPathIgnorePatterns": ["/node_modules/", "/__tests__/setup\\.js$"]
+    "setupFiles": [
+      "./__tests__/setup.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/__tests__/setup\\.js$"
+    ]
   },
   "keywords": [],
   "author": "",
@@ -23,6 +28,7 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
+    "nodemailer": "^8.0.3",
     "pg": "^8.20.0"
   },
   "devDependencies": {

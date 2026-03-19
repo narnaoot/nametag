@@ -65,3 +65,19 @@ export async function setVisibility(is_active) {
 export async function getNearby() {
   return request('/profiles/nearby');
 }
+
+export async function forgotPassword(email) {
+  return request('/auth/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(token, password) {
+  return request('/auth/reset-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password }),
+  });
+}
