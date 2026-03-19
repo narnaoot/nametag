@@ -1,11 +1,12 @@
 // In native Capacitor builds, there's no dev-server proxy, so we need the full URL.
-// Set VITE_API_URL in .env.production to your Render backend URL.
+// Set VITE_API_URL in .env.production to your Render backend URL (e.g. https://nametag.onrender.com/api).
 const BASE = import.meta.env.VITE_API_URL || '/api';
 
 // On native iOS, /uploads/... paths must be absolute Render URLs.
 // On web, Vercel rewrites /uploads/... to Render for us.
+// Derive origin by stripping the trailing /api path segment (anchored, not substring).
 const UPLOAD_BASE = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL.replace('/api', '')
+  ? import.meta.env.VITE_API_URL.replace(/\/api$/, '')
   : '';
 export function photoUrl(path) {
   if (!path) return null;

@@ -17,26 +17,23 @@ function AppShell() {
     if (!isLoggedIn) return;
     getMyProfile().then(profile => {
       if (!profile) setTab('profile');
-    }).catch(() => {});
+    }).catch(err => console.error('[App] profile check:', err));
   }, [isLoggedIn]);
 
   if (!isLoggedIn) return <AuthPage />;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f5f5f0' }}>
+    <div className="min-h-screen bg-page">
       {/* Top nav */}
-      <header className="bg-white sticky top-0 z-10" style={{ borderBottom: '2px solid #f0f0ec' }}>
+      <header className="bg-white sticky top-0 z-10 border-b-2 border-line">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          <span
-            className="font-bold"
-            style={{ fontFamily: "'Caveat', cursive", fontSize: 24, color: '#E63946' }}
-          >
+          <span className="font-caveat font-bold text-brand" style={{ fontSize: 24 }}>
             🏷️ Nametag
           </span>
           <button
             onClick={signOut}
-            className="text-sm font-semibold"
-            style={{ color: '#aaa', fontFamily: "'Caveat', cursive", fontSize: 15 }}
+            className="font-caveat text-sm font-semibold text-dim"
+            style={{ fontSize: 15 }}
           >
             Sign out
           </button>
@@ -49,7 +46,7 @@ function AppShell() {
         {tab === 'profile' && <ProfilePage onSaved={() => setTab('grid')} />}
       </main>
 
-      {/* Design E bottom tab bar */}
+      {/* Bottom tab bar */}
       <NavBar tab={tab} onTabChange={setTab} />
     </div>
   );

@@ -1,3 +1,10 @@
+// Brand tokens — keep in sync with @theme in index.css
+export const COLOR_BRAND = '#E63946';
+export const COLOR_PAGE  = '#f5f5f0';
+export const COLOR_INK   = '#1a1a1a';
+export const COLOR_DIM   = '#aaa';
+export const FONT_CAVEAT = "'Caveat', cursive";
+
 export const BANNER_COLORS = [
   { hex: '#E63946', label: 'Red' },
   { hex: '#2563EB', label: 'Blue' },
