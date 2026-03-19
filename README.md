@@ -4,16 +4,20 @@ A location-based social discovery app — a digital "Hello, My Name Is" badge. S
 
 **Live app**: [nametag.vercel.app](https://nametag.vercel.app) · **API**: [nametag.onrender.com](https://nametag.onrender.com)
 
+> **Resuming development?** See [RESTART_PROMPT.md](RESTART_PROMPT.md) for current state and what's next.
+
 ---
 
 ## Features
 
 - **Register / sign in** with email and password
-- **Build your profile** — display name, pronouns, photo, nametag color, and up to 3 emoji stickers
-- **Share your location** via the browser Geolocation API
-- **See the grid** — nearby people displayed as physical "Hello My Name Is" badge cards, sorted by distance
+- **Forgot password** — reset link sent by email (or logged to console in dev)
+- **Build your profile** — display name, pronouns, tagline, photo, nametag color, and up to 3 emoji stickers
+- **Share your location** via Capacitor Geolocation (web + native iOS)
+- **See the grid** — nearby people displayed as "Hello My Name Is" badge cards, sorted by distance
 - **Control visibility** — always visible, or only show yourself when you choose
 - **Auto-refresh** — location and nearby grid update every 60 seconds
+- **iOS app** — runs natively via Capacitor 7
 
 ---
 
@@ -26,6 +30,7 @@ A location-based social discovery app — a digital "Hello, My Name Is" badge. S
 | Database | PostgreSQL (Neon) |
 | Auth | JWT (30-day tokens, bcrypt passwords) |
 | File uploads | Multer (photos stored on server disk) |
+| iOS | Capacitor 7 |
 | Hosting | Render (API) + Vercel (frontend) |
 
 ---
@@ -39,12 +44,17 @@ nametag/
 │   ├── vite.config.js        # Dev proxy → localhost:3001
 │   └── src/
 │       ├── App.jsx           # App shell + tab navigation
-│       ├── AuthContext.jsx   # JWT token state
-│       ├── api.js            # Fetch wrapper (auto-injects Bearer token)
-│       └── pages/
-│           ├── AuthPage.jsx     # Login / register
-│           ├── ProfilePage.jsx  # Edit profile
-│           └── GridPage.jsx     # Nearby people grid
+│       ├── AuthContext.jsx   # JWT token state (@capacitor/preferences)
+│       ├── api.js            # Fetch wrapper + photoUrl() helper
+│       ├── constants.js      # Shared colors, options, field limits
+│       ├── pages/
+│       │   ├── AuthPage.jsx     # Login / register / forgot / reset password
+│       │   ├── ProfilePage.jsx  # Edit profile
+│       │   └── GridPage.jsx     # Nearby people grid
+│       ├── hooks/
+│       │   └── useNearbyPeople.js  # Location, nearby fetch, 60s auto-refresh
+│       └── designs/
+│           └── DesignE.jsx   # PersonCard + NavBar components
 └── server/                   # Express API
     ├── index.js              # Entry point — runs migrations, starts server
     ├── app.js                # Express app (middleware + routes)
@@ -56,7 +66,7 @@ nametag/
     ├── middleware/
     │   └── auth.js           # JWT verification
     ├── routes/
-    │   ├── auth.js           # /api/auth/register, /login
+    │   ├── auth.js           # /api/auth/* (register, login, forgot, reset)
     │   └── profile.js        # /api/profiles/* (me, location, visibility, nearby)
     └── __tests__/            # Jest + Supertest test suite
 ```
@@ -71,6 +81,8 @@ All authenticated endpoints require `Authorization: Bearer <token>`.
 |---|---|---|---|
 | POST | `/api/auth/register` | — | Create account → returns JWT |
 | POST | `/api/auth/login` | — | Sign in → returns JWT |
+| POST | `/api/auth/forgot-password` | — | Send password reset email |
+| POST | `/api/auth/reset-password` | — | Set new password via reset token |
 | GET | `/api/profiles/me` | ✓ | Get your profile |
 | PUT | `/api/profiles/me` | ✓ | Create / update profile (multipart) |
 | POST | `/api/profiles/me/location` | ✓ | Update lat/lng |
@@ -94,6 +106,7 @@ profiles
   user_id INTEGER UNIQUE REFERENCES users(id) ON DELETE CASCADE
   display_name TEXT NOT NULL
   pronouns TEXT NOT NULL
+  tagline TEXT
   photo_path TEXT
   radius_meters INTEGER DEFAULT 100
   always_visible BOOLEAN DEFAULT TRUE
@@ -104,6 +117,14 @@ profiles
   tag_color TEXT
   stickers TEXT          -- JSON array of emoji strings
   updated_at TIMESTAMPTZ DEFAULT NOW()
+
+password_reset_tokens
+  id SERIAL PRIMARY KEY
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
+  token TEXT UNIQUE NOT NULL
+  expires_at TIMESTAMPTZ NOT NULL
+  used BOOLEAN DEFAULT FALSE
+  created_at TIMESTAMPTZ DEFAULT NOW()
 ```
 
 ---
@@ -138,6 +159,13 @@ Open [http://localhost:5173](http://localhost:5173)
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_SECRET` | Long random string for signing tokens |
 | `PORT` | Server port (default: `3001`) |
+| `APP_URL` | Frontend URL used in reset-password links (default: `https://nametag.vercel.app`) |
+| `SMTP_HOST` | SMTP server hostname (optional — omit to log reset links to console) |
+| `SMTP_PORT` | SMTP port (default: `587`) |
+| `SMTP_SECURE` | `true` for port 465 TLS |
+| `SMTP_USER` | SMTP username |
+| `SMTP_PASS` | SMTP password |
+| `SMTP_FROM` | From address (default: `Nametag <no-reply@nametag.app>`) |
 
 ---
 
@@ -159,7 +187,7 @@ cd server
 npm test
 ```
 
-41 tests covering auth, profile CRUD, location, visibility, and nearby search — all with a mocked database.
+70 tests covering auth (register, login, forgot/reset password), profile CRUD, location, visibility, and nearby search — all with a mocked database.
 
 ---
 

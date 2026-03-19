@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { getMyProfile, updateProfile, photoUrl } from '../api';
-import { BANNER_COLORS, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS } from '../constants';
+import { BANNER_COLORS, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS, NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX } from '../constants';
 
 export default function ProfilePage({ onSaved }) {
   const [displayName, setDisplayName] = useState('');
@@ -77,8 +77,8 @@ export default function ProfilePage({ onSaved }) {
       setLoading(false);
       return;
     }
-    if (displayName.trim().length > 40) {
-      setError('Name must be 40 characters or fewer.');
+    if (displayName.trim().length > NAME_MAX) {
+      setError(`Name must be ${NAME_MAX} characters or fewer.`);
       setLoading(false);
       return;
     }
@@ -89,14 +89,14 @@ export default function ProfilePage({ onSaved }) {
       setLoading(false);
       return;
     }
-    if (pronouns.trim().length > 30) {
-      setError('Pronouns must be 30 characters or fewer.');
+    if (pronouns.trim().length > PRONOUNS_MAX) {
+      setError(`Pronouns must be ${PRONOUNS_MAX} characters or fewer.`);
       setLoading(false);
       return;
     }
 
-    if (tagline.trim().length > 60) {
-      setError('Tagline must be 60 characters or fewer.');
+    if (tagline.trim().length > TAGLINE_MAX) {
+      setError(`Tagline must be ${TAGLINE_MAX} characters or fewer.`);
       setLoading(false);
       return;
     }
@@ -152,8 +152,8 @@ export default function ProfilePage({ onSaved }) {
         <div>
           <div className="flex justify-between mb-1">
             <label className="text-sm font-medium text-slate-700">Your name</label>
-            <span className="text-xs" style={{ color: displayName.length > 36 ? '#E63946' : '#aaa' }}>
-              {displayName.length}/40
+            <span className="text-xs" style={{ color: displayName.length > NAME_MAX - 4 ? '#E63946' : '#aaa' }}>
+              {displayName.length}/{NAME_MAX}
             </span>
           </div>
           <input
@@ -162,7 +162,7 @@ export default function ProfilePage({ onSaved }) {
             onChange={e => setDisplayName(e.target.value)}
             placeholder="What should people call you?"
             required
-            maxLength={40}
+            maxLength={NAME_MAX}
             className="w-full px-4 py-3 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
         </div>
@@ -204,8 +204,8 @@ export default function ProfilePage({ onSaved }) {
             <label className="text-sm font-medium text-slate-700">
               Tagline <span className="text-slate-400 font-normal">(optional)</span>
             </label>
-            <span className="text-xs" style={{ color: tagline.length > 50 ? '#E63946' : '#aaa' }}>
-              {tagline.length}/60
+            <span className="text-xs" style={{ color: tagline.length > TAGLINE_MAX - 10 ? '#E63946' : '#aaa' }}>
+              {tagline.length}/{TAGLINE_MAX}
             </span>
           </div>
           <input
@@ -213,7 +213,7 @@ export default function ProfilePage({ onSaved }) {
             value={tagline}
             onChange={e => setTagline(e.target.value)}
             placeholder="A short line about you…"
-            maxLength={60}
+            maxLength={TAGLINE_MAX}
             className="w-full px-4 py-3 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
         </div>

@@ -23,6 +23,10 @@ export const PRONOUN_OPTIONS = [
   'custom',
 ];
 
+export const NAME_MAX = 40;
+export const PRONOUNS_MAX = 30;
+export const TAGLINE_MAX = 60;
+
 export const RADIUS_OPTIONS = [
   { label: '50 m (same floor)', value: 50 },
   { label: '100 m (city block) — default', value: 100 },
