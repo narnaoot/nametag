@@ -2,7 +2,7 @@
 
 Paste this into Claude Code at the start of a new session to get up to speed quickly.
 
-**At the end of every session**, update this file, `README.md`, and `YOUR_TODOS.md` to reflect what was done and what's next, then commit and push.
+**At the end of every session**, update this file, `README.md`, and `NABIL_TODOS.md` to reflect what was done and what's next, then commit and push.
 
 ---
 
