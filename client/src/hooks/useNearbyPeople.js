@@ -94,7 +94,7 @@ export function useNearbyPeople() {
         await shareLocation();
         await loadNearby();
       } catch (err) {
-        console.error('[useNearbyPeople] background refresh:', err);
+        setLocationError(err.message);
       }
     }, 60_000);
     return () => clearInterval(interval);

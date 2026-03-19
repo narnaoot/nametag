@@ -37,7 +37,7 @@ export default function ProfilePage({ onSaved }) {
       if (profile.stickers) {
         try { setSelectedStickers(JSON.parse(profile.stickers)); } catch {}
       }
-    }).catch(err => console.error('[ProfilePage] load profile:', err));
+    }).catch(() => setError('Failed to load your profile. Please refresh.'));
   }, []);
 
   function toggleSticker(sticker) {
@@ -124,10 +124,7 @@ export default function ProfilePage({ onSaved }) {
 
   return (
     <div className="max-w-md mx-auto px-4 py-8">
-      <h2
-        className="font-bold mb-6"
-        style={{ fontFamily: "'Caveat', cursive", fontSize: 28, color: '#1a1a1a' }}
-      >
+      <h2 className="font-caveat font-bold text-ink mb-6" style={{ fontSize: 28 }}>
         Your Profile
       </h2>
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -143,7 +140,12 @@ export default function ProfilePage({ onSaved }) {
               : <span className="text-4xl">📷</span>
             }
           </div>
-          <button type="button" onClick={handlePickPhoto} className="text-sm font-semibold hover:underline" style={{ color: '#E63946', fontFamily: "'Caveat', cursive", fontSize: 16 }}>
+          <button
+            type="button"
+            onClick={handlePickPhoto}
+            className="font-caveat text-sm font-semibold text-brand hover:underline"
+            style={{ fontSize: 16 }}
+          >
             {photoPreview ? 'Change photo' : 'Add a photo'}
           </button>
         </div>
@@ -152,7 +154,7 @@ export default function ProfilePage({ onSaved }) {
         <div>
           <div className="flex justify-between mb-1">
             <label className="text-sm font-medium text-slate-700">Your name</label>
-            <span className="text-xs" style={{ color: displayName.length > NAME_MAX - 4 ? '#E63946' : '#aaa' }}>
+            <span className={`text-xs ${displayName.length > NAME_MAX - 4 ? 'text-brand' : 'text-dim'}`}>
               {displayName.length}/{NAME_MAX}
             </span>
           </div>
@@ -176,12 +178,12 @@ export default function ProfilePage({ onSaved }) {
                 key={opt}
                 type="button"
                 onClick={() => setPronounSelect(opt)}
-                className="px-3 py-1.5 rounded-full text-sm font-medium border transition-all"
-                style={
+                className={`font-caveat px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
                   pronounSelect === opt
-                    ? { backgroundColor: '#E63946', color: '#fff', borderColor: '#E63946', fontFamily: "'Caveat', cursive", fontSize: 15 }
-                    : { backgroundColor: '#fff', color: '#555', borderColor: '#e2e8f0', fontFamily: "'Caveat', cursive", fontSize: 15 }
-                }
+                    ? 'bg-brand text-white border-brand'
+                    : 'bg-white text-slate-600 border-slate-200'
+                }`}
+                style={{ fontSize: 15 }}
               >
                 {opt === 'custom' ? '+ custom' : opt}
               </button>
@@ -204,7 +206,7 @@ export default function ProfilePage({ onSaved }) {
             <label className="text-sm font-medium text-slate-700">
               Tagline <span className="text-slate-400 font-normal">(optional)</span>
             </label>
-            <span className="text-xs" style={{ color: tagline.length > TAGLINE_MAX - 10 ? '#E63946' : '#aaa' }}>
+            <span className={`text-xs ${tagline.length > TAGLINE_MAX - 10 ? 'text-brand' : 'text-dim'}`}>
               {tagline.length}/{TAGLINE_MAX}
             </span>
           </div>
@@ -237,8 +239,7 @@ export default function ProfilePage({ onSaved }) {
           <div className="flex items-start gap-3">
             <div className="mt-0.5">
               <div
-                className="w-10 h-6 rounded-full cursor-pointer transition-colors relative"
-                style={{ backgroundColor: alwaysVisible ? '#E63946' : '#cbd5e1' }}
+                className={`w-10 h-6 rounded-full cursor-pointer transition-colors relative ${alwaysVisible ? 'bg-brand' : 'bg-slate-300'}`}
                 onClick={() => setAlwaysVisible(v => !v)}
               >
                 <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${alwaysVisible ? 'left-5' : 'left-1'}`} />
@@ -289,11 +290,9 @@ export default function ProfilePage({ onSaved }) {
                 key={s}
                 type="button"
                 onClick={() => toggleSticker(s)}
-                className="w-10 h-10 rounded-xl text-xl flex items-center justify-center border-2 transition-all"
-                style={{
-                  borderColor: selectedStickers.includes(s) ? '#E63946' : '#e2e8f0',
-                  backgroundColor: selectedStickers.includes(s) ? '#E6394615' : '#fff',
-                }}
+                className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center border-2 transition-all ${
+                  selectedStickers.includes(s) ? 'border-brand bg-brand/10' : 'border-slate-200 bg-white'
+                }`}
               >
                 {s}
               </button>
@@ -307,8 +306,8 @@ export default function ProfilePage({ onSaved }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
-          style={{ backgroundColor: '#E63946', fontFamily: "'Caveat', cursive", fontSize: 18 }}
+          className="w-full py-3 text-white rounded-lg font-semibold font-caveat transition-colors disabled:opacity-50 bg-brand"
+          style={{ fontSize: 18 }}
         >
           {loading ? 'Saving…' : 'Save profile'}
         </button>

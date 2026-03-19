@@ -2,22 +2,22 @@
 // Physical hello-my-name-is badge: photo on top, sticker below with
 // colored header band, handwritten name, pronouns strip at the bottom.
 
-import { BANNER_COLOR_HEXES } from '../constants';
+import { useMemo } from 'react';
+import { BANNER_COLOR_HEXES, COLOR_INK, COLOR_DIM, FONT_CAVEAT } from '../constants';
 import { photoUrl } from '../api';
 
-export function PersonCard({ display_name, pronouns, tagline, photo_path, distance_meters, tag_color, stickers, index = 0 }) {
+export function PersonCard({ person, index = 0 }) {
+  const { display_name, pronouns, tagline, photo_path, distance_meters, tag_color, stickers } = person;
   const bannerColor = tag_color || BANNER_COLOR_HEXES[index % BANNER_COLOR_HEXES.length];
   const rotation = (index % 2 === 0 ? -1 : 1) * (0.8 + (index % 3) * 0.4);
-  let stickerList = [];
-  try { stickerList = stickers ? JSON.parse(stickers) : []; } catch {}
+  const stickerList = useMemo(() => {
+    try { return stickers ? JSON.parse(stickers) : []; } catch { return []; }
+  }, [stickers]);
 
   return (
     <div className="flex flex-col items-center gap-2">
       {/* Photo */}
-      <div
-        className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md flex items-center justify-center bg-slate-100"
-        style={{ zIndex: 1 }}
-      >
+      <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md flex items-center justify-center bg-slate-100">
         {photo_path
           ? <img src={photoUrl(photo_path)} alt={display_name} className="w-full h-full object-cover" />
           : <span className="text-4xl">👤</span>
@@ -35,35 +35,23 @@ export function PersonCard({ display_name, pronouns, tagline, photo_path, distan
         }}
       >
         {/* Colored header band */}
-        <div
-          className="px-3 pt-2 pb-1"
-          style={{ backgroundColor: bannerColor }}
-        >
-          <p
-            className="text-white uppercase tracking-widest font-bold"
-            style={{ fontSize: 8, letterSpacing: '0.18em', lineHeight: 1.2 }}
-          >
+        <div className="px-3 pt-2 pb-1" style={{ backgroundColor: bannerColor }}>
+          <p className="text-white uppercase tracking-widest font-bold" style={{ fontSize: 8, letterSpacing: '0.18em', lineHeight: 1.2 }}>
             HELLO
           </p>
-          <p
-            className="text-white uppercase font-semibold"
-            style={{ fontSize: 7, opacity: 0.9, letterSpacing: '0.12em' }}
-          >
+          <p className="text-white uppercase font-semibold" style={{ fontSize: 7, opacity: 0.9, letterSpacing: '0.12em' }}>
             my name is
           </p>
         </div>
 
         {/* Handwritten name area */}
-        <div
-          className="px-3 py-2 flex items-center justify-center"
-          style={{ minHeight: 56, backgroundColor: '#fff' }}
-        >
+        <div className="px-3 py-2 flex items-center justify-center bg-white" style={{ minHeight: 56 }}>
           <p
             style={{
-              fontFamily: "'Caveat', cursive",
+              fontFamily: FONT_CAVEAT,
               fontSize: display_name.length > 12 ? 22 : 28,
               fontWeight: 700,
-              color: '#1a1a1a',
+              color: COLOR_INK,
               lineHeight: 1.1,
               textAlign: 'center',
               wordBreak: 'break-word',
@@ -76,15 +64,7 @@ export function PersonCard({ display_name, pronouns, tagline, photo_path, distan
         {/* Tagline */}
         {tagline && (
           <div className="px-3 pb-1 text-center">
-            <p
-              style={{
-                fontFamily: "'Caveat', cursive",
-                fontSize: 12,
-                color: '#555',
-                fontStyle: 'italic',
-                lineHeight: 1.2,
-              }}
-            >
+            <p style={{ fontFamily: FONT_CAVEAT, fontSize: 12, color: '#555', fontStyle: 'italic', lineHeight: 1.2 }}>
               {tagline}
             </p>
           </div>
@@ -104,21 +84,11 @@ export function PersonCard({ display_name, pronouns, tagline, photo_path, distan
           className="px-3 py-1.5 flex items-center justify-between"
           style={{ backgroundColor: bannerColor + '18', borderTop: `2px solid ${bannerColor}22` }}
         >
-          <p
-            style={{
-              fontFamily: "'Caveat', cursive",
-              fontSize: 14,
-              color: bannerColor,
-              fontWeight: 500,
-            }}
-          >
+          <p style={{ fontFamily: FONT_CAVEAT, fontSize: 14, color: bannerColor, fontWeight: 500 }}>
             {pronouns}
           </p>
           {distance_meters != null && (
-            <p
-              className="text-xs font-medium"
-              style={{ color: '#999', fontSize: 10 }}
-            >
+            <p style={{ color: COLOR_DIM, fontSize: 10 }} className="font-medium">
               {distance_meters < 10 ? 'here' : `${Math.round(distance_meters)}m`}
             </p>
           )}
@@ -143,18 +113,12 @@ export function NavBar({ tab, onTabChange }) {
           >
             <span className="text-xl">{icon}</span>
             <span
-              className="text-xs font-bold uppercase tracking-wider"
-              style={{
-                color: tab === id ? '#E63946' : '#aaa',
-                fontFamily: "'Caveat', cursive",
-                fontSize: 13,
-              }}
+              className={`font-caveat text-xs font-bold uppercase tracking-wider ${tab === id ? 'text-brand' : 'text-dim'}`}
+              style={{ fontSize: 13 }}
             >
               {label}
             </span>
-            {tab === id && (
-              <div className="w-6 h-1 rounded-full mt-0.5" style={{ backgroundColor: '#E63946' }} />
-            )}
+            {tab === id && <div className="w-6 h-1 rounded-full mt-0.5 bg-brand" />}
           </button>
         ))}
       </div>

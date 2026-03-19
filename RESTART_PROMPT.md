@@ -40,7 +40,10 @@ Everything below is **done and on `main`**:
 - First-time UX: new users land on the profile tab automatically
 - iOS / Capacitor: app builds and runs natively; `@capacitor/camera` and `@capacitor/geolocation` wired up; photo URLs work in both web and native builds
 - Token sync: `AuthContext` exposes token via `setToken()` — `api.js` reads from memory, not `localStorage`
+- Brand theme system: `index.css` has a Tailwind v4 `@theme` block (`--color-brand`, `--color-page`, `--color-ink`, `--color-dim`, `--font-caveat`) → utility classes throughout; `constants.js` exports matching JS values (`COLOR_BRAND`, `FONT_CAVEAT`, etc.) for computed/programmatic use
 - Constants: `NAME_MAX`, `PRONOUNS_MAX`, `TAGLINE_MAX`, `BANNER_COLORS`, `PRONOUN_OPTIONS`, `STICKER_OPTIONS`, `RADIUS_OPTIONS` all in `client/src/constants.js`
+- `PersonCard` accepts a single `person` prop object (not 8 individual props); sticker JSON is memoized with `useMemo`
+- Error handling: background location refresh surfaces errors to the UI; profile load failure shows a message in the form; `api.js` URL stripping uses an end-anchored regex (`/\/api$/`)
 - 70 tests passing (Jest + Supertest, mocked DB)
 
 ---
@@ -48,9 +51,10 @@ Everything below is **done and on `main`**:
 ## What still needs doing
 
 1. **SMTP email** — password reset links are working but only logged to the Render console right now. Need to set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, and `APP_URL` env vars on Render to send real emails.
-2. **iOS build** — needs a Mac with Xcode. Run `cd client && npx cap sync && npx cap open ios` to build and test on device. Photo URL fix from last session should make photos load correctly in native.
-3. **Photo storage** — currently stored on Render's disk (`/uploads`). Works fine for now but a free Render instance will lose files on redeploy. Consider Cloudinary or S3 for real persistence.
-4. **Loading states** — the grid shows "Looking for people nearby…" during the initial location fetch, but there's no skeleton/placeholder for the profile page load.
+2. **iOS build** — needs a Mac with Xcode. Run `cd client && npx cap sync && npx cap open ios` to build and test on device. Codebase is now clean and ready for native work.
+3. **iOS Privacy strings** — `Info.plist` needs `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` before App Store submission.
+4. **Photo storage** — currently stored on Render's disk (`/uploads`). Works fine for now but a free Render instance will lose files on redeploy. Consider Cloudinary or S3 for real persistence.
+5. **Loading state on profile page** — no skeleton/placeholder while the profile loads on first open (the grid page has one; the profile page doesn't).
 
 ---
 

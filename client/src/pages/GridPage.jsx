@@ -9,20 +9,17 @@ export default function GridPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2
-            className="font-bold"
-            style={{ fontFamily: "'Caveat', cursive", fontSize: 28, color: '#1a1a1a' }}
-          >
+          <h2 className="font-caveat font-bold text-ink" style={{ fontSize: 28 }}>
             Nearby
           </h2>
           {lastUpdated && (
-            <p className="text-xs" style={{ color: '#aaa' }}>Updated {lastUpdated.toLocaleTimeString()}</p>
+            <p className="text-xs text-dim">Updated {lastUpdated.toLocaleTimeString()}</p>
           )}
         </div>
         <button
           onClick={refresh}
-          className="text-sm font-semibold"
-          style={{ color: '#E63946', fontFamily: "'Caveat', cursive", fontSize: 16 }}
+          className="font-caveat text-sm font-semibold text-brand"
+          style={{ fontSize: 16 }}
         >
           Refresh
         </button>
@@ -53,8 +50,8 @@ export default function GridPage() {
       )}
 
       {myProfile?.always_visible && (
-        <div className="mb-5 rounded-xl px-4 py-3 border" style={{ backgroundColor: '#E6394610', borderColor: '#E6394630' }}>
-          <p className="text-sm" style={{ color: '#E63946' }}>
+        <div className="mb-5 rounded-xl px-4 py-3 border text-brand" style={{ backgroundColor: '#E6394610', borderColor: '#E6394630' }}>
+          <p className="text-sm">
             <span className="font-semibold">You're always visible.</span> To change this, go to your profile settings.
           </p>
         </div>
@@ -69,7 +66,7 @@ export default function GridPage() {
 
       {/* Grid */}
       {loading ? (
-        <div className="text-center py-16" style={{ color: '#aaa', fontFamily: "'Caveat', cursive", fontSize: 20 }}>
+        <div className="text-center py-16 font-caveat text-dim" style={{ fontSize: 20 }}>
           Looking for people nearby…
         </div>
       ) : nearby.length === 0 ? (
@@ -81,17 +78,7 @@ export default function GridPage() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 justify-items-center">
           {nearby.map((person, i) => (
-            <PersonCard
-              key={person.id}
-              display_name={person.display_name}
-              pronouns={person.pronouns}
-              tagline={person.tagline}
-              photo_path={person.photo_path}
-              tag_color={person.tag_color}
-              stickers={person.stickers}
-              distance_meters={person.distance_meters}
-              index={i}
-            />
+            <PersonCard key={person.id} person={person} index={i} />
           ))}
         </div>
       )}

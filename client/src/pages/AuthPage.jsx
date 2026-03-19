@@ -10,17 +10,17 @@ function Logo() {
         className="bg-white rounded-sm overflow-hidden"
         style={{ width: 200, boxShadow: '3px 4px 16px rgba(0,0,0,0.15)', transform: 'rotate(-2deg)' }}
       >
-        <div className="px-4 pt-3 pb-1.5" style={{ backgroundColor: '#E63946' }}>
+        <div className="bg-brand px-4 pt-3 pb-1.5">
           <p className="text-white font-bold uppercase" style={{ fontSize: 9, letterSpacing: '0.2em' }}>HELLO</p>
           <p className="text-white font-semibold uppercase" style={{ fontSize: 8, opacity: 0.9, letterSpacing: '0.12em' }}>my name is</p>
         </div>
         <div className="px-4 py-3 text-center">
-          <p style={{ fontFamily: "'Caveat', cursive", fontSize: 36, fontWeight: 700, color: '#1a1a1a', lineHeight: 1 }}>
+          <p className="font-caveat font-bold text-ink" style={{ fontSize: 36, lineHeight: 1 }}>
             Nametag
           </p>
         </div>
-        <div className="px-4 py-1.5" style={{ backgroundColor: '#E6394618', borderTop: '2px solid #E6394622' }}>
-          <p style={{ fontFamily: "'Caveat', cursive", fontSize: 14, color: '#E63946' }}>say hi! 👋</p>
+        <div className="font-caveat px-4 py-1.5 text-brand" style={{ backgroundColor: '#E6394618', borderTop: '2px solid #E6394622', fontSize: 14 }}>
+          say hi! 👋
         </div>
       </div>
     </div>
@@ -104,7 +104,7 @@ export default function AuthPage() {
   const inputClass = 'w-full px-4 py-3 rounded-lg border border-gray-200 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-red-300';
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#f5f5f0' }}>
+    <div className="min-h-screen flex items-center justify-center px-4 bg-page">
       <div className="w-full max-w-sm">
         <Logo />
 
@@ -113,8 +113,7 @@ export default function AuthPage() {
           <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
             <button
               onClick={() => switchMode('login')}
-              className="text-sm mb-4 flex items-center gap-1"
-              style={{ color: '#aaa' }}
+              className="text-sm mb-4 flex items-center gap-1 text-dim"
             >
               ← Back to sign in
             </button>
@@ -135,8 +134,7 @@ export default function AuthPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 text-white rounded-lg font-semibold text-sm disabled:opacity-50"
-                  style={{ backgroundColor: '#E63946' }}
+                  className="w-full py-3 text-white rounded-lg font-semibold text-sm disabled:opacity-50 bg-brand"
                 >
                   {loading ? 'Sending…' : 'Send reset link'}
                 </button>
@@ -166,8 +164,7 @@ export default function AuthPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 text-white rounded-lg font-semibold text-sm disabled:opacity-50"
-                  style={{ backgroundColor: '#E63946' }}
+                  className="w-full py-3 text-white rounded-lg font-semibold text-sm disabled:opacity-50 bg-brand"
                 >
                   {loading ? 'Saving…' : 'Set new password'}
                 </button>
@@ -184,8 +181,7 @@ export default function AuthPage() {
                 <button
                   key={m}
                   onClick={() => switchMode(m)}
-                  className={`flex-1 py-2 rounded-md text-sm font-semibold transition-all ${mode === m ? 'bg-white shadow' : 'text-gray-400'}`}
-                  style={mode === m ? { color: '#E63946' } : {}}
+                  className={`flex-1 py-2 rounded-md text-sm font-semibold transition-all ${mode === m ? 'bg-white shadow text-brand' : 'text-gray-400'}`}
                 >
                   {m === 'login' ? 'Sign in' : 'Create account'}
                 </button>
@@ -214,8 +210,7 @@ export default function AuthPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 text-white rounded-lg font-semibold text-sm disabled:opacity-50"
-                style={{ backgroundColor: '#E63946' }}
+                className="w-full py-3 text-white rounded-lg font-semibold text-sm disabled:opacity-50 bg-brand"
               >
                 {loading ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
               </button>
@@ -224,8 +219,7 @@ export default function AuthPage() {
             {mode === 'login' && (
               <button
                 onClick={() => switchMode('forgot')}
-                className="mt-3 text-sm w-full text-center"
-                style={{ color: '#aaa' }}
+                className="mt-3 text-sm w-full text-center text-dim"
               >
                 Forgot password?
               </button>
