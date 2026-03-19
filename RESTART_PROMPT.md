@@ -16,6 +16,25 @@ Paste this into Claude Code at the start of a new session to get up to speed qui
 
 ---
 
+## Core privacy principle — minimise server-side data
+
+**The server is a relay, not a data store.** User photos and location must live on the server for the shortest time possible — only while actively needed — and be deleted as soon as they are not. This is non-negotiable: it's both a privacy commitment to users and a cost constraint.
+
+What this means concretely:
+
+- **Photos** — primary copy lives on-device (Capacitor Filesystem). The server copy exists only to serve nearby users while the owner is visible. It must be deleted when the user goes invisible, when their location hasn't been refreshed in X hours (TBD, probably 24h), or when they delete their account.
+- **Location** — never stored as history. The DB holds only the single most-recent lat/lng, overwritten on each refresh. Already enforced by the schema (one row per user, no history table). Location should be cleared (set to NULL) when a user goes invisible or goes stale.
+- **Account deletion** — must be a hard, immediate delete of everything: user row, profile row, photo file on disk. Cascade is already in the schema; the route needs to exist and the UI needs to expose it.
+- **No server-side caching** of data beyond the immediate request.
+
+**Code that still needs updating to honour this:**
+1. `server/routes/profile.js` — add a DELETE `/api/profiles/me` endpoint that removes the user, profile, and photo file
+2. `server/routes/profile.js` — when a user sets `is_active = false` (goes invisible), delete their server-side photo and NULL their location
+3. Add a server-side cron / cleanup job that NULLs location and deletes photo files for users whose `location_updated_at` is older than 24h
+4. On iOS: store the photo in Capacitor Filesystem on-device; upload to server on each "go visible" action rather than once-and-keep
+
+---
+
 ## Stack
 
 | Layer | Technology |
@@ -50,11 +69,17 @@ Everything below is **done and on `main`**:
 
 ## What still needs doing
 
-1. **SMTP email** — password reset links are working but only logged to the Render console right now. Need to set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, and `APP_URL` env vars on Render to send real emails.
-2. **iOS build** — needs a Mac with Xcode. Run `cd client && npx cap sync && npx cap open ios` to build and test on device. Codebase is now clean and ready for native work.
-3. **iOS Privacy strings** — `Info.plist` needs `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` before App Store submission.
-4. **Photo storage** — currently stored on Render's disk (`/uploads`). Works fine for now but a free Render instance will lose files on redeploy. Consider Cloudinary or S3 for real persistence.
-5. **Loading state on profile page** — no skeleton/placeholder while the profile loads on first open (the grid page has one; the profile page doesn't).
+**Privacy / data minimisation (implement before any real users):**
+1. **Account deletion** — add `DELETE /api/profiles/me` (removes user row, profile row, photo file); add a "Delete account" button in the app UI.
+2. **Photo cleanup on invisible** — when `is_active` is set to `false`, delete the server-side photo file and NULL the location. Photo re-uploads on next "go visible".
+3. **Stale-data cleanup** — server cron (or Render cron job) that NULLs location and deletes photo files for users whose `location_updated_at` is older than 24h.
+4. **On-device photo (iOS)** — store the user's own photo in Capacitor Filesystem; upload fresh to server each time they go visible rather than storing permanently server-side.
+
+**Everything else:**
+5. **SMTP email** — reset links are logged to the Render console. Set `SMTP_HOST/PORT/USER/PASS/FROM` + `APP_URL` env vars on Render to send real emails.
+6. **iOS build** — needs a Mac with Xcode. Run `cd client && npx cap sync && npx cap open ios`. Codebase is clean and ready.
+7. **iOS Privacy strings** — `Info.plist` needs `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` before App Store submission.
+8. **Loading state on profile page** — no skeleton/placeholder while the profile loads on first open.
 
 ---
 

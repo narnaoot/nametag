@@ -7,6 +7,17 @@ Updated at the end of every session.
 
 ---
 
+## 🔒 Privacy decisions (decide before launch)
+
+The app is being built on a **server-as-relay** principle: user data lives on the server only as long as strictly needed, then gets deleted. Claude knows about this — it's in RESTART_PROMPT. But you need to decide a few specifics:
+
+- **How long is "stale"?** The current plan is 24h without a location refresh → server deletes the photo and NULLs the location. Does that feel right, or should it be shorter (e.g. 4h, 8h)?
+- **What happens when you go invisible?** The plan: server deletes your photo file immediately and NULLs your location. You re-upload on next "go visible." You okay with that UX?
+- **Privacy policy** — before any real users, you'll need a simple privacy policy page explaining what's collected, how long it's kept, and how to delete an account. This can be a single static page. Just tell Claude when you're ready.
+- **GDPR / right to erasure** — the account-deletion feature (coming soon in code) will cover this, but worth knowing it's on the roadmap.
+
+---
+
 ## 🍎 Turn this into an iPhone app
 
 ### Step 1 — Apple Developer account ($99/year, takes 1–2 days)
@@ -96,13 +107,11 @@ Right now, reset links are logged to the Render console instead of emailed. To f
 
 ---
 
-## 📸 Photo storage (before scaling up)
+## 📸 Photo storage
 
-Photos currently live on Render's disk. This is fine for now but free Render instances can lose files if the service is redeployed to a different instance.
+Photos currently live on Render's disk (`/uploads`). The privacy principle says server-side photos are temporary — deleted when you go invisible or go stale. So a fancy CDN/S3 setup is less critical than it first appeared, since files shouldn't accumulate.
 
-When you're ready to harden this:
-1. Sign up for [Cloudinary](https://cloudinary.com) (free tier is generous) or an S3-compatible service
-2. Tell Claude — the upload logic in `server/routes/profile.js` is straightforward to swap out
+The main risk right now: free Render instances can lose disk contents on redeploy. This is acceptable during development. Once real users are involved, revisit — but the solution may simply be "upload fresh each time you go visible" rather than persistent cloud storage.
 
 ---
 
