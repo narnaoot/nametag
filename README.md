@@ -23,7 +23,7 @@ A location-based social discovery app — a digital "Hello, My Name Is" badge. S
 
 ## Privacy design
 
-Nametag treats the server as a **relay, not a data store**. User data lives on the server only as long as strictly necessary:
+Nametag treats the server as a **relay, not a data store**. User privacy is critical.  User data lives on the server only as long as strictly necessary:
 
 - **Profile data (name, pronouns, tagline, color, stickers)** — the primary copy lives on-device in `@capacitor/preferences`. The server copy is populated only while you are visible to others, and is cleared (set to NULL) the moment you go invisible or your session goes stale. It is re-uploaded transparently from the on-device copy the next time you become active.
 - **Photos** — same lifecycle as profile data. The primary copy lives on-device (Capacitor Filesystem). The server copy is deleted when you go invisible or inactive, and re-uploaded when you become visible again.
