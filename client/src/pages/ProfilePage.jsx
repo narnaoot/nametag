@@ -51,6 +51,8 @@ export default function ProfilePage({ onSaved }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef(null);
+  const loadedRef = useRef(false);
+  const autoSaveTimerRef = useRef(null);
 
   useEffect(() => {
     async function load() {
@@ -111,7 +113,7 @@ export default function ProfilePage({ onSaved }) {
         if (!value) setError('Failed to load your profile. Please refresh.');
       }
     }
-    load();
+    load().then(() => { loadedRef.current = true; });
   }, []);
 
   function toggleSticker(sticker) {
@@ -141,44 +143,34 @@ export default function ProfilePage({ onSaved }) {
     setPhotoFile(file);
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function doSave({ silent = false } = {}) {
+    const name = displayName.trim();
+    const pronouns = pronounSelect === 'custom' ? customPronouns.trim() : pronounSelect;
+
+    // Silently skip during auto-save if required fields aren't ready yet
+    if (!name || !pronouns) {
+      if (!silent) setError('Please enter your name and pronouns.');
+      return;
+    }
+    if (name.length > NAME_MAX) {
+      if (!silent) setError(`Name must be ${NAME_MAX} characters or fewer.`);
+      return;
+    }
+    if (pronouns.length > PRONOUNS_MAX) {
+      if (!silent) setError(`Pronouns must be ${PRONOUNS_MAX} characters or fewer.`);
+      return;
+    }
+    if (tagline.trim().length > TAGLINE_MAX) {
+      if (!silent) setError(`Tagline must be ${TAGLINE_MAX} characters or fewer.`);
+      return;
+    }
+
     setError('');
-    setSuccess('');
     setLoading(true);
 
-    if (!displayName.trim()) {
-      setError('Please enter your name.');
-      setLoading(false);
-      return;
-    }
-    if (displayName.trim().length > NAME_MAX) {
-      setError(`Name must be ${NAME_MAX} characters or fewer.`);
-      setLoading(false);
-      return;
-    }
-
-    const pronouns = pronounSelect === 'custom' ? customPronouns : pronounSelect;
-    if (!pronouns.trim()) {
-      setError('Please enter your pronouns.');
-      setLoading(false);
-      return;
-    }
-    if (pronouns.trim().length > PRONOUNS_MAX) {
-      setError(`Pronouns must be ${PRONOUNS_MAX} characters or fewer.`);
-      setLoading(false);
-      return;
-    }
-
-    if (tagline.trim().length > TAGLINE_MAX) {
-      setError(`Tagline must be ${TAGLINE_MAX} characters or fewer.`);
-      setLoading(false);
-      return;
-    }
-
     const fd = new FormData();
-    fd.append('display_name', displayName.trim());
-    fd.append('pronouns', pronouns.trim());
+    fd.append('display_name', name);
+    fd.append('pronouns', pronouns);
     fd.append('tagline', tagline.trim());
     fd.append('radius_meters', radius);
     fd.append('always_visible', alwaysVisible);
@@ -189,12 +181,11 @@ export default function ProfilePage({ onSaved }) {
 
     try {
       await updateProfile(fd);
-      // Mirror to on-device storage so it survives server-side cleanup
       await Preferences.set({
         key: LOCAL_PROFILE_KEY,
         value: JSON.stringify({
-          display_name: displayName.trim(),
-          pronouns: pronouns.trim(),
+          display_name: name,
+          pronouns,
           tagline: tagline.trim(),
           radius_meters: radius,
           always_visible: alwaysVisible,
@@ -203,7 +194,8 @@ export default function ProfilePage({ onSaved }) {
           party_code: partyCode.trim(),
         }),
       });
-      setSuccess('Profile saved!');
+      setSuccess('Saved');
+      setTimeout(() => setSuccess(''), 2000);
       if (onSaved) onSaved();
     } catch (err) {
       setError(err.message);
@@ -211,6 +203,15 @@ export default function ProfilePage({ onSaved }) {
       setLoading(false);
     }
   }
+
+  // Auto-save: debounce 700 ms after any field change, skip during initial load
+  useEffect(() => {
+    if (!loadedRef.current) return;
+    clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => doSave({ silent: true }), 700);
+    return () => clearTimeout(autoSaveTimerRef.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayName, pronounSelect, customPronouns, tagline, radius, alwaysVisible, tagColor, selectedStickers, partyCode, photoFile]);
 
   async function handleDeleteAccount() {
     setDeleting(true);
@@ -226,10 +227,12 @@ export default function ProfilePage({ onSaved }) {
 
   return (
     <div className="max-w-md mx-auto px-4 py-8">
-      <h2 className="font-caveat font-bold text-ink mb-6" style={{ fontSize: 28 }}>
-        Your Profile
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="flex items-baseline justify-between mb-6">
+        <h2 className="font-caveat font-bold text-ink" style={{ fontSize: 28 }}>Your Profile</h2>
+        {loading && <span className="text-xs text-slate-400">Saving…</span>}
+        {!loading && success && <span className="text-xs text-green-600">{success} ✓</span>}
+      </div>
+      <form onSubmit={e => { e.preventDefault(); doSave(); }} className="space-y-5">
 
         {/* Hidden file input for photo selection */}
         <input
@@ -435,16 +438,6 @@ export default function ProfilePage({ onSaved }) {
         </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
-        {success && <p className="text-green-600 text-sm">{success}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 text-white rounded-lg font-semibold font-caveat transition-colors disabled:opacity-50 bg-brand"
-          style={{ fontSize: 18 }}
-        >
-          {loading ? 'Saving…' : 'Save profile'}
-        </button>
       </form>
 
       {/* Delete account */}
