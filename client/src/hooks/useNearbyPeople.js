@@ -1,6 +1,47 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Geolocation } from '@capacitor/geolocation';
-import { getNearby, updateLocation, setVisibility, getMyProfile } from '../api';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Preferences } from '@capacitor/preferences';
+import { getNearby, updateLocation, setVisibility, getMyProfile, updateProfile } from '../api';
+import { LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY } from '../constants';
+
+// Re-uploads the full profile (name, pronouns, photo, etc.) from on-device
+// storage. Called when the server copy has been cleaned up (user went inactive
+// or stale cleanup ran). Silent no-op if there's nothing stored locally.
+async function reuploadFullProfile() {
+  try {
+    const { value } = await Preferences.get({ key: LOCAL_PROFILE_KEY });
+    if (!value) return;
+    const p = JSON.parse(value);
+    if (!p.display_name || !p.pronouns) return; // incomplete — skip
+
+    const fd = new FormData();
+    fd.append('display_name', p.display_name);
+    fd.append('pronouns', p.pronouns);
+    fd.append('tagline', p.tagline || '');
+    fd.append('radius_meters', p.radius_meters ?? 100);
+    fd.append('always_visible', p.always_visible ?? true);
+    fd.append('tag_color', p.tag_color || '');
+    fd.append('stickers', p.stickers || '[]');
+
+    // Include photo from Filesystem if available
+    try {
+      const result = await Filesystem.readFile({
+        path: LOCAL_PHOTO_PATH,
+        directory: Directory.Data,
+        encoding: Encoding.UTF8,
+      });
+      const blob = await fetch(result.data).then(r => r.blob());
+      fd.append('photo', new File([blob], 'photo.jpg', { type: blob.type }));
+    } catch {
+      // No local photo — upload profile data without it
+    }
+
+    await updateProfile(fd);
+  } catch {
+    // Preferences empty, parse error, or upload failed — proceed without restoring
+  }
+}
 
 export function useNearbyPeople() {
   const [nearby, setNearby] = useState([]);
@@ -16,6 +57,10 @@ export function useNearbyPeople() {
       setMyProfile(profile);
       if (profile) {
         setIsActive(profile.always_visible || profile.is_active);
+        // If sensitive fields were cleaned up server-side, restore from on-device data
+        if (!profile.display_name) {
+          await reuploadFullProfile();
+        }
       }
     } catch (err) {
       console.error('[useNearbyPeople] loadMyProfile:', err);
@@ -62,6 +107,10 @@ export function useNearbyPeople() {
     if (alwaysVisible) return;
     const newActive = !isActive;
     try {
+      if (newActive) {
+        // Going visible — restore full profile from on-device storage first
+        await reuploadFullProfile();
+      }
       await setVisibility(newActive);
       setIsActive(newActive);
     } catch (err) {

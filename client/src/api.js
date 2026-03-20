@@ -78,6 +78,16 @@ export async function getNearby() {
   return request('/profiles/nearby');
 }
 
+export async function uploadPhoto(photoFile) {
+  const fd = new FormData();
+  fd.append('photo', photoFile);
+  return request('/profiles/me/photo', { method: 'POST', body: fd });
+}
+
+export async function deleteAccount() {
+  return request('/profiles/me', { method: 'DELETE' });
+}
+
 export async function forgotPassword(email) {
   return request('/auth/forgot-password', {
     method: 'POST',

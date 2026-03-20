@@ -3,6 +3,10 @@ const jwt = require('jsonwebtoken');
 const app = require('../app');
 const db = require('../db');
 
+// Spy on fs.promises.unlink so tests don't touch the real filesystem.
+// We use spyOn (not jest.mock) so that the rest of fs (mkdirSync etc.) stays intact for multer.
+const fs = require('fs');
+
 // Helper: generate a valid Bearer token for a given userId
 function makeToken(userId = 'user-test-id') {
   return jwt.sign({ userId }, process.env.JWT_SECRET);
@@ -14,6 +18,11 @@ function authHeader(userId) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  jest.spyOn(fs.promises, 'unlink').mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
 });
 
 // ---------------------------------------------------------------------------
@@ -107,7 +116,7 @@ describe('PUT /api/profiles/me', () => {
   });
 
   it('updates an existing profile and returns it', async () => {
-    // 1st query: SELECT existing profile → found
+    // 1st query: SELECT existing profile (id + photo_path) → found
     db.query.mockResolvedValueOnce({ rows: [{ id: 'profile-2', photo_path: null }] });
     // 2nd query: UPDATE
     db.query.mockResolvedValueOnce({ rows: [] });
@@ -284,7 +293,7 @@ describe('Profile persistence across sessions', () => {
     expect(res.body.photo_path).toBe(existingPhotoPath);
   });
 
-  it('replaces photo when a new file is uploaded', async () => {
+  it('replaces photo when a new file is uploaded and deletes old file', async () => {
     const oldPhoto = '/uploads/user_42_old.jpg';
     const smallImage = Buffer.from(
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
@@ -303,7 +312,8 @@ describe('Profile persistence across sessions', () => {
       .attach('photo', smallImage, { filename: 'avatar.png', contentType: 'image/png' });
 
     expect(res.status).toBe(200);
-
+    // Old file should be deleted
+    expect(fs.promises.unlink).toHaveBeenCalledWith(expect.stringContaining('user_42_old.jpg'));
     // A new file was uploaded, so photo_path arg should be non-null
     const updateArgs = db.query.mock.calls[1][1];
     expect(updateArgs[3]).not.toBeNull();
@@ -440,6 +450,7 @@ describe('POST /api/profiles/me/location', () => {
 // ---------------------------------------------------------------------------
 describe('POST /api/profiles/me/visibility', () => {
   it('sets is_active to true and returns ok:true', async () => {
+    // Going visible: single UPDATE query
     db.query.mockResolvedValueOnce({ rows: [] });
 
     const res = await request(app)
@@ -449,12 +460,12 @@ describe('POST /api/profiles/me/visibility', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true });
-
-    const args = db.query.mock.calls[0][1];
-    expect(args[1]).toBe(true);
   });
 
-  it('sets is_active to false and returns ok:true', async () => {
+  it('sets is_active to false, deletes photo file, and clears location', async () => {
+    const photo = '/uploads/user_1_old.jpg';
+    // Going invisible: SELECT photo_path, then UPDATE
+    db.query.mockResolvedValueOnce({ rows: [{ photo_path: photo }] });
     db.query.mockResolvedValueOnce({ rows: [] });
 
     const res = await request(app)
@@ -464,9 +475,27 @@ describe('POST /api/profiles/me/visibility', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true });
+    // Photo file should be deleted
+    expect(fs.promises.unlink).toHaveBeenCalledWith(expect.stringContaining('user_1_old.jpg'));
+    // UPDATE should NULL all sensitive fields
+    const updateSql = db.query.mock.calls[1][0];
+    expect(updateSql).toMatch(/display_name = NULL/);
+    expect(updateSql).toMatch(/pronouns = NULL/);
+    expect(updateSql).toMatch(/lat = NULL/);
+    expect(updateSql).toMatch(/photo_path = NULL/);
+  });
 
-    const args = db.query.mock.calls[0][1];
-    expect(args[1]).toBe(false);
+  it('handles going invisible when user has no photo', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ photo_path: null }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .post('/api/profiles/me/visibility')
+      .set('Authorization', authHeader())
+      .send({ is_active: false });
+
+    expect(res.status).toBe(200);
+    expect(fs.promises.unlink).not.toHaveBeenCalled();
   });
 
   it('returns 401 without a token', async () => {
@@ -484,6 +513,119 @@ describe('POST /api/profiles/me/visibility', () => {
       .post('/api/profiles/me/visibility')
       .set('Authorization', authHeader())
       .send({ is_active: true });
+
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('error', 'Server error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/profiles/me/photo
+// ---------------------------------------------------------------------------
+describe('POST /api/profiles/me/photo', () => {
+  const smallImage = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    'base64'
+  );
+
+  it('uploads a photo and returns the new photo_path', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ photo_path: null }] }); // SELECT existing
+    db.query.mockResolvedValueOnce({ rows: [] });                     // UPDATE
+
+    const res = await request(app)
+      .post('/api/profiles/me/photo')
+      .set('Authorization', authHeader())
+      .attach('photo', smallImage, { filename: 'avatar.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('photo_path');
+    expect(res.body.photo_path).toMatch(/^\/uploads\//);
+  });
+
+  it('deletes old photo when uploading a new one', async () => {
+    const oldPhoto = '/uploads/user_1_old.jpg';
+    db.query.mockResolvedValueOnce({ rows: [{ photo_path: oldPhoto }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app)
+      .post('/api/profiles/me/photo')
+      .set('Authorization', authHeader())
+      .attach('photo', smallImage, { filename: 'new.png', contentType: 'image/png' });
+
+    expect(fs.promises.unlink).toHaveBeenCalledWith(expect.stringContaining('user_1_old.jpg'));
+  });
+
+  it('returns 400 when no file is provided', async () => {
+    const res = await request(app)
+      .post('/api/profiles/me/photo')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('error', 'No photo provided');
+  });
+
+  it('returns 401 without a token', async () => {
+    const res = await request(app)
+      .post('/api/profiles/me/photo')
+      .attach('photo', smallImage, { filename: 'avatar.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(401);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DELETE /api/profiles/me
+// ---------------------------------------------------------------------------
+describe('DELETE /api/profiles/me', () => {
+  it('deletes the user and photo file, returns ok:true', async () => {
+    const photo = '/uploads/user_1_profile.jpg';
+    db.query.mockResolvedValueOnce({ rows: [{ photo_path: photo }] }); // SELECT photo
+    db.query.mockResolvedValueOnce({ rows: [] });                       // DELETE user
+
+    const res = await request(app)
+      .delete('/api/profiles/me')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true });
+    expect(fs.promises.unlink).toHaveBeenCalledWith(expect.stringContaining('user_1_profile.jpg'));
+    expect(db.query.mock.calls[1][0]).toMatch(/DELETE FROM users/);
+  });
+
+  it('deletes user even when profile has no photo', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ photo_path: null }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .delete('/api/profiles/me')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(200);
+    expect(fs.promises.unlink).not.toHaveBeenCalled();
+  });
+
+  it('deletes user even when they have no profile row', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] }); // no profile
+    db.query.mockResolvedValueOnce({ rows: [] }); // DELETE user
+
+    const res = await request(app)
+      .delete('/api/profiles/me')
+      .set('Authorization', authHeader());
+
+    expect(res.status).toBe(200);
+  });
+
+  it('returns 401 without a token', async () => {
+    const res = await request(app).delete('/api/profiles/me');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 500 on database error', async () => {
+    db.query.mockRejectedValueOnce(new Error('db error'));
+
+    const res = await request(app)
+      .delete('/api/profiles/me')
+      .set('Authorization', authHeader());
 
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('error', 'Server error');

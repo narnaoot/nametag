@@ -1,9 +1,40 @@
 import { useState, useEffect } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Preferences } from '@capacitor/preferences';
 import { getMyProfile, updateProfile, photoUrl } from '../api';
-import { BANNER_COLORS, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS, NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX } from '../constants';
+import { useAuth } from '../AuthContext';
+import {
+  BANNER_COLORS, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS,
+  NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY,
+} from '../constants';
+
+async function savePhotoLocally(dataUrl) {
+  try {
+    await Filesystem.writeFile({
+      path: LOCAL_PHOTO_PATH,
+      data: dataUrl,
+      directory: Directory.Data,
+      encoding: Encoding.UTF8,
+    });
+  } catch {}
+}
+
+async function loadLocalPhoto() {
+  try {
+    const result = await Filesystem.readFile({
+      path: LOCAL_PHOTO_PATH,
+      directory: Directory.Data,
+      encoding: Encoding.UTF8,
+    });
+    return result.data; // data URL string
+  } catch {
+    return null;
+  }
+}
 
 export default function ProfilePage({ onSaved }) {
+  const { deleteAccount } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [pronounSelect, setPronounSelect] = useState('they/them');
   const [customPronouns, setCustomPronouns] = useState('');
@@ -17,27 +48,67 @@ export default function ProfilePage({ onSaved }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    getMyProfile().then(profile => {
-      if (!profile) return;
-      setDisplayName(profile.display_name || '');
-      const knownPronoun = PRONOUN_OPTIONS.slice(0, -1).includes(profile.pronouns);
-      if (knownPronoun) {
-        setPronounSelect(profile.pronouns);
-      } else {
-        setPronounSelect('custom');
-        setCustomPronouns(profile.pronouns || '');
+    async function load() {
+      // 1. Try on-device photo (always the freshest)
+      const localPhoto = await loadLocalPhoto();
+      if (localPhoto) setPhotoPreview(localPhoto);
+
+      // 2. Try on-device profile data (name, pronouns, etc.)
+      const { value } = await Preferences.get({ key: LOCAL_PROFILE_KEY });
+      if (value) {
+        try {
+          const p = JSON.parse(value);
+          setDisplayName(p.display_name || '');
+          const knownPronoun = PRONOUN_OPTIONS.slice(0, -1).includes(p.pronouns);
+          if (knownPronoun) {
+            setPronounSelect(p.pronouns);
+          } else {
+            setPronounSelect('custom');
+            setCustomPronouns(p.pronouns || '');
+          }
+          setTagline(p.tagline || '');
+          setRadius(p.radius_meters || 100);
+          setAlwaysVisible(p.always_visible !== false);
+          if (p.tag_color) setTagColor(p.tag_color);
+          if (p.stickers) {
+            try { setSelectedStickers(JSON.parse(p.stickers)); } catch {}
+          }
+        } catch {}
       }
-      setTagline(profile.tagline || '');
-      setRadius(profile.radius_meters || 100);
-      setAlwaysVisible(profile.always_visible !== false);
-      if (profile.photo_path) setPhotoPreview(photoUrl(profile.photo_path));
-      if (profile.tag_color) setTagColor(profile.tag_color);
-      if (profile.stickers) {
-        try { setSelectedStickers(JSON.parse(profile.stickers)); } catch {}
+
+      // 3. Fall back to server for anything not in local storage
+      try {
+        const profile = await getMyProfile();
+        if (!profile) return;
+        // Only use server values if we had no local data
+        if (!value) {
+          setDisplayName(profile.display_name || '');
+          const knownPronoun = PRONOUN_OPTIONS.slice(0, -1).includes(profile.pronouns);
+          if (knownPronoun) {
+            setPronounSelect(profile.pronouns || 'they/them');
+          } else {
+            setPronounSelect('custom');
+            setCustomPronouns(profile.pronouns || '');
+          }
+          setTagline(profile.tagline || '');
+          setRadius(profile.radius_meters || 100);
+          setAlwaysVisible(profile.always_visible !== false);
+          if (profile.tag_color) setTagColor(profile.tag_color);
+          if (profile.stickers) {
+            try { setSelectedStickers(JSON.parse(profile.stickers)); } catch {}
+          }
+        }
+        // Server photo only if no local copy
+        if (profile.photo_path && !localPhoto) setPhotoPreview(photoUrl(profile.photo_path));
+      } catch {
+        if (!value) setError('Failed to load your profile. Please refresh.');
       }
-    }).catch(() => setError('Failed to load your profile. Please refresh.'));
+    }
+    load();
   }, []);
 
   function toggleSticker(sticker) {
@@ -54,10 +125,10 @@ export default function ProfilePage({ onSaved }) {
         quality: 85,
         allowEditing: true,
         resultType: CameraResultType.DataUrl,
-        source: CameraSource.Prompt, // shows "Camera / Photo Library" action sheet on iOS
+        source: CameraSource.Prompt,
       });
       setPhotoPreview(photo.dataUrl);
-      // Convert data URL → File for FormData upload
+      await savePhotoLocally(photo.dataUrl);
       const res = await fetch(photo.dataUrl);
       const blob = await res.blob();
       setPhotoFile(new File([blob], 'photo.jpg', { type: blob.type }));
@@ -113,12 +184,37 @@ export default function ProfilePage({ onSaved }) {
 
     try {
       await updateProfile(fd);
+      // Mirror to on-device storage so it survives server-side cleanup
+      await Preferences.set({
+        key: LOCAL_PROFILE_KEY,
+        value: JSON.stringify({
+          display_name: displayName.trim(),
+          pronouns: pronouns.trim(),
+          tagline: tagline.trim(),
+          radius_meters: radius,
+          always_visible: alwaysVisible,
+          tag_color: tagColor,
+          stickers: JSON.stringify(selectedStickers),
+        }),
+      });
       setSuccess('Profile saved!');
       if (onSaved) onSaved();
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      await deleteAccount();
+      // deleteAccount signs out — app re-renders to AuthPage
+    } catch (err) {
+      setError(err.message);
+      setConfirmDelete(false);
+      setDeleting(false);
     }
   }
 
@@ -312,6 +408,40 @@ export default function ProfilePage({ onSaved }) {
           {loading ? 'Saving…' : 'Save profile'}
         </button>
       </form>
+
+      {/* Delete account */}
+      <div className="mt-10 pt-6 border-t border-slate-200">
+        {!confirmDelete ? (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="text-sm text-slate-400 hover:text-red-500 transition-colors"
+          >
+            Delete account
+          </button>
+        ) : (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+            <p className="text-sm font-semibold text-red-700">Delete your account?</p>
+            <p className="text-xs text-red-600">
+              This permanently deletes your profile, photo, and account. There is no undo.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="flex-1 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold disabled:opacity-50"
+              >
+                {deleting ? 'Deleting…' : 'Yes, delete everything'}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="flex-1 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
