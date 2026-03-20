@@ -38,6 +38,7 @@ export default function AuthPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // If the URL has ?reset=<token>, jump straight to the reset form
   useEffect(() => {
@@ -103,6 +104,30 @@ export default function AuthPage() {
 
   const inputClass = 'w-full px-4 py-3 rounded-lg border border-gray-200 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-red-300';
 
+  function PasswordInput({ placeholder, minLength }) {
+    return (
+      <div className="relative">
+        <input
+          type={showPassword ? 'text' : 'password'}
+          placeholder={placeholder}
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+          minLength={minLength}
+          className={inputClass + ' pr-12'}
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(v => !v)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm select-none"
+          tabIndex={-1}
+        >
+          {showPassword ? 'Hide' : 'Show'}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-page">
       <div className="w-full max-w-sm">
@@ -149,15 +174,7 @@ export default function AuthPage() {
             <h2 className="font-semibold text-slate-800 mb-1">Choose a new password</h2>
             <p className="text-sm text-slate-500 mb-4">Must be at least 8 characters.</p>
             <form onSubmit={handleReset} className="space-y-4">
-              <input
-                type="password"
-                placeholder="New password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                minLength={8}
-                className={inputClass}
-              />
+              <PasswordInput placeholder="New password" minLength={8} />
               {error && <p className="text-red-500 text-sm">{error}</p>}
               {success && <p className="text-green-600 text-sm">{success}</p>}
               {!success && (
@@ -197,14 +214,9 @@ export default function AuthPage() {
                 required
                 className={inputClass}
               />
-              <input
-                type="password"
+              <PasswordInput
                 placeholder={mode === 'register' ? 'Password (8+ characters)' : 'Password'}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
                 minLength={mode === 'register' ? 8 : undefined}
-                className={inputClass}
               />
               {error && <p className="text-red-500 text-sm">{error}</p>}
               <button
