@@ -1,5 +1,6 @@
 import { useNearbyPeople } from '../hooks/useNearbyPeople';
 import { PersonCard } from '../designs/DesignE';
+import { COLOR_DIM } from '../constants';
 
 export default function GridPage() {
   const { nearby, myProfile, locationError, loading, isActive, lastUpdated, refresh, toggleVisibility } = useNearbyPeople();
@@ -52,7 +53,7 @@ export default function GridPage() {
       {myProfile?.always_visible && (
         <div className="mb-5 rounded-xl px-4 py-3 border text-brand" style={{ backgroundColor: '#E6394610', borderColor: '#E6394630' }}>
           <p className="text-sm">
-            <span className="font-semibold">You're always visible.</span> To change this, go to your profile settings.
+            <span className="font-semibold">You're always visible.</span> To change this, go to My Tag.
           </p>
         </div>
       )}
@@ -69,18 +70,36 @@ export default function GridPage() {
         <div className="text-center py-16 font-caveat text-dim" style={{ fontSize: 20 }}>
           Looking for people nearby…
         </div>
-      ) : nearby.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-4xl mb-3">👋</p>
-          <p className="text-slate-600 font-medium">No one nearby right now</p>
-          <p className="text-slate-400 text-sm mt-1">Check back when you're around others using Nametag.</p>
-        </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 justify-items-center">
-          {nearby.map((person, i) => (
-            <PersonCard key={person.id} person={person} index={i} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 justify-items-center">
+            {/* Logged-in user's own card */}
+            {myProfile?.display_name && (
+              <div className="relative" style={{ opacity: isActive ? 1 : 0.4 }}>
+                <PersonCard person={myProfile} index={0} />
+                <span
+                  className="absolute top-0 right-0 rounded-full px-1.5 py-0.5 text-white font-bold uppercase tracking-wide"
+                  style={{ fontSize: 8, backgroundColor: COLOR_DIM }}
+                >
+                  You
+                </span>
+              </div>
+            )}
+            {nearby.map((person, i) => (
+              <PersonCard key={person.id} person={person} index={i + (myProfile?.display_name ? 1 : 0)} />
+            ))}
+          </div>
+          {nearby.length === 0 && !myProfile?.display_name && (
+            <div className="text-center py-16">
+              <p className="text-4xl mb-3">👋</p>
+              <p className="text-slate-600 font-medium">No one nearby right now</p>
+              <p className="text-slate-400 text-sm mt-1">Check back when you're around others using Nametag.</p>
+            </div>
+          )}
+          {nearby.length === 0 && myProfile?.display_name && (
+            <p className="text-center text-slate-400 text-sm mt-4">No one else nearby right now.</p>
+          )}
+        </>
       )}
     </div>
   );

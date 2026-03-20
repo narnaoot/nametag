@@ -5,7 +5,8 @@ async function migrate() {
     ALTER TABLE profiles
       ADD COLUMN IF NOT EXISTS tag_color TEXT,
       ADD COLUMN IF NOT EXISTS stickers TEXT,
-      ADD COLUMN IF NOT EXISTS tagline TEXT
+      ADD COLUMN IF NOT EXISTS tagline TEXT,
+      ADD COLUMN IF NOT EXISTS party_code VARCHAR(20)
   `);
 
   // Allow sensitive profile fields to be NULLed when a user goes invisible,

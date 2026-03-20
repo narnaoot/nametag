@@ -34,7 +34,7 @@ router.get('/me', auth, async (req, res) => {
 
 // CREATE or UPDATE profile
 router.put('/me', auth, upload.single('photo'), async (req, res) => {
-  const { display_name, pronouns, radius_meters, always_visible, tag_color, stickers, tagline } = req.body;
+  const { display_name, pronouns, radius_meters, always_visible, tag_color, stickers, tagline, party_code } = req.body;
   const cleanName = display_name?.trim();
   const cleanPronouns = pronouns?.trim();
   if (!cleanName || !cleanPronouns) {
@@ -47,6 +47,7 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
   const tagColor = tag_color || null;
   const stickersVal = stickers || null;
   const taglineVal = tagline ? tagline.slice(0, 60) : null;
+  const partyCodeVal = party_code ? party_code.slice(0, 20).trim() || null : null;
 
   try {
     const existing = await db.query(
@@ -56,9 +57,9 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
 
     if (existing.rows.length === 0) {
       await db.query(
-        `INSERT INTO profiles (user_id, display_name, pronouns, photo_path, radius_meters, always_visible, tag_color, stickers, tagline)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [req.user.userId, cleanName, cleanPronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal, taglineVal]
+        `INSERT INTO profiles (user_id, display_name, pronouns, photo_path, radius_meters, always_visible, tag_color, stickers, tagline, party_code)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [req.user.userId, cleanName, cleanPronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal, taglineVal, partyCodeVal]
       );
     } else {
       // Delete old photo from disk when a new one is uploaded
@@ -75,9 +76,10 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
           tag_color = $7,
           stickers = $8,
           tagline = $9,
+          party_code = $10,
           updated_at = NOW()
          WHERE user_id = $1`,
-        [req.user.userId, cleanName, cleanPronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal, taglineVal]
+        [req.user.userId, cleanName, cleanPronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal, taglineVal, partyCodeVal]
       );
     }
 
@@ -188,7 +190,7 @@ router.delete('/me', auth, async (req, res) => {
 router.get('/nearby', auth, async (req, res) => {
   try {
     const myProfile = await db.query(
-      'SELECT lat, lng, radius_meters FROM profiles WHERE user_id = $1',
+      'SELECT lat, lng, radius_meters, party_code FROM profiles WHERE user_id = $1',
       [req.user.userId]
     );
     const me = myProfile.rows[0];
@@ -196,7 +198,7 @@ router.get('/nearby', auth, async (req, res) => {
       return res.status(400).json({ error: 'Share your location first' });
     }
 
-    const { lat, lng, radius_meters } = me;
+    const { lat, lng, radius_meters, party_code } = me;
 
     // Bounding box in degrees (rough pre-filter, fast index scan)
     const latDelta = radius_meters / 111320.0;
@@ -226,6 +228,7 @@ router.get('/nearby', auth, async (req, res) => {
            AND p.location_updated_at > NOW() - INTERVAL '30 minutes'
            AND p.lat BETWEEN $4 AND $5
            AND p.lng BETWEEN $6 AND $7
+           AND ($9::text IS NULL OR p.party_code = $9)
        ) sub
        WHERE distance_meters <= $8
        ORDER BY distance_meters ASC`,
@@ -235,6 +238,7 @@ router.get('/nearby', auth, async (req, res) => {
         lat - latDelta, lat + latDelta,
         lng - lngDelta, lng + lngDelta,
         radius_meters,
+        party_code || null,
       ]
     );
 

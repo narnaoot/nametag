@@ -6,7 +6,7 @@ import { getMyProfile, updateProfile, photoUrl } from '../api';
 import { useAuth } from '../AuthContext';
 import {
   BANNER_COLORS, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS,
-  NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY,
+  NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, PARTY_CODE_MAX, LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY,
 } from '../constants';
 
 async function savePhotoLocally(dataUrl) {
@@ -48,6 +48,7 @@ export default function ProfilePage({ onSaved }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [partyCode, setPartyCode] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -77,6 +78,7 @@ export default function ProfilePage({ onSaved }) {
           if (p.stickers) {
             try { setSelectedStickers(JSON.parse(p.stickers)); } catch {}
           }
+          if (p.party_code !== undefined) setPartyCode(p.party_code || '');
         } catch {}
       }
 
@@ -101,6 +103,7 @@ export default function ProfilePage({ onSaved }) {
           if (profile.stickers) {
             try { setSelectedStickers(JSON.parse(profile.stickers)); } catch {}
           }
+          if (profile.party_code !== undefined) setPartyCode(profile.party_code || '');
         }
         // Server photo only if no local copy
         if (profile.photo_path && !localPhoto) setPhotoPreview(photoUrl(profile.photo_path));
@@ -180,6 +183,7 @@ export default function ProfilePage({ onSaved }) {
     fd.append('always_visible', alwaysVisible);
     fd.append('tag_color', tagColor);
     fd.append('stickers', JSON.stringify(selectedStickers));
+    fd.append('party_code', partyCode.trim());
     if (photoFile) fd.append('photo', photoFile);
 
     try {
@@ -195,6 +199,7 @@ export default function ProfilePage({ onSaved }) {
           always_visible: alwaysVisible,
           tag_color: tagColor,
           stickers: JSON.stringify(selectedStickers),
+          party_code: partyCode.trim(),
         }),
       });
       setSuccess('Profile saved!');
@@ -394,6 +399,29 @@ export default function ProfilePage({ onSaved }) {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Party code */}
+        <div>
+          <div className="flex justify-between mb-1">
+            <label className="text-sm font-medium text-slate-700">
+              Party code <span className="text-slate-400 font-normal">(optional)</span>
+            </label>
+            <span className={`text-xs ${partyCode.length > PARTY_CODE_MAX - 4 ? 'text-brand' : 'text-dim'}`}>
+              {partyCode.length}/{PARTY_CODE_MAX}
+            </span>
+          </div>
+          <input
+            type="text"
+            value={partyCode}
+            onChange={e => setPartyCode(e.target.value.slice(0, PARTY_CODE_MAX))}
+            placeholder="Enter a code to see only your group…"
+            maxLength={PARTY_CODE_MAX}
+            className="w-full px-4 py-3 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          />
+          <p className="text-xs text-slate-400 mt-1">
+            When set, Nearby only shows people with the same code.
+          </p>
         </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
