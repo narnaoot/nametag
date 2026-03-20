@@ -27,11 +27,7 @@ What this means concretely:
 - **Account deletion** — must be a hard, immediate delete of everything: user row, profile row, photo file on disk. Cascade is already in the schema; the route needs to exist and the UI needs to expose it.
 - **No server-side caching** of data beyond the immediate request.
 
-**Code that still needs updating to honour this:**
-1. `server/routes/profile.js` — add a DELETE `/api/profiles/me` endpoint that removes the user, profile, and photo file
-2. `server/routes/profile.js` — when a user sets `is_active = false` (goes invisible), delete their server-side photo and NULL their location
-3. Add a server-side cron / cleanup job that NULLs location and deletes photo files for users whose `location_updated_at` is older than 24h
-4. On iOS: store the photo in Capacitor Filesystem on-device; upload to server on each "go visible" action rather than once-and-keep
+**All four items are now implemented** — see the commit "Implement privacy data-minimisation".
 
 ---
 
@@ -63,23 +59,26 @@ Everything below is **done and on `main`**:
 - Constants: `NAME_MAX`, `PRONOUNS_MAX`, `TAGLINE_MAX`, `BANNER_COLORS`, `PRONOUN_OPTIONS`, `STICKER_OPTIONS`, `RADIUS_OPTIONS` all in `client/src/constants.js`
 - `PersonCard` accepts a single `person` prop object (not 8 individual props); sticker JSON is memoized with `useMemo`
 - Error handling: background location refresh surfaces errors to the UI; profile load failure shows a message in the form; `api.js` URL stripping uses an end-anchored regex (`/\/api$/`)
-- 70 tests passing (Jest + Supertest, mocked DB)
+- Privacy data-minimisation implemented:
+  - `server/cleanup.js` — `runCleanup()` runs hourly; finds profiles stale >24h, deletes photo files, NULLs location
+  - `POST /me/visibility` going invisible: deletes server photo, NULLs location immediately
+  - `DELETE /me`: hard-deletes user + profile (cascade) + photo file
+  - `POST /me/photo`: standalone photo re-upload for going-visible flow
+  - `ProfilePage`: saves photo to Capacitor Filesystem on-device; loads local copy on mount
+  - `useNearbyPeople`: re-uploads local photo when going visible or when server copy is missing
+  - "Delete account" UI in ProfilePage with two-step confirmation
+- `@capacitor/filesystem` installed; `LOCAL_PHOTO_PATH` constant in `constants.js`
+- 80 tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
 
 ---
 
 ## What still needs doing
 
-**Privacy / data minimisation (implement before any real users):**
-1. **Account deletion** — add `DELETE /api/profiles/me` (removes user row, profile row, photo file); add a "Delete account" button in the app UI.
-2. **Photo cleanup on invisible** — when `is_active` is set to `false`, delete the server-side photo file and NULL the location. Photo re-uploads on next "go visible".
-3. **Stale-data cleanup** — server cron (or Render cron job) that NULLs location and deletes photo files for users whose `location_updated_at` is older than 24h.
-4. **On-device photo (iOS)** — store the user's own photo in Capacitor Filesystem; upload fresh to server each time they go visible rather than storing permanently server-side.
-
-**Everything else:**
-5. **SMTP email** — reset links are logged to the Render console. Set `SMTP_HOST/PORT/USER/PASS/FROM` + `APP_URL` env vars on Render to send real emails.
-6. **iOS build** — needs a Mac with Xcode. Run `cd client && npx cap sync && npx cap open ios`. Codebase is clean and ready.
-7. **iOS Privacy strings** — `Info.plist` needs `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` before App Store submission.
-8. **Loading state on profile page** — no skeleton/placeholder while the profile loads on first open.
+1. **SMTP email** — reset links are logged to the Render console. Set `SMTP_HOST/PORT/USER/PASS/FROM` + `APP_URL` env vars on Render to send real emails.
+2. **End-to-end test on live app** — register a user, set a profile, test nearby grid, test forgot-password flow on nametag.vercel.app / nametag.onrender.com.
+3. **iOS build** — needs a Mac with Xcode. Run `cd client && npx cap sync && npx cap open ios`. Codebase is clean and ready.
+4. **iOS Privacy strings** — `Info.plist` needs `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` before App Store submission.
+5. **Loading state on profile page** — no skeleton/placeholder while the profile loads on first open.
 
 ---
 

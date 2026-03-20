@@ -7,6 +7,21 @@ Updated at the end of every session.
 
 ---
 
+## ✅ Test the live app (do this soon)
+
+The codebase has had significant refactoring and new features added. Before going further, do a quick end-to-end smoke test on the live deployment:
+
+1. Go to [nametag.vercel.app](https://nametag.vercel.app)
+2. Register a new account
+3. Fill in your profile — name, pronouns, photo, color, stickers
+4. Check the nearby grid loads (it'll be empty if no one else is around, that's fine)
+5. Test forgot password — enter your email, check the Render logs for the reset link (SMTP not set up yet), use the link
+6. Test "Delete account" — the button is now in the profile page, below the save button
+
+If anything looks broken, tell Claude what you see.
+
+---
+
 ## 🔒 Privacy decisions (decide before launch)
 
 The app is being built on a **server-as-relay** principle: user data lives on the server only as long as strictly needed, then gets deleted. Claude knows about this — it's in RESTART_PROMPT. But you need to decide a few specifics:
