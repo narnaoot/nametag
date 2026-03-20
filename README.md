@@ -2,7 +2,7 @@
 
 A location-based social discovery app — a digital "Hello, My Name Is" badge. See who's nearby in real time, share your name and pronouns, and control your own visibility.
 
-**Live app**: [nametag.vercel.app](https://nametag.vercel.app) · **API**: [nametag.onrender.com](https://nametag.onrender.com)
+**Live app**:https://nametag-pi.vercel.app/· **API**: [nametag.onrender.com](https://nametag.onrender.com)
 
 > **Resuming development?** See [RESTART_PROMPT.md](RESTART_PROMPT.md) for current state and what's next.
 
