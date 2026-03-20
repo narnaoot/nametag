@@ -147,8 +147,10 @@ router.post('/me/visibility', auth, async (req, res) => {
       await deletePhotoFile(profile.rows[0]?.photo_path);
       await db.query(
         `UPDATE profiles
-         SET is_active = FALSE, lat = NULL, lng = NULL,
-             location_updated_at = NULL, photo_path = NULL
+         SET display_name = NULL, pronouns = NULL, tagline = NULL,
+             tag_color = NULL, stickers = NULL, photo_path = NULL,
+             lat = NULL, lng = NULL, location_updated_at = NULL,
+             is_active = FALSE
          WHERE user_id = $1`,
         [req.user.userId]
       );

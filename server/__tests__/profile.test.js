@@ -477,8 +477,10 @@ describe('POST /api/profiles/me/visibility', () => {
     expect(res.body).toEqual({ ok: true });
     // Photo file should be deleted
     expect(fs.promises.unlink).toHaveBeenCalledWith(expect.stringContaining('user_1_old.jpg'));
-    // UPDATE should NULL location and photo_path
+    // UPDATE should NULL all sensitive fields
     const updateSql = db.query.mock.calls[1][0];
+    expect(updateSql).toMatch(/display_name = NULL/);
+    expect(updateSql).toMatch(/pronouns = NULL/);
     expect(updateSql).toMatch(/lat = NULL/);
     expect(updateSql).toMatch(/photo_path = NULL/);
   });

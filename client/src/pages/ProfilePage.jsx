@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Preferences } from '@capacitor/preferences';
 import { getMyProfile, updateProfile, photoUrl } from '../api';
 import { useAuth } from '../AuthContext';
 import {
   BANNER_COLORS, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS,
-  NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, LOCAL_PHOTO_PATH,
+  NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY,
 } from '../constants';
 
 async function savePhotoLocally(dataUrl) {
@@ -52,32 +53,59 @@ export default function ProfilePage({ onSaved }) {
 
   useEffect(() => {
     async function load() {
-      // Try on-device photo first — it's always the freshest copy
+      // 1. Try on-device photo (always the freshest)
       const localPhoto = await loadLocalPhoto();
       if (localPhoto) setPhotoPreview(localPhoto);
 
+      // 2. Try on-device profile data (name, pronouns, etc.)
+      const { value } = await Preferences.get({ key: LOCAL_PROFILE_KEY });
+      if (value) {
+        try {
+          const p = JSON.parse(value);
+          setDisplayName(p.display_name || '');
+          const knownPronoun = PRONOUN_OPTIONS.slice(0, -1).includes(p.pronouns);
+          if (knownPronoun) {
+            setPronounSelect(p.pronouns);
+          } else {
+            setPronounSelect('custom');
+            setCustomPronouns(p.pronouns || '');
+          }
+          setTagline(p.tagline || '');
+          setRadius(p.radius_meters || 100);
+          setAlwaysVisible(p.always_visible !== false);
+          if (p.tag_color) setTagColor(p.tag_color);
+          if (p.stickers) {
+            try { setSelectedStickers(JSON.parse(p.stickers)); } catch {}
+          }
+        } catch {}
+      }
+
+      // 3. Fall back to server for anything not in local storage
       try {
         const profile = await getMyProfile();
         if (!profile) return;
-        setDisplayName(profile.display_name || '');
-        const knownPronoun = PRONOUN_OPTIONS.slice(0, -1).includes(profile.pronouns);
-        if (knownPronoun) {
-          setPronounSelect(profile.pronouns);
-        } else {
-          setPronounSelect('custom');
-          setCustomPronouns(profile.pronouns || '');
+        // Only use server values if we had no local data
+        if (!value) {
+          setDisplayName(profile.display_name || '');
+          const knownPronoun = PRONOUN_OPTIONS.slice(0, -1).includes(profile.pronouns);
+          if (knownPronoun) {
+            setPronounSelect(profile.pronouns || 'they/them');
+          } else {
+            setPronounSelect('custom');
+            setCustomPronouns(profile.pronouns || '');
+          }
+          setTagline(profile.tagline || '');
+          setRadius(profile.radius_meters || 100);
+          setAlwaysVisible(profile.always_visible !== false);
+          if (profile.tag_color) setTagColor(profile.tag_color);
+          if (profile.stickers) {
+            try { setSelectedStickers(JSON.parse(profile.stickers)); } catch {}
+          }
         }
-        setTagline(profile.tagline || '');
-        setRadius(profile.radius_meters || 100);
-        setAlwaysVisible(profile.always_visible !== false);
-        // Only fall back to server photo if no local copy
+        // Server photo only if no local copy
         if (profile.photo_path && !localPhoto) setPhotoPreview(photoUrl(profile.photo_path));
-        if (profile.tag_color) setTagColor(profile.tag_color);
-        if (profile.stickers) {
-          try { setSelectedStickers(JSON.parse(profile.stickers)); } catch {}
-        }
       } catch {
-        setError('Failed to load your profile. Please refresh.');
+        if (!value) setError('Failed to load your profile. Please refresh.');
       }
     }
     load();
@@ -100,9 +128,7 @@ export default function ProfilePage({ onSaved }) {
         source: CameraSource.Prompt,
       });
       setPhotoPreview(photo.dataUrl);
-      // Save to device for future re-uploads after going invisible
       await savePhotoLocally(photo.dataUrl);
-      // Convert data URL → File for FormData upload
       const res = await fetch(photo.dataUrl);
       const blob = await res.blob();
       setPhotoFile(new File([blob], 'photo.jpg', { type: blob.type }));
@@ -158,6 +184,19 @@ export default function ProfilePage({ onSaved }) {
 
     try {
       await updateProfile(fd);
+      // Mirror to on-device storage so it survives server-side cleanup
+      await Preferences.set({
+        key: LOCAL_PROFILE_KEY,
+        value: JSON.stringify({
+          display_name: displayName.trim(),
+          pronouns: pronouns.trim(),
+          tagline: tagline.trim(),
+          radius_meters: radius,
+          always_visible: alwaysVisible,
+          tag_color: tagColor,
+          stickers: JSON.stringify(selectedStickers),
+        }),
+      });
       setSuccess('Profile saved!');
       if (onSaved) onSaved();
     } catch (err) {
@@ -171,7 +210,7 @@ export default function ProfilePage({ onSaved }) {
     setDeleting(true);
     try {
       await deleteAccount();
-      // deleteAccount signs out — app will re-render to AuthPage
+      // deleteAccount signs out — app re-renders to AuthPage
     } catch (err) {
       setError(err.message);
       setConfirmDelete(false);

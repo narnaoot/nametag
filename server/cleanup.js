@@ -36,8 +36,10 @@ async function runCleanup() {
     const userIds = stale.rows.map(r => r.user_id);
     await db.query(
       `UPDATE profiles
-       SET lat = NULL, lng = NULL, location_updated_at = NULL,
-           photo_path = NULL, is_active = FALSE
+       SET display_name = NULL, pronouns = NULL, tagline = NULL,
+           tag_color = NULL, stickers = NULL, photo_path = NULL,
+           lat = NULL, lng = NULL, location_updated_at = NULL,
+           is_active = FALSE
        WHERE user_id = ANY($1)`,
       [userIds]
     );
