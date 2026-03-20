@@ -25,7 +25,10 @@ export const BANNER_COLOR_HEXES = BANNER_COLORS.map(c => c.hex);
 export const STICKER_OPTIONS = [
   '👋', '🌟', '🎉', '🌈', '🦄', '🐉', '🌸', '🍕',
   '🎸', '📚', '🎨', '🏳️‍🌈', '🏳️‍⚧️', '🌍', '☕', '🤖',
+  '🐱', '🐶',
 ];
+
+export const PARTY_CODE_MAX = 20;
 
 export const PRONOUN_OPTIONS = [
   'she/her',

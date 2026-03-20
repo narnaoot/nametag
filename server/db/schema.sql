@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   tag_color TEXT,
   stickers TEXT,
   tagline TEXT,
+  party_code VARCHAR(20),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 

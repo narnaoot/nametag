@@ -23,6 +23,7 @@ async function reuploadFullProfile() {
     fd.append('always_visible', p.always_visible ?? true);
     fd.append('tag_color', p.tag_color || '');
     fd.append('stickers', p.stickers || '[]');
+    fd.append('party_code', p.party_code || '');
 
     // Include photo from Filesystem if available
     try {
@@ -60,6 +61,11 @@ export function useNearbyPeople() {
         // If sensitive fields were cleaned up server-side, restore from on-device data
         if (!profile.display_name) {
           await reuploadFullProfile();
+          const refreshed = await getMyProfile();
+          if (refreshed) {
+            setMyProfile(refreshed);
+            setIsActive(refreshed.always_visible || refreshed.is_active);
+          }
         }
       }
     } catch (err) {
