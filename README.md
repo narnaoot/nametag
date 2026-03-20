@@ -31,6 +31,15 @@ Nametag treats the server as a **relay, not a data store**. User data lives on t
 - **Account deletion** — a hard delete: user record, profile, and photo file are removed immediately.
 - **No persistent tracking** — there is no location history, no activity log, no analytics on user movement.
 
+### Data storage at a glance
+
+| Data | On your phone (permanent) | Server (temporary) |
+|---|---|---|
+| Name, pronouns, tagline, color, stickers | `@capacitor/preferences` | Only while active; NULLed on invisible/stale |
+| Photo | Capacitor Filesystem | Only while active; deleted on invisible/stale |
+| Other people's info | Not stored | Only while they're active |
+| Location | Never | Current position only; NULLed on invisible/stale |
+
 ---
 
 ## Tech stack
