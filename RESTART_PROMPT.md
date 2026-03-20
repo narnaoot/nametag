@@ -57,6 +57,7 @@ Everything below is **done and on `main`**:
 - Photo upload: uses standard `<input type="file">` on web (Capacitor Camera removed from ProfilePage — was breaking in browsers); Capacitor Camera still available for native iOS if needed
 - Show/hide password toggle on all auth forms (login, register, reset password)
 - Geolocation on web fixed: `Geolocation.requestPermissions()` threw "Not implemented on web" in Capacitor on browsers; now caught so `getCurrentPosition()` proceeds and browser prompts naturally
+- Nearby photo fix: `cleanup.js` can delete the server photo without NULLing `display_name`; `loadMyProfile` now triggers `reuploadFullProfile()` when either `display_name` or `photo_path` is missing
 - Token sync: `AuthContext` exposes token via `setToken()` — `api.js` reads from memory, not `localStorage`
 - Brand theme system: `index.css` has a Tailwind v4 `@theme` block (`--color-brand`, `--color-page`, `--color-ink`, `--color-dim`, `--font-caveat`) → utility classes throughout; `constants.js` exports matching JS values (`COLOR_BRAND`, `FONT_CAVEAT`, etc.) for computed/programmatic use
 - Constants: `NAME_MAX`, `PRONOUNS_MAX`, `TAGLINE_MAX`, `BANNER_COLORS`, `PRONOUN_OPTIONS`, `STICKER_OPTIONS`, `RADIUS_OPTIONS` all in `client/src/constants.js`
