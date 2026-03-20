@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { useState, useEffect, useRef } from 'react';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import { getMyProfile, updateProfile, photoUrl } from '../api';
@@ -51,6 +50,7 @@ export default function ProfilePage({ onSaved }) {
   const [partyCode, setPartyCode] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     async function load() {
@@ -122,22 +122,23 @@ export default function ProfilePage({ onSaved }) {
     );
   }
 
-  async function handlePickPhoto() {
-    try {
-      const photo = await Camera.getPhoto({
-        quality: 85,
-        allowEditing: true,
-        resultType: CameraResultType.DataUrl,
-        source: CameraSource.Prompt,
-      });
-      setPhotoPreview(photo.dataUrl);
-      await savePhotoLocally(photo.dataUrl);
-      const res = await fetch(photo.dataUrl);
-      const blob = await res.blob();
-      setPhotoFile(new File([blob], 'photo.jpg', { type: blob.type }));
-    } catch {
-      // User cancelled — do nothing
-    }
+  function handlePickPhoto() {
+    fileInputRef.current?.click();
+  }
+
+  async function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset so the same file can be re-selected if needed
+    e.target.value = '';
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target.result;
+      setPhotoPreview(dataUrl);
+      await savePhotoLocally(dataUrl);
+    };
+    reader.readAsDataURL(file);
+    setPhotoFile(file);
   }
 
   async function handleSubmit(e) {
@@ -229,6 +230,15 @@ export default function ProfilePage({ onSaved }) {
         Your Profile
       </h2>
       <form onSubmit={handleSubmit} className="space-y-5">
+
+        {/* Hidden file input for photo selection */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
 
         {/* Photo */}
         <div className="flex flex-col items-center gap-3">

@@ -2,7 +2,7 @@
 
 A location-based social discovery app — a digital "Hello, My Name Is" badge. See who's nearby in real time, share your name and pronouns, and control your own visibility.
 
-**Live app**:https://nametag-pi.vercel.app/· **API**: [nametag.onrender.com](https://nametag.onrender.com)
+**Live app**: [nametag-pi.vercel.app](https://nametag-pi.vercel.app) · **API**: [nametag.onrender.com](https://nametag.onrender.com)
 
 > **Resuming development?** See [RESTART_PROMPT.md](RESTART_PROMPT.md) for current state and what's next.
 
@@ -13,10 +13,13 @@ A location-based social discovery app — a digital "Hello, My Name Is" badge. S
 - **Register / sign in** with email and password
 - **Forgot password** — reset link sent by email (or logged to console in dev)
 - **Build your profile** — display name, pronouns, tagline, photo, nametag color, and up to 3 emoji stickers
+- **Add a photo** — browser file picker on web; native camera on iOS
+- **Show/hide password** toggle on all auth forms
 - **Share your location** via Capacitor Geolocation (web + native iOS)
 - **See the grid** — nearby people displayed as "Hello My Name Is" badge cards, sorted by distance
 - **Control visibility** — always visible, or only show yourself when you choose
 - **Auto-refresh** — location and nearby grid update every 60 seconds
+- **Delete account** — two-step confirmation, hard-deletes all data immediately
 - **iOS app** — runs natively via Capacitor 7
 
 ---
