@@ -74,9 +74,19 @@ export function useNearbyPeople() {
   }, []);
 
   const shareLocation = useCallback(async () => {
-    const perm = await Geolocation.requestPermissions();
-    if (perm.location === 'denied') {
-      throw new Error('Location access denied. Please allow location access in Settings.');
+    try {
+      const perm = await Geolocation.requestPermissions();
+      if (perm.location === 'denied') {
+        throw new Error('Location access denied. Please allow location access in Settings.');
+      }
+    } catch (err) {
+      // requestPermissions() is not implemented on web — the browser will
+      // prompt automatically when getCurrentPosition is called, so proceed.
+      if (!err.message?.includes('denied')) {
+        // not a real denial — ignore and continue
+      } else {
+        throw err;
+      }
     }
     const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
     await updateLocation(pos.coords.latitude, pos.coords.longitude);
