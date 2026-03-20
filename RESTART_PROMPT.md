@@ -10,7 +10,7 @@ Paste this into Claude Code at the start of a new session to get up to speed qui
 
 **Nametag** is a location-based social discovery app — a digital "Hello, My Name Is" badge. Users share their name, pronouns, and a photo. When nearby people open the app, they see each other's badges in a grid sorted by distance.
 
-- **Live app**: https://nametag.vercel.app
+- **Live app**: https://nametag-pi.vercel.app
 - **API**: https://nametag.onrender.com
 - **Repo**: https://github.com/narnaoot/nametag (cloned at `/home/user/nametag`)
 
@@ -53,7 +53,9 @@ Everything below is **done and on `main`**:
 - Nearby grid: Haversine distance in SQL (no PostGIS), 30-min activity window, bounding-box pre-filter
 - Location + visibility: `is_active` toggle on the grid screen; auto-refresh every 60s
 - First-time UX: new users land on the profile tab automatically
-- iOS / Capacitor: app builds and runs natively; `@capacitor/camera` and `@capacitor/geolocation` wired up; photo URLs work in both web and native builds
+- iOS / Capacitor: app builds and runs natively; `@capacitor/geolocation` wired up; photo URLs work in both web and native builds
+- Photo upload: uses standard `<input type="file">` on web (Capacitor Camera removed from ProfilePage — was breaking in browsers); Capacitor Camera still available for native iOS if needed
+- Show/hide password toggle on all auth forms (login, register, reset password)
 - Token sync: `AuthContext` exposes token via `setToken()` — `api.js` reads from memory, not `localStorage`
 - Brand theme system: `index.css` has a Tailwind v4 `@theme` block (`--color-brand`, `--color-page`, `--color-ink`, `--color-dim`, `--font-caveat`) → utility classes throughout; `constants.js` exports matching JS values (`COLOR_BRAND`, `FONT_CAVEAT`, etc.) for computed/programmatic use
 - Constants: `NAME_MAX`, `PRONOUNS_MAX`, `TAGLINE_MAX`, `BANNER_COLORS`, `PRONOUN_OPTIONS`, `STICKER_OPTIONS`, `RADIUS_OPTIONS` all in `client/src/constants.js`
@@ -75,7 +77,7 @@ Everything below is **done and on `main`**:
 ## What still needs doing
 
 1. **SMTP email** — reset links are logged to the Render console. Set `SMTP_HOST/PORT/USER/PASS/FROM` + `APP_URL` env vars on Render to send real emails.
-2. **End-to-end test on live app** — register a user, set a profile, test nearby grid, test forgot-password flow on nametag.vercel.app / nametag.onrender.com.
+2. **End-to-end test on live app** — register a user, set a profile, test nearby grid, test forgot-password flow on nametag-pi.vercel.app / nametag.onrender.com.
 3. **iOS build** — needs a Mac with Xcode. Run `cd client && npx cap sync && npx cap open ios`. Codebase is clean and ready.
 4. **iOS Privacy strings** — `Info.plist` needs `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` before App Store submission.
 5. **Loading state on profile page** — no skeleton/placeholder while the profile loads on first open.

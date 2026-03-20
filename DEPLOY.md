@@ -52,9 +52,15 @@
    - **Root directory**: `client`
    - **Framework**: Vite (auto-detected)
 5. Before deploying, **update `client/vercel.json`**:
-   Replace `https://nametag-api.onrender.com` with your actual Render URL from Step 2.
+   Replace `https://nametag.onrender.com` with your actual Render URL from Step 2.
    Commit and push that change.
-6. Click **Deploy**
+6. Add an **Environment Variable** in the Vercel project settings:
+   | Key | Value |
+   |-----|-------|
+   | `VITE_API_URL` | Your Render URL + `/api` (e.g. `https://nametag.onrender.com/api`) |
+
+   > Without this, the frontend won't know where to send API requests.
+7. Click **Deploy**
 
 Your app will be live at `https://nametag-xxx.vercel.app` 🎉
 
