@@ -1,6 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Geolocation } from '@capacitor/geolocation';
-import { getNearby, updateLocation, setVisibility, getMyProfile } from '../api';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { getNearby, updateLocation, setVisibility, getMyProfile, uploadPhoto } from '../api';
+import { LOCAL_PHOTO_PATH } from '../constants';
+
+async function reuploadLocalPhoto() {
+  try {
+    const result = await Filesystem.readFile({
+      path: LOCAL_PHOTO_PATH,
+      directory: Directory.Data,
+      encoding: Encoding.UTF8,
+    });
+    const blob = await fetch(result.data).then(r => r.blob());
+    await uploadPhoto(new File([blob], 'photo.jpg', { type: blob.type }));
+  } catch {
+    // No local photo or upload failed — proceed without it
+  }
+}
 
 export function useNearbyPeople() {
   const [nearby, setNearby] = useState([]);
@@ -16,6 +32,11 @@ export function useNearbyPeople() {
       setMyProfile(profile);
       if (profile) {
         setIsActive(profile.always_visible || profile.is_active);
+        // If the server has no photo (e.g. cleaned up after going stale),
+        // restore from the on-device copy
+        if (!profile.photo_path) {
+          await reuploadLocalPhoto();
+        }
       }
     } catch (err) {
       console.error('[useNearbyPeople] loadMyProfile:', err);
@@ -62,6 +83,10 @@ export function useNearbyPeople() {
     if (alwaysVisible) return;
     const newActive = !isActive;
     try {
+      if (newActive) {
+        // Going visible — restore server-side photo from on-device copy if needed
+        await reuploadLocalPhoto();
+      }
       await setVisibility(newActive);
       setIsActive(newActive);
     } catch (err) {

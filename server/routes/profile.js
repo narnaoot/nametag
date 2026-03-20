@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const db = require('../db');
 const auth = require('../middleware/auth');
+const { deletePhotoFile } = require('../cleanup');
 
 const storage = multer.diskStorage({
   destination: path.join(__dirname, '../uploads'),
@@ -48,7 +49,10 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
   const taglineVal = tagline ? tagline.slice(0, 60) : null;
 
   try {
-    const existing = await db.query('SELECT id FROM profiles WHERE user_id = $1', [req.user.userId]);
+    const existing = await db.query(
+      'SELECT id, photo_path FROM profiles WHERE user_id = $1',
+      [req.user.userId]
+    );
 
     if (existing.rows.length === 0) {
       await db.query(
@@ -57,6 +61,10 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
         [req.user.userId, cleanName, cleanPronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal, taglineVal]
       );
     } else {
+      // Delete old photo from disk when a new one is uploaded
+      if (req.file) {
+        await deletePhotoFile(existing.rows[0].photo_path);
+      }
       await db.query(
         `UPDATE profiles SET
           display_name = $2,
@@ -75,6 +83,27 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
 
     const result = await db.query('SELECT * FROM profiles WHERE user_id = $1', [req.user.userId]);
     res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Upload or replace photo only — called when re-establishing visibility
+router.post('/me/photo', auth, upload.single('photo'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No photo provided' });
+  const photo_path = `/uploads/${req.file.filename}`;
+  try {
+    const existing = await db.query(
+      'SELECT photo_path FROM profiles WHERE user_id = $1',
+      [req.user.userId]
+    );
+    await deletePhotoFile(existing.rows[0]?.photo_path);
+    await db.query(
+      'UPDATE profiles SET photo_path = $2, updated_at = NOW() WHERE user_id = $1',
+      [req.user.userId, photo_path]
+    );
+    res.json({ photo_path });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -104,11 +133,48 @@ router.post('/me/location', auth, async (req, res) => {
   }
 });
 
-// Set visibility (active/inactive)
+// Set visibility — going invisible deletes photo and clears location
 router.post('/me/visibility', auth, async (req, res) => {
   const { is_active } = req.body;
+  const newActive = !!is_active;
   try {
-    await db.query('UPDATE profiles SET is_active = $2 WHERE user_id = $1', [req.user.userId, !!is_active]);
+    if (!newActive) {
+      // Privacy: delete server-side photo and NULL location when going invisible
+      const profile = await db.query(
+        'SELECT photo_path FROM profiles WHERE user_id = $1',
+        [req.user.userId]
+      );
+      await deletePhotoFile(profile.rows[0]?.photo_path);
+      await db.query(
+        `UPDATE profiles
+         SET is_active = FALSE, lat = NULL, lng = NULL,
+             location_updated_at = NULL, photo_path = NULL
+         WHERE user_id = $1`,
+        [req.user.userId]
+      );
+    } else {
+      await db.query(
+        'UPDATE profiles SET is_active = TRUE WHERE user_id = $1',
+        [req.user.userId]
+      );
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Delete account — hard delete of user, profile, and photo file
+router.delete('/me', auth, async (req, res) => {
+  try {
+    const profile = await db.query(
+      'SELECT photo_path FROM profiles WHERE user_id = $1',
+      [req.user.userId]
+    );
+    // Delete user first (cascades to profile row), then clean up the file
+    await db.query('DELETE FROM users WHERE id = $1', [req.user.userId]);
+    await deletePhotoFile(profile.rows[0]?.photo_path);
     res.json({ ok: true });
   } catch (err) {
     console.error(err);

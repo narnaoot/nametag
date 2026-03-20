@@ -1,9 +1,39 @@
 import { useState, useEffect } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { getMyProfile, updateProfile, photoUrl } from '../api';
-import { BANNER_COLORS, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS, NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX } from '../constants';
+import { useAuth } from '../AuthContext';
+import {
+  BANNER_COLORS, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS,
+  NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, LOCAL_PHOTO_PATH,
+} from '../constants';
+
+async function savePhotoLocally(dataUrl) {
+  try {
+    await Filesystem.writeFile({
+      path: LOCAL_PHOTO_PATH,
+      data: dataUrl,
+      directory: Directory.Data,
+      encoding: Encoding.UTF8,
+    });
+  } catch {}
+}
+
+async function loadLocalPhoto() {
+  try {
+    const result = await Filesystem.readFile({
+      path: LOCAL_PHOTO_PATH,
+      directory: Directory.Data,
+      encoding: Encoding.UTF8,
+    });
+    return result.data; // data URL string
+  } catch {
+    return null;
+  }
+}
 
 export default function ProfilePage({ onSaved }) {
+  const { deleteAccount } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [pronounSelect, setPronounSelect] = useState('they/them');
   const [customPronouns, setCustomPronouns] = useState('');
@@ -17,27 +47,40 @@ export default function ProfilePage({ onSaved }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    getMyProfile().then(profile => {
-      if (!profile) return;
-      setDisplayName(profile.display_name || '');
-      const knownPronoun = PRONOUN_OPTIONS.slice(0, -1).includes(profile.pronouns);
-      if (knownPronoun) {
-        setPronounSelect(profile.pronouns);
-      } else {
-        setPronounSelect('custom');
-        setCustomPronouns(profile.pronouns || '');
+    async function load() {
+      // Try on-device photo first — it's always the freshest copy
+      const localPhoto = await loadLocalPhoto();
+      if (localPhoto) setPhotoPreview(localPhoto);
+
+      try {
+        const profile = await getMyProfile();
+        if (!profile) return;
+        setDisplayName(profile.display_name || '');
+        const knownPronoun = PRONOUN_OPTIONS.slice(0, -1).includes(profile.pronouns);
+        if (knownPronoun) {
+          setPronounSelect(profile.pronouns);
+        } else {
+          setPronounSelect('custom');
+          setCustomPronouns(profile.pronouns || '');
+        }
+        setTagline(profile.tagline || '');
+        setRadius(profile.radius_meters || 100);
+        setAlwaysVisible(profile.always_visible !== false);
+        // Only fall back to server photo if no local copy
+        if (profile.photo_path && !localPhoto) setPhotoPreview(photoUrl(profile.photo_path));
+        if (profile.tag_color) setTagColor(profile.tag_color);
+        if (profile.stickers) {
+          try { setSelectedStickers(JSON.parse(profile.stickers)); } catch {}
+        }
+      } catch {
+        setError('Failed to load your profile. Please refresh.');
       }
-      setTagline(profile.tagline || '');
-      setRadius(profile.radius_meters || 100);
-      setAlwaysVisible(profile.always_visible !== false);
-      if (profile.photo_path) setPhotoPreview(photoUrl(profile.photo_path));
-      if (profile.tag_color) setTagColor(profile.tag_color);
-      if (profile.stickers) {
-        try { setSelectedStickers(JSON.parse(profile.stickers)); } catch {}
-      }
-    }).catch(() => setError('Failed to load your profile. Please refresh.'));
+    }
+    load();
   }, []);
 
   function toggleSticker(sticker) {
@@ -54,9 +97,11 @@ export default function ProfilePage({ onSaved }) {
         quality: 85,
         allowEditing: true,
         resultType: CameraResultType.DataUrl,
-        source: CameraSource.Prompt, // shows "Camera / Photo Library" action sheet on iOS
+        source: CameraSource.Prompt,
       });
       setPhotoPreview(photo.dataUrl);
+      // Save to device for future re-uploads after going invisible
+      await savePhotoLocally(photo.dataUrl);
       // Convert data URL → File for FormData upload
       const res = await fetch(photo.dataUrl);
       const blob = await res.blob();
@@ -119,6 +164,18 @@ export default function ProfilePage({ onSaved }) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      await deleteAccount();
+      // deleteAccount signs out — app will re-render to AuthPage
+    } catch (err) {
+      setError(err.message);
+      setConfirmDelete(false);
+      setDeleting(false);
     }
   }
 
@@ -312,6 +369,40 @@ export default function ProfilePage({ onSaved }) {
           {loading ? 'Saving…' : 'Save profile'}
         </button>
       </form>
+
+      {/* Delete account */}
+      <div className="mt-10 pt-6 border-t border-slate-200">
+        {!confirmDelete ? (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="text-sm text-slate-400 hover:text-red-500 transition-colors"
+          >
+            Delete account
+          </button>
+        ) : (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+            <p className="text-sm font-semibold text-red-700">Delete your account?</p>
+            <p className="text-xs text-red-600">
+              This permanently deletes your profile, photo, and account. There is no undo.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="flex-1 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold disabled:opacity-50"
+              >
+                {deleting ? 'Deleting…' : 'Yes, delete everything'}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="flex-1 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

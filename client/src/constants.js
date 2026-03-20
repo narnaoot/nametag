@@ -5,6 +5,9 @@ export const COLOR_INK   = '#1a1a1a';
 export const COLOR_DIM   = '#aaa';
 export const FONT_CAVEAT = "'Caveat', cursive";
 
+// Capacitor Filesystem path for the user's own profile photo (on-device copy)
+export const LOCAL_PHOTO_PATH = 'profile_photo';
+
 export const BANNER_COLORS = [
   { hex: '#E63946', label: 'Red' },
   { hex: '#2563EB', label: 'Blue' },

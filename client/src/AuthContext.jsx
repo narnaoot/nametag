@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { Preferences } from '@capacitor/preferences';
-import { setToken as setApiToken } from './api';
+import { setToken as setApiToken, deleteAccount as deleteAccountApi } from './api';
 
 const TOKEN_KEY = 'nametag_token';
 const AuthContext = createContext(null);
@@ -30,10 +30,17 @@ export function AuthProvider({ children }) {
     setApiToken(null);
   }
 
+  async function deleteAccount() {
+    await deleteAccountApi();
+    await Preferences.remove({ key: TOKEN_KEY });
+    setToken(null);
+    setApiToken(null);
+  }
+
   if (!ready) return null;
 
   return (
-    <AuthContext.Provider value={{ token, isLoggedIn: !!token, signIn, signOut }}>
+    <AuthContext.Provider value={{ token, isLoggedIn: !!token, signIn, signOut, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );
