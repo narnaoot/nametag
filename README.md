@@ -21,6 +21,17 @@ A location-based social discovery app — a digital "Hello, My Name Is" badge. S
 
 ---
 
+## Privacy design
+
+Nametag treats the server as a **relay, not a data store**. User data lives on the server only as long as strictly necessary:
+
+- **Photos** — the primary copy lives on-device. The server copy exists only to serve nearby users while you're visible, and is deleted when you go invisible or when your location goes stale.
+- **Location** — never stored as history. The server holds only your single most-recent position, and it is cleared when you go invisible or inactive.
+- **Account deletion** — a hard delete: user record, profile, and photo file are removed immediately.
+- **No persistent tracking** — there is no location history, no activity log, no analytics on user movement.
+
+---
+
 ## Tech stack
 
 | Layer | Technology |
