@@ -58,6 +58,7 @@ Everything below is **done and on `main`**:
 - Show/hide password toggle on all auth forms (login, register, reset password)
 - Geolocation on web fixed: `Geolocation.requestPermissions()` threw "Not implemented on web" in Capacitor on browsers; now caught so `getCurrentPosition()` proceeds and browser prompts naturally
 - Nearby photo fix: `cleanup.js` can delete the server photo without NULLing `display_name`; `loadMyProfile` now triggers `reuploadFullProfile()` when either `display_name` or `photo_path` is missing
+- Auto-save on ProfilePage: save button removed; any field change debounces a save (700ms); "Saving…" / "Saved ✓" status appears next to the page title (always visible, not below the fold)
 - Token sync: `AuthContext` exposes token via `setToken()` — `api.js` reads from memory, not `localStorage`
 - Brand theme system: `index.css` has a Tailwind v4 `@theme` block (`--color-brand`, `--color-page`, `--color-ink`, `--color-dim`, `--font-caveat`) → utility classes throughout; `constants.js` exports matching JS values (`COLOR_BRAND`, `FONT_CAVEAT`, etc.) for computed/programmatic use
 - Constants: `NAME_MAX`, `PRONOUNS_MAX`, `TAGLINE_MAX`, `BANNER_COLORS`, `PRONOUN_OPTIONS`, `STICKER_OPTIONS`, `RADIUS_OPTIONS` all in `client/src/constants.js`
@@ -82,7 +83,7 @@ Everything below is **done and on `main`**:
 2. **End-to-end test on live app** — register a user, set a profile, test nearby grid, test forgot-password flow on nametag-pi.vercel.app / nametag.onrender.com.
 3. **iOS build** — needs a Mac with Xcode. Run `cd client && npx cap sync && npx cap open ios`. Codebase is clean and ready.
 4. **iOS Privacy strings** — `Info.plist` needs `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` before App Store submission.
-5. **Loading state on profile page** — no skeleton/placeholder while the profile loads on first open.
+5. **Loading state on profile page** — no skeleton/placeholder while the profile loads on first open (the auto-save "Saving…" indicator shows at the top, but fields still pop in with a delay).
 
 ---
 
