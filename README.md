@@ -25,7 +25,8 @@ A location-based social discovery app — a digital "Hello, My Name Is" badge. S
 
 Nametag treats the server as a **relay, not a data store**. User data lives on the server only as long as strictly necessary:
 
-- **Photos** — the primary copy lives on-device. The server copy exists only to serve nearby users while you're visible, and is deleted when you go invisible or when your location goes stale.
+- **Profile data (name, pronouns, tagline, color, stickers)** — the primary copy lives on-device in `@capacitor/preferences`. The server copy is populated only while you are visible to others, and is cleared (set to NULL) the moment you go invisible or your session goes stale. It is re-uploaded transparently from the on-device copy the next time you become active.
+- **Photos** — same lifecycle as profile data. The primary copy lives on-device (Capacitor Filesystem). The server copy is deleted when you go invisible or inactive, and re-uploaded when you become visible again.
 - **Location** — never stored as history. The server holds only your single most-recent position, and it is cleared when you go invisible or inactive.
 - **Account deletion** — a hard delete: user record, profile, and photo file are removed immediately.
 - **No persistent tracking** — there is no location history, no activity log, no analytics on user movement.
@@ -116,8 +117,8 @@ users
 profiles
   id SERIAL PRIMARY KEY
   user_id INTEGER UNIQUE REFERENCES users(id) ON DELETE CASCADE
-  display_name TEXT NOT NULL
-  pronouns TEXT NOT NULL
+  display_name TEXT             -- NULLed while user is invisible/inactive
+  pronouns TEXT                 -- NULLed while user is invisible/inactive
   tagline TEXT
   photo_path TEXT
   radius_meters INTEGER DEFAULT 100
@@ -199,7 +200,7 @@ cd server
 npm test
 ```
 
-70 tests covering auth (register, login, forgot/reset password), profile CRUD, location, visibility, and nearby search — all with a mocked database.
+80 tests covering auth (register, login, forgot/reset password), profile CRUD, location, visibility, and nearby search — all with a mocked database.
 
 ---
 
