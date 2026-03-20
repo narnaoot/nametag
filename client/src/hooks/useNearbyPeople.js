@@ -58,8 +58,10 @@ export function useNearbyPeople() {
       setMyProfile(profile);
       if (profile) {
         setIsActive(profile.always_visible || profile.is_active);
-        // If sensitive fields were cleaned up server-side, restore from on-device data
-        if (!profile.display_name) {
+        // If sensitive fields were cleaned up server-side, restore from on-device data.
+        // Check both display_name and photo_path — cleanup.js can delete the photo
+        // without NULLing the name, so check each independently.
+        if (!profile.display_name || !profile.photo_path) {
           await reuploadFullProfile();
           const refreshed = await getMyProfile();
           if (refreshed) {
