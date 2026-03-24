@@ -3,14 +3,17 @@ import { AuthProvider, useAuth } from './AuthContext';
 import AuthPage from './pages/AuthPage';
 import ProfilePage from './pages/ProfilePage';
 import GridPage from './pages/GridPage';
+import PrivacyPage from './pages/PrivacyPage';
 import { NavBar } from './designs/DesignE';
 import './index.css';
 
 function AppShell() {
   const { isLoggedIn, signOut } = useAuth();
   const [tab, setTab] = useState('profile');
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
-  if (!isLoggedIn) return <AuthPage />;
+  if (showPrivacy) return <PrivacyPage onBack={() => setShowPrivacy(false)} />;
+  if (!isLoggedIn) return <AuthPage onShowPrivacy={() => setShowPrivacy(true)} />;
 
   return (
     <div className="min-h-screen bg-page">
@@ -33,7 +36,12 @@ function AppShell() {
       {/* Page content */}
       <main className="pb-20">
         {tab === 'grid' && <GridPage />}
-        {tab === 'profile' && <ProfilePage onSaved={() => setTab('grid')} />}
+        {tab === 'profile' && (
+          <ProfilePage
+            onSaved={() => setTab('grid')}
+            onShowPrivacy={() => setShowPrivacy(true)}
+          />
+        )}
       </main>
 
       {/* Bottom tab bar */}

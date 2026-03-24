@@ -3,7 +3,7 @@
 Things that require you (not Claude) to act — accounts, hardware, credentials, decisions.
 Updated at the end of every session.
 
-> **Codebase status (March 2026):** Web app is feature-complete and cleaned up — consistent theme system, no magic values, proper error handling. Ready for native iOS work whenever you have a Mac + Apple Developer account.
+> **Codebase status (March 2026):** Web app is feature-complete and polished — loading skeleton on profile, privacy policy page live, consistent theme. Ready for native iOS work whenever you have a Mac + Apple Developer account.
 
 ---
 
@@ -29,7 +29,7 @@ The app is being built on a **server-as-relay** principle: user data lives on th
 
 - **How long is "stale"?** The current plan is 24h without a location refresh → server deletes the photo and NULLs the location. Does that feel right, or should it be shorter (e.g. 4h, 8h)?
 - **What happens when you go invisible?** The plan: server deletes your photo file immediately and NULLs your location. You re-upload on next "go visible." You okay with that UX?
-- **Privacy policy** — before any real users, you'll need a simple privacy policy page explaining what's collected, how long it's kept, and how to delete an account. This can be a single static page. Just tell Claude when you're ready.
+- **Privacy policy** ✅ — `client/src/pages/PrivacyPage.jsx` is live. Linked from the AuthPage footer (pre-login) and the ProfilePage footer. Review the content before launch and add a contact email if you want one.
 - **GDPR / right to erasure** — the account-deletion feature (coming soon in code) will cover this, but worth knowing it's on the roadmap.
 
 ---

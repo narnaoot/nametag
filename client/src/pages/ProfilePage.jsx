@@ -32,8 +32,58 @@ async function loadLocalPhoto() {
   }
 }
 
-export default function ProfilePage({ onSaved }) {
+function ProfileSkeleton() {
+  return (
+    <div className="max-w-md mx-auto px-4 py-8 animate-pulse">
+      <div className="h-7 w-36 bg-slate-200 rounded mb-6" />
+      <div className="flex flex-col items-center gap-3 mb-5">
+        <div className="w-28 h-28 rounded-full bg-slate-200" />
+        <div className="h-4 w-24 bg-slate-200 rounded" />
+      </div>
+      <div className="space-y-2 mb-5">
+        <div className="h-4 w-20 bg-slate-200 rounded" />
+        <div className="h-12 bg-slate-200 rounded-lg" />
+      </div>
+      <div className="mb-5">
+        <div className="h-4 w-28 bg-slate-200 rounded mb-2" />
+        <div className="flex gap-2 flex-wrap">
+          {[80, 64, 80, 72, 72, 80].map((w, i) => (
+            <div key={i} className="h-8 rounded-full bg-slate-200" style={{ width: w }} />
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2 mb-5">
+        <div className="h-4 w-16 bg-slate-200 rounded" />
+        <div className="h-12 bg-slate-200 rounded-lg" />
+      </div>
+      <div className="space-y-2 mb-5">
+        <div className="h-4 w-40 bg-slate-200 rounded" />
+        <div className="h-12 bg-slate-200 rounded-lg" />
+      </div>
+      <div className="h-20 bg-slate-200 rounded-xl mb-5" />
+      <div className="mb-5">
+        <div className="h-4 w-28 bg-slate-200 rounded mb-2" />
+        <div className="flex gap-3">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="w-8 h-8 rounded-full bg-slate-200" />
+          ))}
+        </div>
+      </div>
+      <div className="mb-5">
+        <div className="h-4 w-32 bg-slate-200 rounded mb-2" />
+        <div className="flex flex-wrap gap-2">
+          {Array.from({ length: 18 }).map((_, i) => (
+            <div key={i} className="w-10 h-10 rounded-xl bg-slate-200" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ProfilePage({ onSaved, onShowPrivacy }) {
   const { deleteAccount } = useAuth();
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [pronounSelect, setPronounSelect] = useState('they/them');
   const [customPronouns, setCustomPronouns] = useState('');
@@ -113,7 +163,7 @@ export default function ProfilePage({ onSaved }) {
         if (!value) setError('Failed to load your profile. Please refresh.');
       }
     }
-    load().then(() => { loadedRef.current = true; });
+    load().then(() => { loadedRef.current = true; setProfileLoaded(true); });
   }, []);
 
   function toggleSticker(sticker) {
@@ -224,6 +274,8 @@ export default function ProfilePage({ onSaved }) {
       setDeleting(false);
     }
   }
+
+  if (!profileLoaded) return <ProfileSkeleton />;
 
   return (
     <div className="max-w-md mx-auto px-4 py-8">
@@ -440,8 +492,8 @@ export default function ProfilePage({ onSaved }) {
         {error && <p className="text-red-500 text-sm">{error}</p>}
       </form>
 
-      {/* Delete account */}
-      <div className="mt-10 pt-6 border-t border-slate-200">
+      {/* Delete account + privacy */}
+      <div className="mt-10 pt-6 border-t border-slate-200 flex items-center justify-between">
         {!confirmDelete ? (
           <button
             onClick={() => setConfirmDelete(true)}
@@ -471,6 +523,14 @@ export default function ProfilePage({ onSaved }) {
               </button>
             </div>
           </div>
+        )}
+        {!confirmDelete && onShowPrivacy && (
+          <button
+            onClick={onShowPrivacy}
+            className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            Privacy policy
+          </button>
         )}
       </div>
     </div>

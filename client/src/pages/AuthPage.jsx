@@ -27,7 +27,7 @@ function Logo() {
   );
 }
 
-export default function AuthPage() {
+export default function AuthPage({ onShowPrivacy }) {
   const { signIn } = useAuth();
 
   // mode: 'login' | 'register' | 'forgot' | 'reset'
@@ -133,6 +133,7 @@ export default function AuthPage() {
       <div className="w-full max-w-sm">
         <Logo />
 
+
         {/* ── Forgot password ── */}
         {mode === 'forgot' && (
           <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
@@ -237,6 +238,11 @@ export default function AuthPage() {
               </button>
             )}
           </div>
+        )}
+        {onShowPrivacy && (
+          <p className="mt-6 text-center text-xs text-slate-400">
+            <button onClick={onShowPrivacy} className="hover:underline">Privacy policy</button>
+          </p>
         )}
       </div>
     </div>

@@ -74,6 +74,8 @@ Everything below is **done and on `main`**:
   - "Delete account" UI in ProfilePage with two-step confirmation
 - `@capacitor/filesystem` installed; `LOCAL_PHOTO_PATH` constant in `constants.js`
 - 80 tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
+- **ProfilePage loading skeleton**: `animate-pulse` skeleton renders while profile data loads; flips to real form when load() resolves
+- **Privacy policy page**: `client/src/pages/PrivacyPage.jsx` — full static page covering data collected, retention, user rights. Accessible via "Privacy policy" link in AuthPage footer and ProfilePage footer. Wired via `showPrivacy` state in App.jsx (no router needed).
 
 ---
 
@@ -82,8 +84,7 @@ Everything below is **done and on `main`**:
 1. **SMTP email** — reset links are logged to the Render console. Set `SMTP_HOST/PORT/USER/PASS/FROM` + `APP_URL` env vars on Render to send real emails.
 2. **End-to-end test on live app** — register a user, set a profile, test nearby grid, test forgot-password flow on nametag-pi.vercel.app / nametag.onrender.com.
 3. **iOS build** — needs a Mac with Xcode. Run `cd client && npx cap sync && npx cap open ios`. Codebase is clean and ready.
-4. **iOS Privacy strings** — `Info.plist` needs `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` before App Store submission.
-5. **Loading state on profile page** — no skeleton/placeholder while the profile loads on first open (the auto-save "Saving…" indicator shows at the top, but fields still pop in with a delay).
+4. **iOS Privacy strings** — `Info.plist` needs `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` before App Store submission. (iOS dir not committed to git — will need to add after `cap sync` on a Mac.)
 
 ---
 
@@ -101,14 +102,15 @@ git status                  # check for anything uncommitted
 
 ```
 client/src/
-  App.jsx               — shell, tab nav, first-time user redirect
+  App.jsx               — shell, tab nav, showPrivacy state
   AuthContext.jsx        — JWT token state (@capacitor/preferences)
   api.js                 — fetch wrapper + photoUrl() helper
   constants.js           — shared field limits, colors, options
   pages/
-    AuthPage.jsx          — login / register / forgot / reset
-    ProfilePage.jsx       — profile editor
+    AuthPage.jsx          — login / register / forgot / reset (+ privacy link in footer)
+    ProfilePage.jsx       — profile editor (+ skeleton + privacy link in footer)
     GridPage.jsx          — nearby people grid
+    PrivacyPage.jsx       — static privacy policy page
   hooks/
     useNearbyPeople.js    — location, nearby fetch, 60s auto-refresh
   designs/
