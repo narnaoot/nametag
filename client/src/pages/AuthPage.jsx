@@ -1,28 +1,34 @@
 import { useState, useEffect } from 'react';
 import { login, register, forgotPassword, resetPassword } from '../api';
 import { useAuth } from '../AuthContext';
+import { PersonCard } from '../components/Badge';
 
-// Nametag logo sticker — shared across all auth screens
-function Logo() {
+// Hero promo badge shown above the form (the chosen "badge" composition).
+const DEMO = {
+  name: 'Nametag', pronouns: 'say hi! 👋', tagline: 'See who’s nearby',
+  stickers: ['👋', '🌟', '🎉'], distance: null,
+};
+
+// Password field with a show/hide toggle.
+function PwField({ value, onChange, placeholder, minLength }) {
+  const [show, setShow] = useState(false);
   return (
-    <div className="flex justify-center mb-8">
-      <div
-        className="bg-white rounded-sm overflow-hidden"
-        style={{ width: 200, boxShadow: '3px 4px 16px rgba(0,0,0,0.15)', transform: 'rotate(-2deg)' }}
-      >
-        <div className="bg-brand px-4 pt-3 pb-1.5">
-          <p className="text-white font-bold uppercase" style={{ fontSize: 9, letterSpacing: '0.2em' }}>HELLO</p>
-          <p className="text-white font-semibold uppercase" style={{ fontSize: 8, opacity: 0.9, letterSpacing: '0.12em' }}>my name is</p>
-        </div>
-        <div className="px-4 py-3 text-center">
-          <p className="font-caveat font-bold text-ink" style={{ fontSize: 36, lineHeight: 1 }}>
-            Nametag
-          </p>
-        </div>
-        <div className="font-caveat px-4 py-1.5 text-brand" style={{ backgroundColor: '#E6394618', borderTop: '2px solid #E6394622', fontSize: 14 }}>
-          say hi! 👋
-        </div>
-      </div>
+    <div style={{ position: 'relative' }}>
+      <input
+        className="na-field" style={{ paddingRight: 56 }}
+        type={show ? 'text' : 'password'} value={value} placeholder={placeholder}
+        required minLength={minLength}
+        onChange={e => onChange(e.target.value)}
+      />
+      <button
+        type="button" onClick={() => setShow(s => !s)} tabIndex={-1}
+        style={{
+          position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
+          background: 'none', border: 'none', cursor: 'pointer',
+          fontWeight: 800, fontSize: 12.5, color: 'var(--muted)',
+          textTransform: 'uppercase', letterSpacing: '.08em',
+        }}
+      >{show ? 'Hide' : 'Show'}</button>
     </div>
   );
 }
@@ -38,9 +44,8 @@ export default function AuthPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
-  // If the URL has ?reset=<token>, jump straight to the reset form
+  // If the URL has ?reset=<token>, jump straight to the reset form.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const t = params.get('reset');
@@ -63,6 +68,9 @@ export default function AuthPage() {
     try {
       const fn = mode === 'login' ? login : register;
       const data = await fn(email, password);
+      // NOTE: per the redesign, "Create account" should route to first-run
+      // onboarding before Nearby. Wire that in once OnboardingScreen lands;
+      // for now registration signs in directly (unchanged behavior).
       signIn(data.token);
     } catch (err) {
       setError(err.message);
@@ -92,7 +100,7 @@ export default function AuthPage() {
     try {
       await resetPassword(resetToken, password);
       setSuccess('Password updated! You can now sign in.');
-      // Clear the token from the URL without a page reload
+      // Clear the token from the URL without a page reload.
       window.history.replaceState({}, '', window.location.pathname);
       setTimeout(() => switchMode('login'), 1500);
     } catch (err) {
@@ -102,142 +110,126 @@ export default function AuthPage() {
     }
   }
 
-  const inputClass = 'w-full px-4 py-3 rounded-lg border border-gray-200 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-red-300';
+  const message = error
+    ? <p style={{ color: 'var(--danger)', fontSize: 13.5, fontWeight: 700, margin: 0 }}>{error}</p>
+    : success
+      ? <p style={{ color: 'var(--sage)', fontSize: 13.5, fontWeight: 700, margin: 0 }}>{success}</p>
+      : null;
 
-  function PasswordInput({ placeholder, minLength }) {
+  function renderForm() {
+    // ── Forgot password ──
+    if (mode === 'forgot') {
+      return (
+        <form onSubmit={handleForgot} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <button
+            type="button" onClick={() => switchMode('login')}
+            style={{
+              alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--muted)', fontWeight: 700, fontSize: 13.5, padding: 0,
+            }}
+          >← Back to sign in</button>
+          <div className="t-h3" style={{ fontSize: 19 }}>Forgot your password?</div>
+          <div className="t-body" style={{ fontSize: 13.5, marginTop: -6 }}>
+            Enter your email and we’ll send a reset link your way.
+          </div>
+          <input
+            className="na-field" type="email" placeholder="you@email.com"
+            value={email} onChange={e => setEmail(e.target.value)} required
+          />
+          {message}
+          {!success && (
+            <button className="na-btn" type="submit" disabled={loading}>
+              {loading ? 'Sending…' : 'Send reset link'}
+            </button>
+          )}
+        </form>
+      );
+    }
+
+    // ── Reset password (from ?reset=<token>) ──
+    if (mode === 'reset') {
+      return (
+        <form onSubmit={handleReset} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="t-h3" style={{ fontSize: 19 }}>Choose a new password</div>
+          <div className="t-body" style={{ fontSize: 13.5, marginTop: -6 }}>
+            Must be at least 8 characters.
+          </div>
+          <PwField value={password} onChange={setPassword} placeholder="New password" minLength={8} />
+          {message}
+          {!success && (
+            <button className="na-btn" type="submit" disabled={loading}>
+              {loading ? 'Saving…' : 'Set new password'}
+            </button>
+          )}
+        </form>
+      );
+    }
+
+    // ── Login / Register ──
     return (
-      <div className="relative">
+      <form onSubmit={handleLoginRegister} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* segmented tabs */}
+        <div style={{
+          display: 'flex', gap: 4, padding: 4, borderRadius: 'var(--r-pill)',
+          background: 'var(--warm2)', border: 'var(--hairline) solid var(--border)',
+        }}>
+          {[['login', 'Sign in'], ['register', 'Create account']].map(([m, label]) => (
+            <button
+              key={m} type="button" onClick={() => switchMode(m)}
+              style={{
+                flex: 1, padding: '9px 8px', borderRadius: 'var(--r-pill)', border: 'none',
+                cursor: 'pointer', fontWeight: 800, fontSize: 13.5,
+                background: mode === m ? 'var(--surface)' : 'transparent',
+                color: mode === m ? 'var(--primary)' : 'var(--muted)',
+                boxShadow: mode === m ? '0 2px 8px rgba(61,43,31,0.10)' : 'none',
+                transition: 'all .15s ease',
+              }}
+            >{label}</button>
+          ))}
+        </div>
         <input
-          type={showPassword ? 'text' : 'password'}
-          placeholder={placeholder}
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          required
-          minLength={minLength}
-          className={inputClass + ' pr-12'}
+          className="na-field" type="email" placeholder="you@email.com"
+          value={email} onChange={e => setEmail(e.target.value)} required
         />
-        <button
-          type="button"
-          onClick={() => setShowPassword(v => !v)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm select-none"
-          tabIndex={-1}
-        >
-          {showPassword ? 'Hide' : 'Show'}
+        <PwField
+          value={password} onChange={setPassword}
+          placeholder={mode === 'register' ? 'Password (8+ characters)' : 'Password'}
+          minLength={mode === 'register' ? 8 : undefined}
+        />
+        {message}
+        <button className="na-btn" type="submit" disabled={loading}>
+          {loading ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
         </button>
-      </div>
+        {mode === 'login' && (
+          <button
+            type="button" onClick={() => switchMode('forgot')}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)',
+              fontWeight: 700, fontSize: 13, marginTop: -2,
+            }}
+          >Forgot password?</button>
+        )}
+      </form>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-page">
-      <div className="w-full max-w-sm">
-        <Logo />
-
-        {/* ── Forgot password ── */}
-        {mode === 'forgot' && (
-          <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
-            <button
-              onClick={() => switchMode('login')}
-              className="text-sm mb-4 flex items-center gap-1 text-dim"
-            >
-              ← Back to sign in
-            </button>
-            <h2 className="font-semibold text-slate-800 mb-1">Forgot your password?</h2>
-            <p className="text-sm text-slate-500 mb-4">Enter your email and we'll send a reset link.</p>
-            <form onSubmit={handleForgot} className="space-y-4">
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                className={inputClass}
-              />
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              {success && <p className="text-green-600 text-sm">{success}</p>}
-              {!success && (
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 text-white rounded-lg font-semibold text-sm disabled:opacity-50 bg-brand"
-                >
-                  {loading ? 'Sending…' : 'Send reset link'}
-                </button>
-              )}
-            </form>
-          </div>
-        )}
-
-        {/* ── Reset password ── */}
-        {mode === 'reset' && (
-          <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
-            <h2 className="font-semibold text-slate-800 mb-1">Choose a new password</h2>
-            <p className="text-sm text-slate-500 mb-4">Must be at least 8 characters.</p>
-            <form onSubmit={handleReset} className="space-y-4">
-              <PasswordInput placeholder="New password" minLength={8} />
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              {success && <p className="text-green-600 text-sm">{success}</p>}
-              {!success && (
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 text-white rounded-lg font-semibold text-sm disabled:opacity-50 bg-brand"
-                >
-                  {loading ? 'Saving…' : 'Set new password'}
-                </button>
-              )}
-            </form>
-          </div>
-        )}
-
-        {/* ── Login / Register ── */}
-        {(mode === 'login' || mode === 'register') && (
-          <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
-            <div className="flex bg-gray-100 rounded-lg p-1 mb-5">
-              {['login', 'register'].map(m => (
-                <button
-                  key={m}
-                  onClick={() => switchMode(m)}
-                  className={`flex-1 py-2 rounded-md text-sm font-semibold transition-all ${mode === m ? 'bg-white shadow text-brand' : 'text-gray-400'}`}
-                >
-                  {m === 'login' ? 'Sign in' : 'Create account'}
-                </button>
-              ))}
-            </div>
-
-            <form onSubmit={handleLoginRegister} className="space-y-4">
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                className={inputClass}
-              />
-              <PasswordInput
-                placeholder={mode === 'register' ? 'Password (8+ characters)' : 'Password'}
-                minLength={mode === 'register' ? 8 : undefined}
-              />
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 text-white rounded-lg font-semibold text-sm disabled:opacity-50 bg-brand"
-              >
-                {loading ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
-              </button>
-            </form>
-
-            {mode === 'login' && (
-              <button
-                onClick={() => switchMode('forgot')}
-                className="mt-3 text-sm w-full text-center text-dim"
-              >
-                Forgot password?
-              </button>
-            )}
-          </div>
-        )}
+    <div
+      className="na-app dotgrid"
+      style={{
+        minHeight: '100vh', padding: '78px 26px 40px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+      }}
+    >
+      <div style={{ transform: 'rotate(-3deg)', marginBottom: 30 }}>
+        <PersonCard person={DEMO} accent="var(--primary)" variant="sticker" tilt={0} />
+      </div>
+      <div style={{
+        width: '100%', maxWidth: 380,
+        background: 'var(--surface)', border: 'var(--hairline) solid var(--border)',
+        borderRadius: 'var(--r)', boxShadow: 'var(--shadow-card)', padding: 22,
+      }}>
+        {renderForm()}
       </div>
     </div>
   );
