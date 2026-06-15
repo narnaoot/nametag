@@ -34,72 +34,58 @@ async function request(path, options = {}) {
   return data;
 }
 
-export async function register(email, password) {
-  return request('/auth/register', {
+// POST a JSON body. Multipart (FormData) endpoints use request() directly so
+// the browser sets its own Content-Type + boundary.
+function postJson(path, body) {
+  return request(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify(body),
   });
 }
 
-export async function login(email, password) {
-  return request('/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
+export function register(email, password) {
+  return postJson('/auth/register', { email, password });
 }
 
-export async function getMyProfile() {
+export function login(email, password) {
+  return postJson('/auth/login', { email, password });
+}
+
+export function getMyProfile() {
   return request('/profiles/me');
 }
 
-export async function updateProfile(formData) {
+export function updateProfile(formData) {
   return request('/profiles/me', { method: 'PUT', body: formData });
 }
 
-export async function updateLocation(latitude, longitude) {
-  return request('/profiles/me/location', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ latitude, longitude }),
-  });
+export function updateLocation(latitude, longitude) {
+  return postJson('/profiles/me/location', { latitude, longitude });
 }
 
-export async function setVisibility(is_active) {
-  return request('/profiles/me/visibility', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ is_active }),
-  });
+export function setVisibility(is_active) {
+  return postJson('/profiles/me/visibility', { is_active });
 }
 
-export async function getNearby() {
+export function getNearby() {
   return request('/profiles/nearby');
 }
 
-export async function uploadPhoto(photoFile) {
+export function uploadPhoto(photoFile) {
   const fd = new FormData();
   fd.append('photo', photoFile);
   return request('/profiles/me/photo', { method: 'POST', body: fd });
 }
 
-export async function deleteAccount() {
+export function deleteAccount() {
   return request('/profiles/me', { method: 'DELETE' });
 }
 
-export async function forgotPassword(email) {
-  return request('/auth/forgot-password', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
-  });
+export function forgotPassword(email) {
+  return postJson('/auth/forgot-password', { email });
 }
 
-export async function resetPassword(token, password) {
-  return request('/auth/reset-password', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, password }),
-  });
+export function resetPassword(token, password) {
+  return postJson('/auth/reset-password', { token, password });
 }

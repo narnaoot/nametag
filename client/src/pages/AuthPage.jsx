@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { login, register, forgotPassword, resetPassword } from '../api';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../useAuth';
 import { PersonCard } from '../components/Badge';
 
 // Demo hero badge shown above the form — the "wordmark" moment.
@@ -187,10 +187,7 @@ export default function AuthPage({ onRegistered }) {
   }
 
   return (
-    <div className="dotgrid" style={{
-      minHeight: '100vh', padding: '78px 26px 40px',
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-    }}>
+    <div className="dotgrid na-screen-hero" style={{ padding: '78px 26px 40px' }}>
       <div style={{ transform: 'rotate(-3deg)', marginBottom: 30 }}>
         <PersonCard person={HERO} accent="var(--primary)" variant="sticker" tilt={0} />
       </div>

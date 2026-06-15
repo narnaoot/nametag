@@ -6,7 +6,7 @@ import { photoUrl } from './api';
 // --on-primary is computed from the active primary's relative luminance so
 // overlaid text always has enough contrast. Bright accents (mustard) land on
 // dark ink; the rest land on white — decided by the math, not by hand.
-export function lum(hex) {
+function lum(hex) {
   const c = hex.replace('#', '');
   const ch = (i) => {
     const x = parseInt(c.slice(i, i + 2), 16) / 255;

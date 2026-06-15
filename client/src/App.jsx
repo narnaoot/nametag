@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { AuthProvider, useAuth } from './AuthContext';
+import { AuthProvider } from './AuthContext';
+import { useAuth } from './useAuth';
 import AuthPage from './pages/AuthPage';
 import OnboardingPage from './pages/OnboardingPage';
 import ProfilePage from './pages/ProfilePage';

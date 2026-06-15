@@ -5,8 +5,7 @@ import { toBadgePerson, resolveAccent } from '../colors';
 import { PersonCard } from '../components/Badge';
 import DetailSheet from '../components/DetailSheet';
 import Toggle from '../components/Toggle';
-
-const TILT = 2; // shipped sticker tilt
+import { STICKER_TILT } from '../constants';
 
 function timeLabel(d) {
   return d ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
@@ -34,10 +33,10 @@ function SkeletonGrid() {
   );
 }
 
-function YouTag() {
+function YouTag({ right = 18 }) {
   return (
     <span style={{
-      position: 'absolute', top: -6, right: 18, zIndex: 5,
+      position: 'absolute', top: -6, right, zIndex: 5,
       background: 'var(--text)', color: 'var(--bg)',
       fontWeight: 800, fontSize: 9, letterSpacing: '.12em',
       padding: '3px 8px', borderRadius: 99, textTransform: 'uppercase',
@@ -53,20 +52,15 @@ function EmptyNearby({ me, visible, onSelect }) {
         {me && (
           <div className="nt-tappable" onClick={() => onSelect(me)}
                style={{ cursor: 'pointer', opacity: visible ? 1 : 0.4, position: 'relative' }}>
-            <PersonCard person={me} accent={resolveAccent(me, 0)} variant="sticker" tilt={-TILT} />
-            <span style={{
-              position: 'absolute', top: -6, right: 12, zIndex: 5,
-              background: 'var(--text)', color: 'var(--bg)',
-              fontWeight: 800, fontSize: 9, letterSpacing: '.12em',
-              padding: '3px 8px', borderRadius: 99, textTransform: 'uppercase',
-            }}>You</span>
+            <PersonCard person={me} accent={resolveAccent(me, 0)} variant="sticker" tilt={-STICKER_TILT} />
+            <YouTag right={12} />
           </div>
         )}
         {/* the free spot — a dashed ghost sticker */}
         <div style={{
           width: 150, alignSelf: 'stretch', minHeight: 200, marginTop: 28,
           border: '2px dashed color-mix(in srgb, var(--muted) 38%, transparent)',
-          borderRadius: 10, transform: `rotate(${TILT}deg)`,
+          borderRadius: 10, transform: `rotate(${STICKER_TILT}deg)`,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           justifyContent: 'center', gap: 8, padding: 14,
         }}>
@@ -120,7 +114,7 @@ export default function GridPage({ onEditTag }) {
     : `Updated ${timeLabel(lastUpdated)} · ${others.length} ${others.length === 1 ? 'person' : 'people'}`;
 
   return (
-    <div className="no-sb" style={{ minHeight: '100vh', padding: '70px 18px 96px', maxWidth: 520, margin: '0 auto' }}>
+    <div className="no-sb na-screen" style={{ padding: '70px 18px 96px' }}>
       {/* header */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
@@ -155,10 +149,8 @@ export default function GridPage({ onEditTag }) {
 
       {/* location error */}
       {locationError && !loading && (
-        <div style={{
-          background: 'color-mix(in srgb, var(--danger) 9%, var(--surface))',
-          border: 'var(--hairline) solid color-mix(in srgb, var(--danger) 30%, transparent)',
-          borderRadius: 'var(--r)', padding: '12px 14px', marginBottom: 20,
+        <div className="na-danger-card" style={{
+          padding: '12px 14px', marginBottom: 20,
           fontWeight: 700, fontSize: 13, color: 'var(--text)',
         }}>{locationError}</div>
       )}
@@ -180,7 +172,7 @@ export default function GridPage({ onEditTag }) {
                 opacity: dim ? 0.4 : 1, cursor: 'pointer',
               }}>
                 <PersonCard person={p} accent={resolveAccent(p, i)} variant="sticker"
-                            tilt={i % 2 === 0 ? -TILT : TILT} waveState={waveState} />
+                            tilt={i % 2 === 0 ? -STICKER_TILT : STICKER_TILT} waveState={waveState} />
                 {p.you && <YouTag />}
               </div>
             );

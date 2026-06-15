@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { getMyProfile, updateProfile, photoUrl } from '../api';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../useAuth';
 import { savePhotoLocally, loadLocalPhoto, persistProfileLocally, readLocalProfile } from '../profileStorage';
 import { PersonCard, Avatar } from '../components/Badge';
 import Toggle from '../components/Toggle';
+import PaintboxPicker from '../components/PaintboxPicker';
+import PronounChips from '../components/PronounChips';
 import {
-  PAINTBOX, ACCENT_ORDER, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS,
-  NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, PARTY_CODE_MAX, MAX_STICKERS,
+  PAINTBOX, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS,
+  NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, PARTY_CODE_MAX, MAX_STICKERS, STICKER_TILT,
 } from '../constants';
-
-const TILT = 2;
 
 function Field({ label, count, max, children }) {
   return (
@@ -49,46 +49,33 @@ export default function ProfilePage() {
   const loadedRef = useRef(false);
   const autoSaveTimerRef = useRef(null);
 
-  // Apply a tag_color value: accept a paintbox key, otherwise keep the default.
-  function applyAccent(value) {
-    if (value && PAINTBOX[value]) setAccentKey(value);
-  }
-
   useEffect(() => {
+    // Hydrate every editable field from a profile source (on-device or server).
+    function applyProfile(src) {
+      setDisplayName(src.display_name || '');
+      const known = PRONOUN_OPTIONS.slice(0, -1).includes(src.pronouns);
+      if (known) { setPronounSelect(src.pronouns); }
+      else { setPronounSelect('custom'); setCustomPronouns(src.pronouns || ''); }
+      setTagline(src.tagline || '');
+      setRadius(src.radius_meters || 100);
+      setAlwaysVisible(src.always_visible !== false);
+      if (src.tag_color && PAINTBOX[src.tag_color]) setAccentKey(src.tag_color);
+      if (src.stickers) { try { setSelectedStickers(JSON.parse(src.stickers)); } catch { /* ignore */ } }
+      if (src.party_code !== undefined) setPartyCode(src.party_code || '');
+    }
+
     async function load() {
       const localPhoto = await loadLocalPhoto();
       if (localPhoto) setPhotoPreview(localPhoto);
 
+      // On-device copy is freshest; fall back to the server for first load.
       const p = await readLocalProfile();
-      if (p) {
-        setDisplayName(p.display_name || '');
-        const known = PRONOUN_OPTIONS.slice(0, -1).includes(p.pronouns);
-        if (known) setPronounSelect(p.pronouns);
-        else { setPronounSelect('custom'); setCustomPronouns(p.pronouns || ''); }
-        setTagline(p.tagline || '');
-        setRadius(p.radius_meters || 100);
-        setAlwaysVisible(p.always_visible !== false);
-        applyAccent(p.tag_color);
-        if (p.stickers) { try { setSelectedStickers(JSON.parse(p.stickers)); } catch { /* ignore */ } }
-        if (p.party_code !== undefined) setPartyCode(p.party_code || '');
-      }
+      if (p) applyProfile(p);
 
-      // Fall back to server for anything not in local storage.
       try {
         const profile = await getMyProfile();
         if (!profile) return;
-        if (!p) {
-          setDisplayName(profile.display_name || '');
-          const known = PRONOUN_OPTIONS.slice(0, -1).includes(profile.pronouns);
-          if (known) setPronounSelect(profile.pronouns || 'they/them');
-          else { setPronounSelect('custom'); setCustomPronouns(profile.pronouns || ''); }
-          setTagline(profile.tagline || '');
-          setRadius(profile.radius_meters || 100);
-          setAlwaysVisible(profile.always_visible !== false);
-          applyAccent(profile.tag_color);
-          if (profile.stickers) { try { setSelectedStickers(JSON.parse(profile.stickers)); } catch { /* ignore */ } }
-          if (profile.party_code !== undefined) setPartyCode(profile.party_code || '');
-        }
+        if (!p) applyProfile(profile);
         if (profile.photo_path && !localPhoto) setPhotoPreview(photoUrl(profile.photo_path));
       } catch {
         if (!p) setError('Failed to load your profile. Please refresh.');
@@ -193,7 +180,7 @@ export default function ProfilePage() {
   const accentVar = `var(--${accentKey})`;
 
   return (
-    <div className="no-sb" style={{ minHeight: '100vh', padding: '70px 22px 96px', maxWidth: 520, margin: '0 auto' }}>
+    <div className="no-sb na-screen" style={{ padding: '70px 22px 96px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }}>
         <div className="t-display" style={{ fontSize: 38 }}>My <em>tag</em></div>
         {loading ? <span className="t-label">Saving…</span>
@@ -206,7 +193,7 @@ export default function ProfilePage() {
         background: 'var(--warm)', borderRadius: 'var(--r)',
         border: 'var(--hairline) solid var(--border)', marginBottom: 24,
       }}>
-        <PersonCard person={preview} accent={accentVar} variant="sticker" tilt={TILT} />
+        <PersonCard person={preview} accent={accentVar} variant="sticker" tilt={STICKER_TILT} />
       </div>
 
       {/* photo */}
@@ -230,15 +217,7 @@ export default function ProfilePage() {
       </Field>
 
       <Field label="Your pronouns">
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {PRONOUN_OPTIONS.map(opt => (
-            <button key={opt} type="button" className="na-chip"
-              data-on={(opt === 'custom' ? pronounSelect === 'custom' : pronounSelect === opt) ? 'true' : 'false'}
-              onClick={() => setPronounSelect(opt)}>
-              {opt === 'custom' ? '+ custom' : opt}
-            </button>
-          ))}
-        </div>
+        <PronounChips options={PRONOUN_OPTIONS} value={pronounSelect} onChange={setPronounSelect} />
         {pronounSelect === 'custom' && (
           <input className="na-field" style={{ marginTop: 10 }} value={customPronouns}
                  maxLength={PRONOUNS_MAX} onChange={e => setCustomPronouns(e.target.value)}
@@ -286,20 +265,7 @@ export default function ProfilePage() {
 
       {/* nametag color — the paintbox */}
       <Field label="Nametag color">
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          {ACCENT_ORDER.map(key => {
-            const on = accentKey === key;
-            return (
-              <button key={key} type="button" onClick={() => setAccentKey(key)} title={key} style={{
-                width: 34, height: 34, borderRadius: '50%', background: `var(--${key})`,
-                border: on ? '3px solid var(--text)' : '3px solid transparent',
-                boxShadow: on ? '0 0 0 2px var(--surface) inset' : 'none',
-                cursor: 'pointer', transition: 'transform .12s ease',
-                transform: on ? 'scale(1.08)' : 'none',
-              }} />
-            );
-          })}
-        </div>
+        <PaintboxPicker value={accentKey} onChange={setAccentKey} />
       </Field>
 
       {/* stickers */}
@@ -348,11 +314,7 @@ export default function ProfilePage() {
             </button>
           </div>
         ) : (
-          <div style={{
-            background: 'color-mix(in srgb, var(--danger) 9%, var(--surface))',
-            border: 'var(--hairline) solid color-mix(in srgb, var(--danger) 30%, transparent)',
-            borderRadius: 'var(--r)', padding: 16,
-          }}>
+          <div className="na-danger-card" style={{ padding: 16 }}>
             <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--danger)' }}>Delete your account?</div>
             <div className="t-body" style={{ fontSize: 12.5, margin: '6px 0 12px' }}>
               This erases your profile, photo, and account immediately. There’s no undo.

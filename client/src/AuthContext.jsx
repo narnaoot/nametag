@@ -1,9 +1,9 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Preferences } from '@capacitor/preferences';
 import { setToken as setApiToken, deleteAccount as deleteAccountApi } from './api';
+import { AuthContext } from './useAuth';
 
 const TOKEN_KEY = 'nametag_token';
-const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
@@ -44,8 +44,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  return useContext(AuthContext);
 }

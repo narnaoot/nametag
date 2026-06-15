@@ -10,23 +10,18 @@ export const PAINTBOX = {
   lavender: '#A86BFF',
 };
 
-// Deepened variants used inside .theme-ink — same hues, less glow on dark.
-export const PAINTBOX_INK = {
-  coral:    '#E04330',
-  teal:     '#0ABFA6',
-  mustard:  '#E0A000',
-  rose:     '#E83387',
-  lavender: '#955EE8',
-};
+// The Ink theme's deepened paintbox + the semantic success green (--sage) live
+// in index.css (.theme-ink / :root) as the single source of truth — they're
+// applied via CSS vars, so there's no JS mirror to keep in sync here.
 
 // Canonical order for swatch rows and rainbow fallback.
 export const ACCENT_ORDER = ['coral', 'teal', 'mustard', 'rose', 'lavender'];
 
-// Semantic success green (wave sent / visible / saved) — NOT a paintbox accent.
-export const COLOR_SAGE = '#2ED573';
-
 // Brand default: teal leads all chrome.
 export const COLOR_PRIMARY = PAINTBOX.teal;
+
+// Default sticker-badge rotation, in degrees (alternated ± across the grid).
+export const STICKER_TILT = 2;
 
 // Capacitor Filesystem path for the user's own profile photo (on-device copy)
 export const LOCAL_PHOTO_PATH = 'profile_photo';

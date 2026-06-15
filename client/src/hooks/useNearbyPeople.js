@@ -152,7 +152,9 @@ export function useNearbyPeople() {
       }
     }
     init();
-  }, []);
+    // loadMyProfile/shareLocation/loadNearby are stable useCallbacks, so this
+    // still runs only on mount.
+  }, [loadMyProfile, shareLocation, loadNearby]);
 
   // Refresh location + nearby every 60 seconds
   useEffect(() => {

@@ -6,6 +6,7 @@
 // resolveAccent(person, index) from ../colors to produce it.
 
 import { initials, distanceLabel } from '../colors';
+import AccentPill from './AccentPill';
 
 export function Avatar({ person, size = 96, accent, ring = true }) {
   const common = {
@@ -135,12 +136,7 @@ function EditorialCard({ person, accent }) {
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
-          <span style={{
-            fontWeight: 800, fontSize: 11, color: accent,
-            background: `color-mix(in srgb, ${accent} 14%, var(--surface))`,
-            border: `1.5px solid color-mix(in srgb, ${accent} 30%, transparent)`,
-            borderRadius: 'var(--r-pill)', padding: '3px 10px', lineHeight: 1,
-          }}>{person.pronouns}</span>
+          <AccentPill accent={accent}>{person.pronouns}</AccentPill>
           {person.stickers?.length > 0 && (
             <span style={{ display: 'flex', gap: 3 }}>
               {person.stickers.map((s, i) => <span key={i} style={{ fontSize: 14 }}>{s}</span>)}

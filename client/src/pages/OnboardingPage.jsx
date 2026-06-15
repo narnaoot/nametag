@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { updateProfile } from '../api';
 import { persistProfileLocally } from '../profileStorage';
 import { PersonCard } from '../components/Badge';
-import { ACCENT_ORDER, ONBOARDING_PRONOUNS, ONBOARDING_NAME_MAX } from '../constants';
+import PaintboxPicker from '../components/PaintboxPicker';
+import PronounChips from '../components/PronounChips';
+import { ONBOARDING_PRONOUNS, ONBOARDING_NAME_MAX, STICKER_TILT } from '../constants';
 
 // First-run "write your name on your tag" moment, shown right after register.
 // The badge preview fills in live as the user types.
@@ -52,18 +54,14 @@ export default function OnboardingPage({ onDone }) {
   }
 
   return (
-    <div className="dotgrid no-sb" style={{
-      minHeight: '100vh', overflowY: 'auto',
-      padding: '70px 26px 40px', display: 'flex', flexDirection: 'column',
-      alignItems: 'center',
-    }}>
+    <div className="dotgrid no-sb na-screen-hero" style={{ padding: '70px 26px 40px' }}>
       <div className="t-label" style={{ color: 'var(--primary)' }}>One last thing</div>
       <div className="t-display" style={{ fontSize: 30, textAlign: 'center', marginTop: 8, lineHeight: 1.1 }}>
         Write your name<br />on your <em>tag</em>
       </div>
 
       {/* live badge */}
-      <div className="nt-pop" style={{ marginTop: 22, marginBottom: 26, transform: 'rotate(-2deg)' }}>
+      <div className="nt-pop" style={{ marginTop: 22, marginBottom: 26, transform: `rotate(-${STICKER_TILT}deg)` }}>
         <PersonCard person={draft} accent={`var(--${accentKey})`} variant="sticker" tilt={0} />
       </div>
 
@@ -72,28 +70,13 @@ export default function OnboardingPage({ onDone }) {
                value={name} onChange={e => setName(e.target.value)}
                style={{ textAlign: 'center', fontWeight: 800, fontSize: 17 }} />
 
-        {/* pronouns */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-          {ONBOARDING_PRONOUNS.map(p => (
-            <button key={p} type="button" className="na-chip" data-on={pronouns === p ? 'true' : 'false'}
-                    onClick={() => setPronouns(prev => prev === p ? '' : p)}>
-              {p}
-            </button>
-          ))}
-        </div>
+        {/* pronouns — tap again to clear */}
+        <PronounChips options={ONBOARDING_PRONOUNS} value={pronouns} justify="center"
+                      onChange={p => setPronouns(prev => prev === p ? '' : p)} />
 
         {/* paintbox */}
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 2 }}>
-          {ACCENT_ORDER.map(k => (
-            <button key={k} type="button" onClick={() => setAccentKey(k)} aria-label={k} style={{
-              width: 34, height: 34, borderRadius: '50%', cursor: 'pointer',
-              background: `var(--${k})`,
-              border: accentKey === k ? '3px solid var(--text)' : '3px solid transparent',
-              outline: 'var(--hairline) solid var(--border)',
-              transition: 'transform .12s ease',
-              transform: accentKey === k ? 'scale(1.12)' : 'none',
-            }} />
-          ))}
+        <div style={{ marginTop: 2 }}>
+          <PaintboxPicker value={accentKey} onChange={setAccentKey} justify="center" />
         </div>
 
         {error && <p style={{ color: 'var(--danger)', fontWeight: 700, fontSize: 13.5, textAlign: 'center', margin: 0 }}>{error}</p>}

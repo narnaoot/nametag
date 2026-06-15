@@ -28,8 +28,10 @@ we ever want it, but the screens ship sticker + grid.
   `.dotgrid` texture, `.nt-tappable`, and the entrance/skeleton keyframes.
   Cream lives in `:root, .theme-cream`; Ink overrides in `.theme-ink`. Fonts
   (Playfair Display + Nunito) load via the Google Fonts `@import`.
-- **`src/constants.js`** — the paintbox hex maps (`PAINTBOX`, `PAINTBOX_INK`),
-  `ACCENT_ORDER`, sticker/pronoun/radius options, and length limits.
+- **`src/constants.js`** — the cream paintbox hex map (`PAINTBOX`),
+  `ACCENT_ORDER`, sticker/pronoun/radius options, and length limits. The Ink
+  palette and `--sage` live only in `index.css` (CSS vars are the source of
+  truth — no JS mirror to drift).
 - **`src/colors.js`** — pure helpers ported from the prototype:
   - `lum()` / `bestOn()` — the contrast helper that picks `#FFFFFF` vs
     `#23170E` for `--on-primary`. Applied on the app root in `App.jsx`.
