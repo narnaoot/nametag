@@ -1,90 +1,153 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>Nametag — App Icon</title>
-<link rel="stylesheet" href="styles.css">
-<style>
-  body {
-    margin: 0; min-height: 100vh; display: flex; align-items: center;
-    justify-content: center; gap: 48px; background: #E7E2D8;
-    font-family: var(--font-body);
-  }
-  .stage { display: flex; flex-direction: column; align-items: center; gap: 18px; }
-  .caption {
-    font-size: 12px; font-weight: 800; letter-spacing: .14em;
-    text-transform: uppercase; color: #9A8070;
-  }
-  /* The icon artboard — iOS masks its own corners; we preview with 22.5% radius */
-  .icon {
-    width: 512px; height: 512px; position: relative; overflow: hidden;
-    background: #06D6B8;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .icon.rounded { border-radius: 115px; box-shadow: 0 24px 64px rgba(61,43,31,.30); }
-  .icon.small { width: 120px; height: 120px; border-radius: 27px; }
-  .icon.small .sticker { transform: rotate(-4deg) scale(0.2344); }
+// app.jsx — assembles the prototype: tweaks + state + iOS frame.
 
-  /* halftone dot texture, very faint */
-  .icon::after {
-    content: ''; position: absolute; inset: 0;
-    background-image: radial-gradient(rgba(255,255,255,.35) 5%, transparent 6%);
-    background-size: 42px 42px; opacity: .25;
-  }
+const { useState: useState0, useEffect: useEffect0 } = React;
 
-  .sticker {
-    width: 340px; background: #FFFBF5; border-radius: 26px;
-    box-shadow: 0 18px 44px rgba(20,48,40,.35);
-    transform: rotate(-4deg); position: relative; z-index: 2;
-    overflow: hidden; flex-shrink: 0;
-  }
-  .sticker .band {
-    background: #3D2B1F; padding: 26px 30px 22px; text-align: center;
-  }
-  .sticker .band .hello {
-    font-family: var(--font-display); font-weight: 900; font-style: italic;
-    font-size: 64px; color: #FFFBF5; line-height: 1; letter-spacing: -2px;
-  }
-  .sticker .band .sub {
-    font-size: 17px; font-weight: 800; letter-spacing: .26em; margin-top: 10px;
-    text-transform: uppercase; color: rgba(255,251,245,.85);
-  }
-  .sticker .body { padding: 34px 30px 38px; display: flex; flex-direction: column; gap: 16px; }
-  .sticker .line { height: 7px; border-radius: 99px; background: #E8DDD0; }
-  .sticker .line.l1 { width: 78%; }
-  .sticker .line.l2 { width: 52%; }
-</style>
-</head>
-<body>
-  <div class="stage">
-    <div class="icon rounded">
-      <div class="sticker">
-        <div class="band">
-          <div class="hello">hello</div>
-          <div class="sub">my name is</div>
-        </div>
-        <div class="body">
-          <div class="line l1"></div>
-          <div class="line l2"></div>
+const HEX_TO_KEY = Object.fromEntries(
+  Object.entries(window.NAMETAG_ACCENTS).map(([k, v]) => [v.toUpperCase(), k])
+);
+const RAINBOW = window.NAMETAG_ACCENT_ORDER.map(k => window.NAMETAG_ACCENTS[k]);
+
+// relative luminance + best contrasting text color for a filled swatch
+function lum(hex) {
+  const c = hex.replace('#', '');
+  const ch = i => {
+    const x = parseInt(c.slice(i, i + 2), 16) / 255;
+    return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * ch(0) + 0.7152 * ch(2) + 0.0722 * ch(4);
+}
+function bestOn(hex) {
+  const L = lum(hex);
+  const onWhite = 1.05 / (L + 0.05);
+  const onDark = (L + 0.05) / (lum('#23170E') + 0.05);
+  return onWhite >= onDark ? '#FFFFFF' : '#23170E';
+}
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "screen": "Nearby",
+  "theme": "Cream",
+  "primary": "#06D6B8",
+  "badge": "Sticker",
+  "layout": "Grid",
+  "auth": "Badge",
+  "accent": ["#FF4733", "#06D6B8", "#FFB300", "#FF3D9A", "#A86BFF"],
+  "tilt": 2
+}/*EDITMODE-END*/;
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [you, setYou] = useState0({
+    ...window.NAMETAG_DATA.you, radius: 100, alwaysVisible: true,
+  });
+  const [visible, setVisible] = useState0(true);
+  const [waves, setWaves] = useState0({});
+  const sendWave = (id) => setWaves(w => ({ ...w, [id]: 'sent' }));
+  const [scale, setScale] = useState0(1);
+
+  useEffect0(() => {
+    const fit = () => setScale(Math.min(1, (window.innerHeight - 40) / 874,
+                                           (window.innerWidth - 40) / 402));
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, []);
+
+  const people = window.NAMETAG_DATA.people;
+  const themeClass = t.theme === 'Ink' ? 'theme-ink' : 'theme-cream';
+  const dark = t.theme === 'Ink';
+  const variant = t.badge === 'Editorial' ? 'editorial' : 'sticker';
+  const layout = (t.layout || 'Grid').toLowerCase();
+  const authComp = { Card: 'card', Editorial: 'editorial', Badge: 'badge' }[t.auth] || 'card';
+  const accentMode = Array.isArray(t.accent)
+    ? 'rainbow'
+    : (HEX_TO_KEY[String(t.accent).toUpperCase()] || 'coral');
+  const primaryKey = HEX_TO_KEY[String(t.primary || '').toUpperCase()];
+  const primaryHex = t.primary || '#06D6B8';
+  // theme-aware: keyed colors ride the CSS var (ink overrides apply);
+  // contrast is computed from the actual hex in play.
+  const primaryVal = primaryKey ? `var(--${primaryKey})` : primaryHex;
+  const contrastHex = (dark && primaryKey)
+    ? window.NAMETAG_ACCENTS_INK[primaryKey] : primaryHex;
+  const onPrimary = bestOn(contrastHex);
+
+  const screen = t.screen || 'Nearby';
+  const isAuth = screen === 'Sign in';
+  const isOnboarding = screen === 'Welcome';
+  const tab = screen === 'My tag' ? 'profile' : 'grid';
+
+  const goTo = (s) => setTweak('screen', s);
+
+  return (
+    <div style={{
+      minHeight: '100vh', width: '100%',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: dark ? '#1A120C' : '#E7E2D8', padding: 20, boxSizing: 'border-box',
+      transition: 'background .3s ease',
+    }}>
+      <div style={{ width: 402 * scale, height: 874 * scale, position: 'relative' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0,
+                      transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+          <IOSDevice dark={dark}>
+          <div className={themeClass} style={{ width: '100%', height: '100%',
+                 '--primary': primaryVal, '--on-primary': onPrimary }}>
+          <div className="na-app">
+            {isAuth ? (
+              <AuthScreen composition={authComp} accent={primaryVal}
+                          onSignIn={() => goTo('Nearby')}
+                          onRegister={() => goTo('Welcome')} />
+            ) : isOnboarding ? (
+              <OnboardingScreen you={you} setYou={setYou} onDone={() => goTo('Nearby')} />
+            ) : (
+              <React.Fragment>
+                {tab === 'grid'
+                  ? <Nearby you={you} people={t.empty ? [] : people} accentMode={accentMode}
+                            variant={variant} tilt={t.tilt} layout={layout}
+                            visible={visible} onToggleVisible={() => setVisible(v => !v)}
+                            waves={waves} onWave={sendWave}
+                            onEditTag={() => goTo('My tag')} />
+                  : <MyTag you={you} setYou={setYou} accentMode={accentMode}
+                           variant={variant} tilt={t.tilt} />}
+                <TabBar tab={tab} onTab={(id) => goTo(id === 'profile' ? 'My tag' : 'Nearby')} />
+              </React.Fragment>
+            )}
+            </div>
+          </div>
+        </IOSDevice>
         </div>
       </div>
+
+      <TweaksPanel>
+        <TweakSection label="Flow" />
+        <TweakSelect label="Screen" value={screen}
+          options={['Sign in', 'Welcome', 'Nearby', 'My tag']}
+          onChange={v => setTweak('screen', v)} />
+        <TweakRadio label="Theme" value={t.theme} options={['Cream', 'Ink']}
+          onChange={v => setTweak('theme', v)} />
+        <TweakColor label="Brand color" value={t.primary}
+          options={['#06D6B8', '#FFB300', '#FF3D9A', '#A86BFF', '#FF4733']}
+          onChange={v => setTweak('primary', v)} />
+
+        <TweakSection label="The badge" />
+        <TweakRadio label="Card style" value={t.badge} options={['Sticker', 'Editorial']}
+          onChange={v => setTweak('badge', v)} />
+        <TweakColor label="Badge colors" value={t.accent}
+          options={[RAINBOW, '#FF4733', '#06D6B8', '#FFB300', '#FF3D9A', '#A86BFF']}
+          onChange={v => setTweak('accent', v)} />
+        <TweakSlider label="Sticker tilt" value={t.tilt} min={0} max={6} step={0.5} unit="°"
+          onChange={v => setTweak('tilt', v)} />
+
+        <TweakSection label="Nearby" />
+        <TweakRadio label="Layout" value={t.layout} options={['Grid', 'Stacked', 'Radar']}
+          onChange={v => setTweak('layout', v)} />
+        <TweakToggle label="Empty state" value={!!t.empty}
+          onChange={v => setTweak('empty', v)} />
+
+        <TweakSection label="Sign in" />
+        <TweakRadio label="Composition" value={t.auth} options={['Card', 'Editorial', 'Badge']}
+          onChange={v => setTweak('auth', v)} />
+      </TweaksPanel>
     </div>
-    <div class="caption">App icon · 512</div>
-  </div>
-  <div class="stage">
-    <div class="icon small">
-      <div class="sticker">
-        <div class="band">
-          <div class="hello">hello</div>
-          <div class="sub">my name is</div>
-        </div>
-        <div class="body">
-          <div class="line l1"></div>
-          <div class="line l2"></div>
-        </div>
-      </div>
-    </div>
-    <div class="caption">Home screen · 120</div>
-  </div>
-</body>
-</html>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
