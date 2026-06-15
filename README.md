@@ -5,6 +5,8 @@ A location-based social discovery app — a digital "Hello, My Name Is" badge. S
 **Live app**: [nametag-pi.vercel.app](https://nametag-pi.vercel.app) · **API**: [nametag.onrender.com](https://nametag.onrender.com)
 
 > **Resuming development?** See [RESTART_PROMPT.md](RESTART_PROMPT.md) for current state and what's next.
+>
+> **UI:** the frontend uses the Nabil Arnaoot design system (warm cream canvas, Playfair Display + Nunito, a five-color "paintbox," sticker-badge motif). Implementation notes: [client/REDESIGN.md](client/REDESIGN.md). Original references: [design_handoff_nametag_redesign/](design_handoff_nametag_redesign/).
 
 ---
 
@@ -20,7 +22,7 @@ A location-based social discovery app — a digital "Hello, My Name Is" badge. S
 - **Control visibility** — always visible, or only show yourself when you choose
 - **Auto-refresh** — location and nearby grid update every 60 seconds
 - **Delete account** — two-step confirmation, hard-deletes all data immediately
-- **iOS app** — runs natively via Capacitor 7
+- **iOS app** — runs natively via Capacitor 8
 
 ---
 
@@ -49,12 +51,12 @@ Nametag treats the server as a **relay, not a data store**. User privacy is crit
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 19, Vite, Tailwind CSS v4 |
+| Frontend | React 19, Vite, Tailwind CSS v4 (Nabil Arnaoot design system) |
 | Backend | Node.js, Express 5 |
 | Database | PostgreSQL (Neon) |
 | Auth | JWT (30-day tokens, bcrypt passwords) |
 | File uploads | Multer (photos stored on server disk) |
-| iOS | Capacitor 7 |
+| iOS | Capacitor 8 |
 | Hosting | Render (API) + Vercel (frontend) |
 
 ---
@@ -66,20 +68,28 @@ nametag/
 ├── client/                   # React + Vite frontend
 │   ├── vercel.json           # Vercel rewrites → Render API
 │   ├── vite.config.js        # Dev proxy → localhost:3001
+│   ├── REDESIGN.md           # Design-system implementation notes
+│   ├── public/app-icon.svg   # App icon (master SVG; also the web favicon)
 │   └── src/
-│       ├── App.jsx           # App shell + tab navigation
+│       ├── App.jsx           # App shell, theme wrapper, register→onboarding→nearby flow
 │       ├── AuthContext.jsx   # JWT token state (@capacitor/preferences)
 │       ├── api.js            # Fetch wrapper + photoUrl() helper
-│       ├── constants.js      # Brand tokens, shared colors, options, field limits
-│       ├── index.css         # Tailwind v4 @theme tokens (color-brand, font-caveat, …)
+│       ├── colors.js         # Paintbox/accent + contrast helpers, profile→badge mapping
+│       ├── constants.js      # Design tokens (paintbox), options, field limits
+│       ├── profileStorage.js # On-device profile + photo persistence (Capacitor)
+│       ├── index.css         # Design-system tokens, type roles, primitives, animations
+│       ├── components/
+│       │   ├── Badge.jsx        # Avatar + sticker/editorial nametag card + wave chip
+│       │   ├── DetailSheet.jsx  # Slide-up person detail + wave action
+│       │   ├── TabBar.jsx       # Bottom tab bar
+│       │   └── Toggle.jsx       # Pill switch
 │       ├── pages/
-│       │   ├── AuthPage.jsx     # Login / register / forgot / reset password
-│       │   ├── ProfilePage.jsx  # Edit profile
-│       │   └── GridPage.jsx     # Nearby people grid
-│       ├── hooks/
-│       │   └── useNearbyPeople.js  # Location, nearby fetch, 60s auto-refresh
-│       └── designs/
-│           └── DesignE.jsx   # PersonCard + NavBar components
+│       │   ├── AuthPage.jsx       # Login / register / forgot / reset password
+│       │   ├── OnboardingPage.jsx # First-run "write your name on your tag"
+│       │   ├── ProfilePage.jsx    # My Tag — edit your profile
+│       │   └── GridPage.jsx       # Nearby people grid
+│       └── hooks/
+│           └── useNearbyPeople.js  # Location, nearby fetch, 60s auto-refresh
 └── server/                   # Express API
     ├── index.js              # Entry point — runs migrations, starts server
     ├── app.js                # Express app (middleware + routes)
@@ -110,8 +120,10 @@ All authenticated endpoints require `Authorization: Bearer <token>`.
 | POST | `/api/auth/reset-password` | — | Set new password via reset token |
 | GET | `/api/profiles/me` | ✓ | Get your profile |
 | PUT | `/api/profiles/me` | ✓ | Create / update profile (multipart) |
+| POST | `/api/profiles/me/photo` | ✓ | Upload / replace photo only |
 | POST | `/api/profiles/me/location` | ✓ | Update lat/lng |
 | POST | `/api/profiles/me/visibility` | ✓ | Toggle is_active |
+| DELETE | `/api/profiles/me` | ✓ | Delete account (hard delete: user, profile, photo) |
 | GET | `/api/profiles/nearby` | ✓ | List nearby people (Haversine + bounding box) |
 | GET | `/api/health` | — | Health check |
 
@@ -139,8 +151,9 @@ profiles
   lat DOUBLE PRECISION
   lng DOUBLE PRECISION
   location_updated_at TIMESTAMPTZ
-  tag_color TEXT
-  stickers TEXT          -- JSON array of emoji strings
+  tag_color TEXT                -- paintbox accent key (e.g. "teal")
+  stickers TEXT                 -- JSON array of emoji strings
+  party_code VARCHAR(20)        -- optional group filter for nearby
   updated_at TIMESTAMPTZ DEFAULT NOW()
 
 password_reset_tokens
