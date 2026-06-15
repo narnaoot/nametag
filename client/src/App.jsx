@@ -1,43 +1,43 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AuthProvider, useAuth } from './AuthContext';
 import AuthPage from './pages/AuthPage';
+import OnboardingPage from './pages/OnboardingPage';
 import ProfilePage from './pages/ProfilePage';
 import GridPage from './pages/GridPage';
-import { NavBar } from './designs/DesignE';
+import TabBar from './components/TabBar';
+import { bestOn } from './colors';
+import { COLOR_PRIMARY } from './constants';
 import './index.css';
 
 function AppShell() {
-  const { isLoggedIn, signOut } = useAuth();
-  const [tab, setTab] = useState('profile');
+  const { isLoggedIn } = useAuth();
+  const [tab, setTab] = useState('grid');
+  const [onboarding, setOnboarding] = useState(false);
 
-  if (!isLoggedIn) return <AuthPage />;
+  // --on-primary is computed from the brand color's luminance (see colors.js).
+  // Teal leads all chrome; contrast picks white vs. ink ink automatically.
+  const onPrimary = useMemo(() => bestOn(COLOR_PRIMARY), []);
+
+  let content;
+  if (!isLoggedIn) {
+    content = <AuthPage onRegistered={() => setOnboarding(true)} />;
+  } else if (onboarding) {
+    content = <OnboardingPage onDone={() => { setOnboarding(false); setTab('grid'); }} />;
+  } else {
+    content = (
+      <>
+        {tab === 'grid'
+          ? <GridPage onEditTag={() => setTab('profile')} />
+          : <ProfilePage />}
+        <TabBar tab={tab} onTab={setTab} />
+      </>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-page">
-      {/* Top nav */}
-      <header className="bg-white sticky top-0 z-10 border-b-2 border-line">
-        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          <span className="font-caveat font-bold text-brand" style={{ fontSize: 24 }}>
-            🏷️ Nametag
-          </span>
-          <button
-            onClick={signOut}
-            className="font-caveat text-sm font-semibold text-dim"
-            style={{ fontSize: 15 }}
-          >
-            Sign out
-          </button>
-        </div>
-      </header>
-
-      {/* Page content */}
-      <main className="pb-20">
-        {tab === 'grid' && <GridPage />}
-        {tab === 'profile' && <ProfilePage onSaved={() => setTab('grid')} />}
-      </main>
-
-      {/* Bottom tab bar */}
-      <NavBar tab={tab} onTabChange={setTab} />
+    <div className="theme-cream na-app"
+         style={{ '--primary': 'var(--teal)', '--on-primary': onPrimary }}>
+      {content}
     </div>
   );
 }
