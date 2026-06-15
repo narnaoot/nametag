@@ -4,6 +4,7 @@
 // Ported from the design handoff (detail-sheet.jsx).
 
 import { Avatar } from './Badge';
+import AccentPill from './AccentPill';
 import { distanceLabel } from '../colors';
 
 export default function DetailSheet({ person, accent, waved, onWave, onClose, onEditTag }) {
@@ -46,12 +47,7 @@ export default function DetailSheet({ person, accent, waved, onWave, onClose, on
           {/* pronouns + distance */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 9 }}>
             {person.pronouns && (
-              <span style={{
-                fontWeight: 800, fontSize: 12, color: accent, lineHeight: 1,
-                background: `color-mix(in srgb, ${accent} 14%, var(--surface))`,
-                border: `1.5px solid color-mix(in srgb, ${accent} 30%, transparent)`,
-                borderRadius: 'var(--r-pill)', padding: '5px 12px',
-              }}>{person.pronouns}</span>
+              <AccentPill accent={accent} fontSize={12} padding="5px 12px">{person.pronouns}</AccentPill>
             )}
             {dist && (
               <span className="t-label" style={{ fontSize: 10 }}>
