@@ -1,106 +1,196 @@
+import { useState, useEffect, useMemo } from 'react';
 import { useNearbyPeople } from '../hooks/useNearbyPeople';
-import { PersonCard } from '../designs/DesignE';
-import { COLOR_DIM } from '../constants';
+import { loadLocalPhoto } from '../profileStorage';
+import { toBadgePerson, resolveAccent } from '../colors';
+import { PersonCard } from '../components/Badge';
+import DetailSheet from '../components/DetailSheet';
+import Toggle from '../components/Toggle';
 
-export default function GridPage() {
+const TILT = 2; // shipped sticker tilt
+
+function timeLabel(d) {
+  return d ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+}
+
+/* ── Loading skeleton — pulsing placeholder sticker badges ── */
+function SkeletonGrid() {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', columnGap: 14,
+                  rowGap: 30, justifyItems: 'center' }}>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} style={{ width: '100%', display: 'flex', flexDirection: 'column',
+                              alignItems: 'center', animation: `nt-pulse 1.1s ease ${i * 0.12}s infinite alternate` }}>
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--warm2)',
+                        border: 'var(--hairline) solid var(--border)', marginBottom: -14, zIndex: 2 }} />
+          <div style={{ width: 168, height: 150, borderRadius: 8, background: 'var(--surface)',
+                        border: 'var(--hairline) solid var(--border)', paddingTop: 24 }}>
+            <div style={{ height: 28, background: 'var(--warm2)', margin: '0 0 14px' }} />
+            <div style={{ height: 14, background: 'var(--warm2)', borderRadius: 99, margin: '0 28px 8px' }} />
+            <div style={{ height: 10, background: 'var(--warm2)', borderRadius: 99, margin: '0 40px' }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function YouTag() {
+  return (
+    <span style={{
+      position: 'absolute', top: -6, right: 18, zIndex: 5,
+      background: 'var(--text)', color: 'var(--bg)',
+      fontWeight: 800, fontSize: 9, letterSpacing: '.12em',
+      padding: '3px 8px', borderRadius: 99, textTransform: 'uppercase',
+    }}>You</span>
+  );
+}
+
+/* ── Empty state — "you're the first one here" ── */
+function EmptyNearby({ me, visible, onSelect }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18 }}>
+        {me && (
+          <div className="nt-tappable" onClick={() => onSelect(me)}
+               style={{ cursor: 'pointer', opacity: visible ? 1 : 0.4, position: 'relative' }}>
+            <PersonCard person={me} accent={resolveAccent(me, 0)} variant="sticker" tilt={-TILT} />
+            <span style={{
+              position: 'absolute', top: -6, right: 12, zIndex: 5,
+              background: 'var(--text)', color: 'var(--bg)',
+              fontWeight: 800, fontSize: 9, letterSpacing: '.12em',
+              padding: '3px 8px', borderRadius: 99, textTransform: 'uppercase',
+            }}>You</span>
+          </div>
+        )}
+        {/* the free spot — a dashed ghost sticker */}
+        <div style={{
+          width: 150, alignSelf: 'stretch', minHeight: 200, marginTop: 28,
+          border: '2px dashed color-mix(in srgb, var(--muted) 38%, transparent)',
+          borderRadius: 10, transform: `rotate(${TILT}deg)`,
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', gap: 8, padding: 14,
+        }}>
+          <span style={{ fontSize: 26 }}>👋</span>
+          <span className="t-quote" style={{ fontSize: 13.5, color: 'var(--muted)', textAlign: 'center' }}>
+            this spot’s free
+          </span>
+        </div>
+      </div>
+      <div className="t-h2" style={{ fontSize: 24, marginTop: 30, textAlign: 'center', whiteSpace: 'nowrap' }}>
+        No tags nearby <em style={{ color: 'var(--primary)' }}>yet</em>
+      </div>
+      <div className="t-body" style={{ fontSize: 14, textAlign: 'center', maxWidth: 250, marginTop: 9, lineHeight: 1.55 }}>
+        You’re the first one here. Stay visible — when someone arrives, their tag shows up right beside yours.
+      </div>
+    </div>
+  );
+}
+
+export default function GridPage({ onEditTag }) {
   const { nearby, myProfile, locationError, loading, isActive, lastUpdated, refresh, toggleVisibility } = useNearbyPeople();
+  const [selfPhoto, setSelfPhoto] = useState(null);
+  const [waves, setWaves] = useState({});
+  const [sel, setSel] = useState(null);
+
+  useEffect(() => { loadLocalPhoto().then(setSelfPhoto); }, []);
+
+  const alwaysVisible = myProfile?.always_visible !== false;
+  const visible = alwaysVisible || isActive;
+
+  const me = myProfile?.display_name
+    ? toBadgePerson(myProfile, { selfPhoto, you: true })
+    : null;
+
+  const others = useMemo(
+    () => [...nearby]
+      .sort((a, b) => (a.distance_meters ?? 1e9) - (b.distance_meters ?? 1e9))
+      .map(p => toBadgePerson(p)),
+    [nearby]
+  );
+
+  const all = useMemo(() => (me ? [me, ...others] : others), [me, others]);
+
+  const sendWave = (id) => setWaves(w => ({ ...w, [id]: 'sent' }));
+
+  const selIndex = sel ? all.findIndex(p => p.id === sel.id) : -1;
+  const selAccent = sel ? resolveAccent(sel, selIndex < 0 ? 0 : selIndex) : null;
+
+  const status = loading ? 'Scanning nearby…'
+    : others.length === 0 ? `Updated ${timeLabel(lastUpdated)} · just you`
+    : `Updated ${timeLabel(lastUpdated)} · ${others.length} ${others.length === 1 ? 'person' : 'people'}`;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+    <div className="no-sb" style={{ minHeight: '100vh', padding: '70px 18px 96px', maxWidth: 520, margin: '0 auto' }}>
+      {/* header */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
-          <h2 className="font-caveat font-bold text-ink" style={{ fontSize: 28 }}>
-            Nearby
-          </h2>
-          {lastUpdated && (
-            <p className="text-xs text-dim">Updated {lastUpdated.toLocaleTimeString()}</p>
-          )}
+          <div className="t-display" style={{ fontSize: 38 }}>Near<em>by</em></div>
+          <div className="t-label" style={{ marginTop: 6 }}>{status}</div>
         </div>
-        <button
-          onClick={refresh}
-          className="font-caveat text-sm font-semibold text-brand"
-          style={{ fontSize: 16 }}
-        >
-          Refresh
+        <button className="na-chip" style={{ fontWeight: 800 }} onClick={refresh} disabled={loading}>
+          {loading ? 'Scanning…' : 'Refresh →'}
         </button>
       </div>
 
-      {/* Visibility banner */}
-      {myProfile && !myProfile.always_visible && (
-        <div
-          className={`mb-5 rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer border ${
-            isActive ? 'bg-green-50 border-green-200' : 'bg-slate-100 border-slate-200'
-          }`}
-          onClick={() => toggleVisibility(myProfile.always_visible)}
-        >
-          <div>
-            <p className="text-sm font-semibold text-slate-800">
-              {isActive ? '✅ You are visible to others' : '🙈 You are hidden'}
-            </p>
-            <p className="text-xs text-slate-500">
-              {isActive
-                ? 'Tap to hide yourself from the grid.'
-                : 'Tap to make your name and pronouns visible to nearby people.'}
-            </p>
+      {/* visibility banner */}
+      <div onClick={() => !alwaysVisible && toggleVisibility(myProfile?.always_visible)} style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+        background: visible ? 'color-mix(in srgb, var(--sage) 14%, var(--surface))' : 'var(--warm2)',
+        border: `var(--hairline) solid ${visible ? 'color-mix(in srgb, var(--sage) 34%, transparent)' : 'var(--border)'}`,
+        borderRadius: 'var(--r)', padding: '13px 16px', marginBottom: 20,
+        cursor: alwaysVisible ? 'default' : 'pointer',
+      }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontWeight: 800, fontSize: 14 }}>
+            {visible ? 'You’re visible nearby' : 'You’re hidden right now'}
           </div>
-          <div className={`w-10 h-6 rounded-full transition-colors ${isActive ? 'bg-green-500' : 'bg-slate-300'} relative flex-shrink-0`}>
-            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${isActive ? 'left-5' : 'left-1'}`} />
+          <div className="t-body" style={{ fontSize: 12.5, marginTop: 2 }}>
+            {alwaysVisible ? 'Always on — manage in My tag.'
+              : visible ? 'Tap to slip out of view.' : 'Tap to share your name nearby.'}
           </div>
         </div>
+        <Toggle on={visible} color="var(--sage)"
+                onClick={() => !alwaysVisible && toggleVisibility(myProfile?.always_visible)} />
+      </div>
+
+      {/* location error */}
+      {locationError && !loading && (
+        <div style={{
+          background: 'color-mix(in srgb, var(--danger) 9%, var(--surface))',
+          border: 'var(--hairline) solid color-mix(in srgb, var(--danger) 30%, transparent)',
+          borderRadius: 'var(--r)', padding: '12px 14px', marginBottom: 20,
+          fontWeight: 700, fontSize: 13, color: 'var(--text)',
+        }}>{locationError}</div>
       )}
 
-      {myProfile?.always_visible && (
-        <div className="mb-5 rounded-xl px-4 py-3 border text-brand" style={{ backgroundColor: '#E6394610', borderColor: '#E6394630' }}>
-          <p className="text-sm">
-            <span className="font-semibold">You're always visible.</span> To change this, go to My Tag.
-          </p>
-        </div>
-      )}
-
-      {/* Location error */}
-      {locationError && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-          {locationError}
-        </div>
-      )}
-
-      {/* Grid */}
+      {/* body */}
       {loading ? (
-        <div className="text-center py-16 font-caveat text-dim" style={{ fontSize: 20 }}>
-          Looking for people nearby…
-        </div>
+        <SkeletonGrid />
+      ) : others.length === 0 ? (
+        <EmptyNearby me={me} visible={visible} onSelect={setSel} />
       ) : (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 justify-items-center">
-            {/* Logged-in user's own card */}
-            {myProfile?.display_name && (
-              <div className="relative" style={{ opacity: isActive ? 1 : 0.4 }}>
-                <PersonCard person={myProfile} index={0} />
-                <span
-                  className="absolute top-0 right-0 rounded-full px-1.5 py-0.5 text-white font-bold uppercase tracking-wide"
-                  style={{ fontSize: 8, backgroundColor: COLOR_DIM }}
-                >
-                  You
-                </span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', columnGap: 14,
+                      rowGap: 30, justifyItems: 'center' }}>
+          {all.map((p, i) => {
+            const dim = p.you && !visible;
+            const waveState = !p.you ? (waves[p.id] ? 'sent' : (p.wavedAtYou ? 'incoming' : null)) : null;
+            return (
+              <div key={p.id ?? i} onClick={() => setSel(p)} className="nt-tappable" style={{
+                position: 'relative', width: '100%', display: 'flex', justifyContent: 'center',
+                opacity: dim ? 0.4 : 1, cursor: 'pointer',
+              }}>
+                <PersonCard person={p} accent={resolveAccent(p, i)} variant="sticker"
+                            tilt={i % 2 === 0 ? -TILT : TILT} waveState={waveState} />
+                {p.you && <YouTag />}
               </div>
-            )}
-            {nearby.map((person, i) => (
-              <PersonCard key={person.id} person={person} index={i + (myProfile?.display_name ? 1 : 0)} />
-            ))}
-          </div>
-          {nearby.length === 0 && !myProfile?.display_name && (
-            <div className="text-center py-16">
-              <p className="text-4xl mb-3">👋</p>
-              <p className="text-slate-600 font-medium">No one nearby right now</p>
-              <p className="text-slate-400 text-sm mt-1">Check back when you're around others using Nametag.</p>
-            </div>
-          )}
-          {nearby.length === 0 && myProfile?.display_name && (
-            <p className="text-center text-slate-400 text-sm mt-4">No one else nearby right now.</p>
-          )}
-        </>
+            );
+          })}
+        </div>
       )}
+
+      <DetailSheet person={sel} accent={selAccent} waved={!!(sel && waves[sel.id])}
+                   onWave={sendWave} onClose={() => setSel(null)}
+                   onEditTag={() => { setSel(null); onEditTag && onEditTag(); }} />
     </div>
   );
 }

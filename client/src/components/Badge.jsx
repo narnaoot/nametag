@@ -1,26 +1,13 @@
-// badge.jsx — the nametag card. Two variants: 'sticker' (literal HELLO badge,
-// reskinned) and 'editorial' (brand portrait card). Plus Avatar + accent helper.
-// Exports to window: Avatar, PersonCard, resolveAccent
+// Badge.jsx — the nametag card, ported from the design handoff (badge.jsx).
+// Two variants: 'sticker' (literal HELLO badge, reskinned) and 'editorial'
+// (brand portrait card). Plus the Avatar and the wave corner chip.
+//
+// `accent` is a resolved CSS-var reference (e.g. "var(--teal)") — use
+// resolveAccent(person, index) from ../colors to produce it.
 
-const ACCENTS = window.NAMETAG_ACCENTS;
-const ACCENT_ORDER = window.NAMETAG_ACCENT_ORDER;
+import { initials, distanceLabel } from '../colors';
 
-function resolveAccent(person, index, accentMode) {
-  // Returns a CSS var reference so the Ink theme's deepened paintbox
-  // applies automatically wherever the accent is used.
-  const key = (!accentMode || accentMode === 'rainbow')
-    ? (ACCENTS[person.accent] ? person.accent : ACCENT_ORDER[index % ACCENT_ORDER.length])
-    : (ACCENTS[accentMode] ? accentMode : 'coral');
-  return `var(--${key})`;
-}
-
-// initials from a display name
-function initials(name) {
-  const parts = String(name).trim().split(/\s+/);
-  return (parts[0]?.[0] || '?').toUpperCase();
-}
-
-function Avatar({ person, size = 96, accent, ring = true }) {
+export function Avatar({ person, size = 96, accent, ring = true }) {
   const common = {
     width: size, height: size, borderRadius: '50%',
     flexShrink: 0, overflow: 'hidden',
@@ -35,7 +22,7 @@ function Avatar({ person, size = 96, accent, ring = true }) {
       </div>
     );
   }
-  // initial-monogram avatar on accent tint — bright + on-brand, no fake faces
+  // initial-monogram avatar on an accent tint — bright + on-brand, no fake faces
   return (
     <div style={{
       ...common,
@@ -49,13 +36,6 @@ function Avatar({ person, size = 96, accent, ring = true }) {
       }}>{initials(person.name)}</span>
     </div>
   );
-}
-
-function distanceLabel(d) {
-  if (d == null) return null;
-  if (d < 10) return 'here';
-  if (d < 100) return `~${Math.round(d / 5) * 5} m`;
-  return `${Math.max(1, Math.round(d / 80))} min walk`;
 }
 
 /* ── Sticker variant — literal HELLO badge, brand-reskinned ── */
@@ -203,7 +183,7 @@ function WaveChip({ state, variant }) {
   );
 }
 
-function PersonCard({ person, accent, variant = 'sticker', tilt = 0, waveState }) {
+export function PersonCard({ person, accent, variant = 'sticker', tilt = 0, waveState }) {
   const card = variant === 'editorial'
     ? <EditorialCard person={person} accent={accent} />
     : <StickerBadge person={person} accent={accent} tilt={tilt} />;
@@ -215,5 +195,3 @@ function PersonCard({ person, accent, variant = 'sticker', tilt = 0, waveState }
     </div>
   );
 }
-
-Object.assign(window, { Avatar, PersonCard, resolveAccent, distanceLabel, ntInitials: initials });

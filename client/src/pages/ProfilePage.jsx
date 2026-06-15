@@ -1,39 +1,34 @@
 import { useState, useEffect, useRef } from 'react';
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { Preferences } from '@capacitor/preferences';
 import { getMyProfile, updateProfile, photoUrl } from '../api';
 import { useAuth } from '../AuthContext';
+import { savePhotoLocally, loadLocalPhoto, persistProfileLocally, readLocalProfile } from '../profileStorage';
+import { PersonCard, Avatar } from '../components/Badge';
+import Toggle from '../components/Toggle';
 import {
-  BANNER_COLORS, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS,
-  NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, PARTY_CODE_MAX, LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY,
+  PAINTBOX, ACCENT_ORDER, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS,
+  NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, PARTY_CODE_MAX, MAX_STICKERS,
 } from '../constants';
 
-async function savePhotoLocally(dataUrl) {
-  try {
-    await Filesystem.writeFile({
-      path: LOCAL_PHOTO_PATH,
-      data: dataUrl,
-      directory: Directory.Data,
-      encoding: Encoding.UTF8,
-    });
-  } catch {}
+const TILT = 2;
+
+function Field({ label, count, max, children }) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 7 }}>
+        <span style={{ fontWeight: 800, fontSize: 13.5, color: 'var(--text)' }}>{label}</span>
+        {max != null && (
+          <span className="t-label" style={{ color: count > max - 5 ? 'var(--primary)' : 'var(--muted)' }}>
+            {count}/{max}
+          </span>
+        )}
+      </div>
+      {children}
+    </div>
+  );
 }
 
-async function loadLocalPhoto() {
-  try {
-    const result = await Filesystem.readFile({
-      path: LOCAL_PHOTO_PATH,
-      directory: Directory.Data,
-      encoding: Encoding.UTF8,
-    });
-    return result.data; // data URL string
-  } catch {
-    return null;
-  }
-}
-
-export default function ProfilePage({ onSaved }) {
-  const { deleteAccount } = useAuth();
+export default function ProfilePage() {
+  const { deleteAccount, signOut } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [pronounSelect, setPronounSelect] = useState('they/them');
   const [customPronouns, setCustomPronouns] = useState('');
@@ -42,96 +37,80 @@ export default function ProfilePage({ onSaved }) {
   const [alwaysVisible, setAlwaysVisible] = useState(true);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
-  const [tagColor, setTagColor] = useState('');
+  const [accentKey, setAccentKey] = useState('teal');
   const [selectedStickers, setSelectedStickers] = useState([]);
+  const [partyCode, setPartyCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [partyCode, setPartyCode] = useState('');
+  const [saved, setSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef(null);
   const loadedRef = useRef(false);
   const autoSaveTimerRef = useRef(null);
 
+  // Apply a tag_color value: accept a paintbox key, otherwise keep the default.
+  function applyAccent(value) {
+    if (value && PAINTBOX[value]) setAccentKey(value);
+  }
+
   useEffect(() => {
     async function load() {
-      // 1. Try on-device photo (always the freshest)
       const localPhoto = await loadLocalPhoto();
       if (localPhoto) setPhotoPreview(localPhoto);
 
-      // 2. Try on-device profile data (name, pronouns, etc.)
-      const { value } = await Preferences.get({ key: LOCAL_PROFILE_KEY });
-      if (value) {
-        try {
-          const p = JSON.parse(value);
-          setDisplayName(p.display_name || '');
-          const knownPronoun = PRONOUN_OPTIONS.slice(0, -1).includes(p.pronouns);
-          if (knownPronoun) {
-            setPronounSelect(p.pronouns);
-          } else {
-            setPronounSelect('custom');
-            setCustomPronouns(p.pronouns || '');
-          }
-          setTagline(p.tagline || '');
-          setRadius(p.radius_meters || 100);
-          setAlwaysVisible(p.always_visible !== false);
-          if (p.tag_color) setTagColor(p.tag_color);
-          if (p.stickers) {
-            try { setSelectedStickers(JSON.parse(p.stickers)); } catch {}
-          }
-          if (p.party_code !== undefined) setPartyCode(p.party_code || '');
-        } catch {}
+      const p = await readLocalProfile();
+      if (p) {
+        setDisplayName(p.display_name || '');
+        const known = PRONOUN_OPTIONS.slice(0, -1).includes(p.pronouns);
+        if (known) setPronounSelect(p.pronouns);
+        else { setPronounSelect('custom'); setCustomPronouns(p.pronouns || ''); }
+        setTagline(p.tagline || '');
+        setRadius(p.radius_meters || 100);
+        setAlwaysVisible(p.always_visible !== false);
+        applyAccent(p.tag_color);
+        if (p.stickers) { try { setSelectedStickers(JSON.parse(p.stickers)); } catch { /* ignore */ } }
+        if (p.party_code !== undefined) setPartyCode(p.party_code || '');
       }
 
-      // 3. Fall back to server for anything not in local storage
+      // Fall back to server for anything not in local storage.
       try {
         const profile = await getMyProfile();
         if (!profile) return;
-        // Only use server values if we had no local data
-        if (!value) {
+        if (!p) {
           setDisplayName(profile.display_name || '');
-          const knownPronoun = PRONOUN_OPTIONS.slice(0, -1).includes(profile.pronouns);
-          if (knownPronoun) {
-            setPronounSelect(profile.pronouns || 'they/them');
-          } else {
-            setPronounSelect('custom');
-            setCustomPronouns(profile.pronouns || '');
-          }
+          const known = PRONOUN_OPTIONS.slice(0, -1).includes(profile.pronouns);
+          if (known) setPronounSelect(profile.pronouns || 'they/them');
+          else { setPronounSelect('custom'); setCustomPronouns(profile.pronouns || ''); }
           setTagline(profile.tagline || '');
           setRadius(profile.radius_meters || 100);
           setAlwaysVisible(profile.always_visible !== false);
-          if (profile.tag_color) setTagColor(profile.tag_color);
-          if (profile.stickers) {
-            try { setSelectedStickers(JSON.parse(profile.stickers)); } catch {}
-          }
+          applyAccent(profile.tag_color);
+          if (profile.stickers) { try { setSelectedStickers(JSON.parse(profile.stickers)); } catch { /* ignore */ } }
           if (profile.party_code !== undefined) setPartyCode(profile.party_code || '');
         }
-        // Server photo only if no local copy
         if (profile.photo_path && !localPhoto) setPhotoPreview(photoUrl(profile.photo_path));
       } catch {
-        if (!value) setError('Failed to load your profile. Please refresh.');
+        if (!p) setError('Failed to load your profile. Please refresh.');
       }
     }
     load().then(() => { loadedRef.current = true; });
   }, []);
 
-  function toggleSticker(sticker) {
+  const pronouns = pronounSelect === 'custom' ? customPronouns.trim() : pronounSelect;
+
+  function toggleSticker(s) {
     setSelectedStickers(prev =>
-      prev.includes(sticker)
-        ? prev.filter(s => s !== sticker)
-        : prev.length < 3 ? [...prev, sticker] : prev
+      prev.includes(s) ? prev.filter(x => x !== s)
+        : prev.length < MAX_STICKERS ? [...prev, s] : prev
     );
   }
 
-  function handlePickPhoto() {
-    fileInputRef.current?.click();
-  }
+  function handlePickPhoto() { fileInputRef.current?.click(); }
 
-  async function handleFileChange(e) {
+  function handleFileChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Reset so the same file can be re-selected if needed
     e.target.value = '';
     const reader = new FileReader();
     reader.onload = async (ev) => {
@@ -145,58 +124,36 @@ export default function ProfilePage({ onSaved }) {
 
   async function doSave({ silent = false } = {}) {
     const name = displayName.trim();
-    const pronouns = pronounSelect === 'custom' ? customPronouns.trim() : pronounSelect;
-
-    // Silently skip during auto-save if required fields aren't ready yet
     if (!name || !pronouns) {
       if (!silent) setError('Please enter your name and pronouns.');
       return;
     }
-    if (name.length > NAME_MAX) {
-      if (!silent) setError(`Name must be ${NAME_MAX} characters or fewer.`);
-      return;
-    }
-    if (pronouns.length > PRONOUNS_MAX) {
-      if (!silent) setError(`Pronouns must be ${PRONOUNS_MAX} characters or fewer.`);
-      return;
-    }
-    if (tagline.trim().length > TAGLINE_MAX) {
-      if (!silent) setError(`Tagline must be ${TAGLINE_MAX} characters or fewer.`);
-      return;
-    }
+    if (name.length > NAME_MAX) { if (!silent) setError(`Name must be ${NAME_MAX} characters or fewer.`); return; }
+    if (pronouns.length > PRONOUNS_MAX) { if (!silent) setError(`Pronouns must be ${PRONOUNS_MAX} characters or fewer.`); return; }
+    if (tagline.trim().length > TAGLINE_MAX) { if (!silent) setError(`Tagline must be ${TAGLINE_MAX} characters or fewer.`); return; }
 
     setError('');
     setLoading(true);
 
+    const fields = {
+      display_name: name,
+      pronouns,
+      tagline: tagline.trim(),
+      radius_meters: radius,
+      always_visible: alwaysVisible,
+      tag_color: accentKey,
+      stickers: JSON.stringify(selectedStickers),
+      party_code: partyCode.trim(),
+    };
     const fd = new FormData();
-    fd.append('display_name', name);
-    fd.append('pronouns', pronouns);
-    fd.append('tagline', tagline.trim());
-    fd.append('radius_meters', radius);
-    fd.append('always_visible', alwaysVisible);
-    fd.append('tag_color', tagColor);
-    fd.append('stickers', JSON.stringify(selectedStickers));
-    fd.append('party_code', partyCode.trim());
+    Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
     if (photoFile) fd.append('photo', photoFile);
 
     try {
       await updateProfile(fd);
-      await Preferences.set({
-        key: LOCAL_PROFILE_KEY,
-        value: JSON.stringify({
-          display_name: name,
-          pronouns,
-          tagline: tagline.trim(),
-          radius_meters: radius,
-          always_visible: alwaysVisible,
-          tag_color: tagColor,
-          stickers: JSON.stringify(selectedStickers),
-          party_code: partyCode.trim(),
-        }),
-      });
-      setSuccess('Saved');
-      setTimeout(() => setSuccess(''), 2000);
-      if (onSaved) onSaved();
+      await persistProfileLocally(fields);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -204,20 +161,19 @@ export default function ProfilePage({ onSaved }) {
     }
   }
 
-  // Auto-save: debounce 700 ms after any field change, skip during initial load
+  // Auto-save: debounce 700 ms after any field change, skip during initial load.
   useEffect(() => {
     if (!loadedRef.current) return;
     clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => doSave({ silent: true }), 700);
     return () => clearTimeout(autoSaveTimerRef.current);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayName, pronounSelect, customPronouns, tagline, radius, alwaysVisible, tagColor, selectedStickers, partyCode, photoFile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayName, pronounSelect, customPronouns, tagline, radius, alwaysVisible, accentKey, selectedStickers, partyCode, photoFile]);
 
   async function handleDeleteAccount() {
     setDeleting(true);
     try {
       await deleteAccount();
-      // deleteAccount signs out — app re-renders to AuthPage
     } catch (err) {
       setError(err.message);
       setConfirmDelete(false);
@@ -225,250 +181,189 @@ export default function ProfilePage({ onSaved }) {
     }
   }
 
+  const preview = {
+    name: displayName || ' ',
+    pronouns: pronouns || ' ',
+    tagline: tagline,
+    accent: accentKey,
+    stickers: selectedStickers,
+    photo: photoPreview,
+    distance: null,
+  };
+  const accentVar = `var(--${accentKey})`;
+
   return (
-    <div className="max-w-md mx-auto px-4 py-8">
-      <div className="flex items-baseline justify-between mb-6">
-        <h2 className="font-caveat font-bold text-ink" style={{ fontSize: 28 }}>Your Profile</h2>
-        {loading && <span className="text-xs text-slate-400">Saving…</span>}
-        {!loading && success && <span className="text-xs text-green-600">{success} ✓</span>}
+    <div className="no-sb" style={{ minHeight: '100vh', padding: '70px 22px 96px', maxWidth: 520, margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }}>
+        <div className="t-display" style={{ fontSize: 38 }}>My <em>tag</em></div>
+        {loading ? <span className="t-label">Saving…</span>
+          : saved ? <span className="t-label" style={{ color: 'var(--sage)' }}>Saved ✓</span> : null}
       </div>
-      <form onSubmit={e => { e.preventDefault(); doSave(); }} className="space-y-5">
 
-        {/* Hidden file input for photo selection */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleFileChange}
-        />
+      {/* live preview */}
+      <div style={{
+        display: 'flex', justifyContent: 'center', padding: '22px 0 26px',
+        background: 'var(--warm)', borderRadius: 'var(--r)',
+        border: 'var(--hairline) solid var(--border)', marginBottom: 24,
+      }}>
+        <PersonCard person={preview} accent={accentVar} variant="sticker" tilt={TILT} />
+      </div>
 
-        {/* Photo */}
-        <div className="flex flex-col items-center gap-3">
-          <div
-            className="w-28 h-28 rounded-full bg-slate-100 border-2 border-slate-200 overflow-hidden cursor-pointer flex items-center justify-center"
-            onClick={handlePickPhoto}
-          >
-            {photoPreview
-              ? <img src={photoPreview} alt="Your photo" className="w-full h-full object-cover" />
-              : <span className="text-4xl">📷</span>
-            }
-          </div>
-          <button
-            type="button"
-            onClick={handlePickPhoto}
-            className="font-caveat text-sm font-semibold text-brand hover:underline"
-            style={{ fontSize: 16 }}
-          >
-            {photoPreview ? 'Change photo' : 'Add a photo'}
-          </button>
+      {/* photo */}
+      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 22 }}>
+        <div onClick={handlePickPhoto} style={{ cursor: 'pointer' }}>
+          <Avatar person={preview} size={88} accent={accentVar} />
         </div>
+        <button type="button" onClick={handlePickPhoto} style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          fontWeight: 800, fontSize: 13.5, color: 'var(--primary)',
+        }}>
+          {photoPreview ? 'Change photo' : 'Add a photo'}
+        </button>
+      </div>
 
-        {/* Name */}
-        <div>
-          <div className="flex justify-between mb-1">
-            <label className="text-sm font-medium text-slate-700">Your name</label>
-            <span className={`text-xs ${displayName.length > NAME_MAX - 4 ? 'text-brand' : 'text-dim'}`}>
-              {displayName.length}/{NAME_MAX}
-            </span>
-          </div>
-          <input
-            type="text"
-            value={displayName}
-            onChange={e => setDisplayName(e.target.value)}
-            placeholder="What should people call you?"
-            required
-            maxLength={NAME_MAX}
-            className="w-full px-4 py-3 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          />
+      <Field label="Your name" count={displayName.length} max={NAME_MAX}>
+        <input className="na-field" value={displayName} maxLength={NAME_MAX}
+               onChange={e => setDisplayName(e.target.value)}
+               placeholder="What should people call you?" />
+      </Field>
+
+      <Field label="Your pronouns">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {PRONOUN_OPTIONS.map(opt => (
+            <button key={opt} type="button" className="na-chip"
+              data-on={(opt === 'custom' ? pronounSelect === 'custom' : pronounSelect === opt) ? 'true' : 'false'}
+              onClick={() => setPronounSelect(opt)}>
+              {opt === 'custom' ? '+ custom' : opt}
+            </button>
+          ))}
         </div>
+        {pronounSelect === 'custom' && (
+          <input className="na-field" style={{ marginTop: 10 }} value={customPronouns}
+                 maxLength={PRONOUNS_MAX} onChange={e => setCustomPronouns(e.target.value)}
+                 placeholder="e.g. xe/xem, fae/faer…" />
+        )}
+      </Field>
 
-        {/* Pronouns */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Your pronouns</label>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {PRONOUN_OPTIONS.map(opt => (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => setPronounSelect(opt)}
-                className={`font-caveat px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
-                  pronounSelect === opt
-                    ? 'bg-brand text-white border-brand'
-                    : 'bg-white text-slate-600 border-slate-200'
-                }`}
-                style={{ fontSize: 15 }}
-              >
-                {opt === 'custom' ? '+ custom' : opt}
-              </button>
-            ))}
-          </div>
-          {pronounSelect === 'custom' && (
-            <input
-              type="text"
-              value={customPronouns}
-              onChange={e => setCustomPronouns(e.target.value)}
-              placeholder="e.g. xe/xem, fae/faer…"
-              className="w-full px-4 py-3 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            />
-          )}
-        </div>
+      <Field label="Tagline" count={tagline.length} max={TAGLINE_MAX}>
+        <input className="na-field" value={tagline} maxLength={TAGLINE_MAX}
+               onChange={e => setTagline(e.target.value)}
+               placeholder="A short line about you…" />
+      </Field>
 
-        {/* Tagline */}
-        <div>
-          <div className="flex justify-between mb-1">
-            <label className="text-sm font-medium text-slate-700">
-              Tagline <span className="text-slate-400 font-normal">(optional)</span>
-            </label>
-            <span className={`text-xs ${tagline.length > TAGLINE_MAX - 10 ? 'text-brand' : 'text-dim'}`}>
-              {tagline.length}/{TAGLINE_MAX}
-            </span>
-          </div>
-          <input
-            type="text"
-            value={tagline}
-            onChange={e => setTagline(e.target.value)}
-            placeholder="A short line about you…"
-            maxLength={TAGLINE_MAX}
-            className="w-full px-4 py-3 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          />
-        </div>
-
-        {/* Radius */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Show me to people within</label>
-          <select
-            value={radius}
-            onChange={e => setRadius(Number(e.target.value))}
-            className="w-full px-4 py-3 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-          >
-            {RADIUS_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
+      <Field label="Show me to people within">
+        <div style={{ position: 'relative' }}>
+          <select className="na-field" value={radius}
+                  onChange={e => setRadius(Number(e.target.value))}
+                  style={{ appearance: 'none', cursor: 'pointer' }}>
+            {RADIUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
+          <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
+                         pointerEvents: 'none', color: 'var(--muted)', fontWeight: 800 }}>▾</span>
         </div>
+      </Field>
 
-        {/* Visibility */}
-        <div className="rounded-xl p-4 border" style={{ backgroundColor: '#E6394610', borderColor: '#E6394630' }}>
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5">
-              <div
-                className={`w-10 h-6 rounded-full cursor-pointer transition-colors relative ${alwaysVisible ? 'bg-brand' : 'bg-slate-300'}`}
-                onClick={() => setAlwaysVisible(v => !v)}
-              >
-                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${alwaysVisible ? 'left-5' : 'left-1'}`} />
-              </div>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-800">
-                {alwaysVisible ? 'Always visible when nearby' : 'Only visible when I choose'}
-              </p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {alwaysVisible
-                  ? 'Others nearby will see your name and pronouns automatically. Toggle off to control when you appear.'
-                  : 'You are hidden by default. Use the grid screen to turn visibility on when you want to be seen.'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Tag color */}
+      {/* visibility */}
+      <div style={{
+        display: 'flex', gap: 13, alignItems: 'flex-start', padding: 16, marginBottom: 22,
+        background: 'color-mix(in srgb, var(--primary) 8%, var(--surface))',
+        border: 'var(--hairline) solid color-mix(in srgb, var(--primary) 26%, transparent)',
+        borderRadius: 'var(--r)',
+      }}>
+        <Toggle on={alwaysVisible} onClick={() => setAlwaysVisible(v => !v)} />
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Nametag color</label>
-          <div className="flex gap-3 flex-wrap">
-            {BANNER_COLORS.map(({ hex, label }) => (
-              <button
-                key={hex}
-                type="button"
-                title={label}
-                onClick={() => setTagColor(hex)}
-                className="w-8 h-8 rounded-full border-4 transition-all"
-                style={{
-                  backgroundColor: hex,
-                  borderColor: tagColor === hex ? '#1a1a1a' : 'transparent',
-                  boxShadow: tagColor === hex ? '0 0 0 2px #fff inset' : 'none',
-                }}
-              />
-            ))}
+          <div style={{ fontWeight: 800, fontSize: 13.5 }}>
+            {alwaysVisible ? 'Always visible when nearby' : 'Only visible when I choose'}
+          </div>
+          <div className="t-body" style={{ fontSize: 12.5, marginTop: 2 }}>
+            {alwaysVisible
+              ? 'People nearby see your name automatically.'
+              : 'Hidden by default — flip visibility on from Nearby.'}
           </div>
         </div>
+      </div>
 
-        {/* Stickers */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Stickers <span className="text-slate-400 font-normal">(pick up to 3)</span>
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {STICKER_OPTIONS.map(s => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => toggleSticker(s)}
-                className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center border-2 transition-all ${
-                  selectedStickers.includes(s) ? 'border-brand bg-brand/10' : 'border-slate-200 bg-white'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+      {/* nametag color — the paintbox */}
+      <Field label="Nametag color">
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          {ACCENT_ORDER.map(key => {
+            const on = accentKey === key;
+            return (
+              <button key={key} type="button" onClick={() => setAccentKey(key)} title={key} style={{
+                width: 34, height: 34, borderRadius: '50%', background: `var(--${key})`,
+                border: on ? '3px solid var(--text)' : '3px solid transparent',
+                boxShadow: on ? '0 0 0 2px var(--surface) inset' : 'none',
+                cursor: 'pointer', transition: 'transform .12s ease',
+                transform: on ? 'scale(1.08)' : 'none',
+              }} />
+            );
+          })}
         </div>
+      </Field>
 
-        {/* Party code */}
-        <div>
-          <div className="flex justify-between mb-1">
-            <label className="text-sm font-medium text-slate-700">
-              Party code <span className="text-slate-400 font-normal">(optional)</span>
-            </label>
-            <span className={`text-xs ${partyCode.length > PARTY_CODE_MAX - 4 ? 'text-brand' : 'text-dim'}`}>
-              {partyCode.length}/{PARTY_CODE_MAX}
-            </span>
-          </div>
-          <input
-            type="text"
-            value={partyCode}
-            onChange={e => setPartyCode(e.target.value.slice(0, PARTY_CODE_MAX))}
-            placeholder="Enter a code to see only your group…"
-            maxLength={PARTY_CODE_MAX}
-            className="w-full px-4 py-3 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          />
-          <p className="text-xs text-slate-400 mt-1">
-            When set, Nearby only shows people with the same code.
-          </p>
+      {/* stickers */}
+      <Field label={`Stickers · pick up to ${MAX_STICKERS}`}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {STICKER_OPTIONS.map(s => {
+            const on = selectedStickers.includes(s);
+            return (
+              <button key={s} type="button" onClick={() => toggleSticker(s)} style={{
+                width: 42, height: 42, borderRadius: 'var(--r)', fontSize: 20,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'all .12s ease',
+                background: on ? 'color-mix(in srgb, var(--primary) 14%, var(--surface))' : 'var(--surface)',
+                border: `var(--hairline) solid ${on ? 'var(--primary)' : 'var(--border)'}`,
+              }}>{s}</button>
+            );
+          })}
         </div>
+      </Field>
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-      </form>
+      {/* party code — keeps the existing group-filter feature */}
+      <Field label="Party code · optional" count={partyCode.length} max={PARTY_CODE_MAX}>
+        <input className="na-field" value={partyCode} maxLength={PARTY_CODE_MAX}
+               onChange={e => setPartyCode(e.target.value.slice(0, PARTY_CODE_MAX))}
+               placeholder="Enter a code to see only your group…" />
+        <div className="t-body" style={{ fontSize: 12, marginTop: 6 }}>
+          When set, Nearby only shows people with the same code.
+        </div>
+      </Field>
 
-      {/* Delete account */}
-      <div className="mt-10 pt-6 border-t border-slate-200">
+      {error && <p style={{ color: 'var(--danger)', fontWeight: 700, fontSize: 13.5 }}>{error}</p>}
+
+      {/* account actions — sign out + the lone danger zone */}
+      <div style={{ marginTop: 14, paddingTop: 20, borderTop: 'var(--hairline) solid var(--border)' }}>
         {!confirmDelete ? (
-          <button
-            onClick={() => setConfirmDelete(true)}
-            className="text-sm text-slate-400 hover:text-red-500 transition-colors"
-          >
-            Delete account
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+            <button type="button" onClick={signOut} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--text)', fontWeight: 800, fontSize: 13.5, padding: 0 }}>
+              Sign out
+            </button>
+            <button type="button" onClick={() => setConfirmDelete(true)} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--muted)', fontWeight: 700, fontSize: 13.5, padding: 0 }}>
+              Delete account
+            </button>
+          </div>
         ) : (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
-            <p className="text-sm font-semibold text-red-700">Delete your account?</p>
-            <p className="text-xs text-red-600">
-              This permanently deletes your profile, photo, and account. There is no undo.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={handleDeleteAccount}
-                disabled={deleting}
-                className="flex-1 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold disabled:opacity-50"
-              >
-                {deleting ? 'Deleting…' : 'Yes, delete everything'}
+          <div style={{
+            background: 'color-mix(in srgb, var(--danger) 9%, var(--surface))',
+            border: 'var(--hairline) solid color-mix(in srgb, var(--danger) 30%, transparent)',
+            borderRadius: 'var(--r)', padding: 16,
+          }}>
+            <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--danger)' }}>Delete your account?</div>
+            <div className="t-body" style={{ fontSize: 12.5, margin: '6px 0 12px' }}>
+              This erases your profile, photo, and account immediately. There’s no undo.
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="na-btn" style={{ flex: 1, padding: '11px', background: 'var(--danger)', color: '#fff' }}
+                      disabled={deleting} onClick={handleDeleteAccount}>
+                {deleting ? 'Deleting…' : 'Delete everything'}
               </button>
-              <button
-                onClick={() => setConfirmDelete(false)}
-                className="flex-1 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold"
-              >
-                Cancel
-              </button>
+              <button className="na-btn na-btn--ghost" style={{ flex: 1, padding: '11px' }}
+                      onClick={() => setConfirmDelete(false)}>Cancel</button>
             </div>
           </div>
         )}

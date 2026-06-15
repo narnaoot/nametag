@@ -1,0 +1,48 @@
+// profileStorage.js — on-device persistence helpers for the user's own
+// profile, shared by Onboarding and My Tag. The local copy lets the app
+// restore the full profile after server-side privacy cleanup (see
+// useNearbyPeople.reuploadFullProfile).
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Preferences } from '@capacitor/preferences';
+import { LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY } from './constants';
+
+export async function savePhotoLocally(dataUrl) {
+  try {
+    await Filesystem.writeFile({
+      path: LOCAL_PHOTO_PATH,
+      data: dataUrl,
+      directory: Directory.Data,
+      encoding: Encoding.UTF8,
+    });
+  } catch { /* best-effort */ }
+}
+
+export async function loadLocalPhoto() {
+  try {
+    const result = await Filesystem.readFile({
+      path: LOCAL_PHOTO_PATH,
+      directory: Directory.Data,
+      encoding: Encoding.UTF8,
+    });
+    return result.data; // data URL string
+  } catch {
+    return null;
+  }
+}
+
+// Persists the profile fields (NOT the photo binary) to Preferences so the
+// hook can re-upload them if the server copy is cleaned up.
+export async function persistProfileLocally(fields) {
+  try {
+    await Preferences.set({ key: LOCAL_PROFILE_KEY, value: JSON.stringify(fields) });
+  } catch { /* best-effort */ }
+}
+
+export async function readLocalProfile() {
+  try {
+    const { value } = await Preferences.get({ key: LOCAL_PROFILE_KEY });
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
+  }
+}

@@ -1,16 +1,19 @@
-// detail-sheet.jsx — slide-up person detail sheet for the Nearby screen.
-// Tapping a badge opens this inside the phone frame. Includes the
-// "Say hi" wave action (state lives in app.jsx so it persists).
-// Exports to window: DetailSheet
+// DetailSheet.jsx — slide-up person detail sheet for the Nearby screen.
+// Tapping a badge opens this. Includes the "Say hi" wave action; wave state
+// lives in the Nearby screen so it persists across opens.
+// Ported from the design handoff (detail-sheet.jsx).
 
-function DetailSheet({ person, accent, waved, onWave, onClose, onEditTag }) {
+import { Avatar } from './Badge';
+import { distanceLabel } from '../colors';
+
+export default function DetailSheet({ person, accent, waved, onWave, onClose, onEditTag }) {
   if (!person) return null;
   const isYou = !!person.you;
-  const dist = window.distanceLabel(person.distance);
+  const dist = distanceLabel(person.distance);
   const incoming = !isYou && !!person.wavedAtYou;
 
   return (
-    <div style={{ position: 'absolute', inset: 0, zIndex: 60 }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
       {/* scrim */}
       <div className="nt-scrim" onClick={onClose} style={{
         position: 'absolute', inset: 0,
@@ -23,11 +26,12 @@ function DetailSheet({ person, accent, waved, onWave, onClose, onEditTag }) {
         borderTop: 'var(--hairline) solid var(--border)',
         borderRadius: '22px 22px 0 0',
         boxShadow: '0 -12px 40px rgba(29,19,11,.25)',
-        padding: '10px 24px calc(22px + 14px)',
+        padding: '10px 24px calc(22px + env(safe-area-inset-bottom, 14px))',
+        maxWidth: 520, margin: '0 auto',
       }}>
         {/* grabber */}
         <div onClick={onClose} style={{ display: 'flex', justifyContent: 'center', padding: '2px 0 12px', cursor: 'pointer' }}>
-          <div style={{ width: 40, height: 4.5, borderRadius: 99, background: 'var(--border)' }}></div>
+          <div style={{ width: 40, height: 4.5, borderRadius: 99, background: 'var(--border)' }} />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
@@ -41,12 +45,14 @@ function DetailSheet({ person, accent, waved, onWave, onClose, onEditTag }) {
 
           {/* pronouns + distance */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 9 }}>
-            <span style={{
-              fontWeight: 800, fontSize: 12, color: accent, lineHeight: 1,
-              background: `color-mix(in srgb, ${accent} 14%, var(--surface))`,
-              border: `1.5px solid color-mix(in srgb, ${accent} 30%, transparent)`,
-              borderRadius: 'var(--r-pill)', padding: '5px 12px',
-            }}>{person.pronouns}</span>
+            {person.pronouns && (
+              <span style={{
+                fontWeight: 800, fontSize: 12, color: accent, lineHeight: 1,
+                background: `color-mix(in srgb, ${accent} 14%, var(--surface))`,
+                border: `1.5px solid color-mix(in srgb, ${accent} 30%, transparent)`,
+                borderRadius: 'var(--r-pill)', padding: '5px 12px',
+              }}>{person.pronouns}</span>
+            )}
             {dist && (
               <span className="t-label" style={{ fontSize: 10 }}>
                 {isYou ? 'this is you' : dist === 'here' ? 'right here' : dist.includes('walk') ? dist : `${dist} away`}
@@ -106,5 +112,3 @@ function DetailSheet({ person, accent, waved, onWave, onClose, onEditTag }) {
     </div>
   );
 }
-
-Object.assign(window, { DetailSheet });
