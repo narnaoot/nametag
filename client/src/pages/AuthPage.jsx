@@ -187,10 +187,7 @@ export default function AuthPage({ onRegistered }) {
   }
 
   return (
-    <div className="dotgrid" style={{
-      minHeight: '100vh', padding: '78px 26px 40px',
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-    }}>
+    <div className="dotgrid na-screen-hero" style={{ padding: '78px 26px 40px' }}>
       <div style={{ transform: 'rotate(-3deg)', marginBottom: 30 }}>
         <PersonCard person={HERO} accent="var(--primary)" variant="sticker" tilt={0} />
       </div>

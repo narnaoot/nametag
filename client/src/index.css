@@ -186,6 +186,13 @@ body {
 .no-sb { scrollbar-width: none; }
 .no-sb::-webkit-scrollbar { display: none; }
 
+/* page containers — set padding inline per screen */
+.na-screen { min-height: 100vh; max-width: 520px; margin: 0 auto; }
+.na-screen-hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+}
+
 /* tappable cards — gentle lift on hover/press */
 .nt-tappable { transition: transform .15s ease; }
 .nt-tappable:hover { transform: translateY(-2px); }

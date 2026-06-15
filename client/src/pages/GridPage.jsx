@@ -114,7 +114,7 @@ export default function GridPage({ onEditTag }) {
     : `Updated ${timeLabel(lastUpdated)} · ${others.length} ${others.length === 1 ? 'person' : 'people'}`;
 
   return (
-    <div className="no-sb" style={{ minHeight: '100vh', padding: '70px 18px 96px', maxWidth: 520, margin: '0 auto' }}>
+    <div className="no-sb na-screen" style={{ padding: '70px 18px 96px' }}>
       {/* header */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>

@@ -54,11 +54,7 @@ export default function OnboardingPage({ onDone }) {
   }
 
   return (
-    <div className="dotgrid no-sb" style={{
-      minHeight: '100vh', overflowY: 'auto',
-      padding: '70px 26px 40px', display: 'flex', flexDirection: 'column',
-      alignItems: 'center',
-    }}>
+    <div className="dotgrid no-sb na-screen-hero" style={{ padding: '70px 26px 40px' }}>
       <div className="t-label" style={{ color: 'var(--primary)' }}>One last thing</div>
       <div className="t-display" style={{ fontSize: 30, textAlign: 'center', marginTop: 8, lineHeight: 1.1 }}>
         Write your name<br />on your <em>tag</em>

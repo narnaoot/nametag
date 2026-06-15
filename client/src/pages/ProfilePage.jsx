@@ -180,7 +180,7 @@ export default function ProfilePage() {
   const accentVar = `var(--${accentKey})`;
 
   return (
-    <div className="no-sb" style={{ minHeight: '100vh', padding: '70px 22px 96px', maxWidth: 520, margin: '0 auto' }}>
+    <div className="no-sb na-screen" style={{ padding: '70px 22px 96px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }}>
         <div className="t-display" style={{ fontSize: 38 }}>My <em>tag</em></div>
         {loading ? <span className="t-label">Saving…</span>
