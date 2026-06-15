@@ -3,7 +3,7 @@ import { updateProfile } from '../api';
 import { persistProfileLocally } from '../profileStorage';
 import { PersonCard } from '../components/Badge';
 import PaintboxPicker from '../components/PaintboxPicker';
-import { ONBOARDING_PRONOUNS, ONBOARDING_NAME_MAX } from '../constants';
+import { ONBOARDING_PRONOUNS, ONBOARDING_NAME_MAX, STICKER_TILT } from '../constants';
 
 // First-run "write your name on your tag" moment, shown right after register.
 // The badge preview fills in live as the user types.
@@ -64,7 +64,7 @@ export default function OnboardingPage({ onDone }) {
       </div>
 
       {/* live badge */}
-      <div className="nt-pop" style={{ marginTop: 22, marginBottom: 26, transform: 'rotate(-2deg)' }}>
+      <div className="nt-pop" style={{ marginTop: 22, marginBottom: 26, transform: `rotate(-${STICKER_TILT}deg)` }}>
         <PersonCard person={draft} accent={`var(--${accentKey})`} variant="sticker" tilt={0} />
       </div>
 

@@ -20,6 +20,9 @@ export const ACCENT_ORDER = ['coral', 'teal', 'mustard', 'rose', 'lavender'];
 // Brand default: teal leads all chrome.
 export const COLOR_PRIMARY = PAINTBOX.teal;
 
+// Default sticker-badge rotation, in degrees (alternated ± across the grid).
+export const STICKER_TILT = 2;
+
 // Capacitor Filesystem path for the user's own profile photo (on-device copy)
 export const LOCAL_PHOTO_PATH = 'profile_photo';
 

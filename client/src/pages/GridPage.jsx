@@ -5,8 +5,7 @@ import { toBadgePerson, resolveAccent } from '../colors';
 import { PersonCard } from '../components/Badge';
 import DetailSheet from '../components/DetailSheet';
 import Toggle from '../components/Toggle';
-
-const TILT = 2; // shipped sticker tilt
+import { STICKER_TILT } from '../constants';
 
 function timeLabel(d) {
   return d ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
@@ -53,7 +52,7 @@ function EmptyNearby({ me, visible, onSelect }) {
         {me && (
           <div className="nt-tappable" onClick={() => onSelect(me)}
                style={{ cursor: 'pointer', opacity: visible ? 1 : 0.4, position: 'relative' }}>
-            <PersonCard person={me} accent={resolveAccent(me, 0)} variant="sticker" tilt={-TILT} />
+            <PersonCard person={me} accent={resolveAccent(me, 0)} variant="sticker" tilt={-STICKER_TILT} />
             <span style={{
               position: 'absolute', top: -6, right: 12, zIndex: 5,
               background: 'var(--text)', color: 'var(--bg)',
@@ -66,7 +65,7 @@ function EmptyNearby({ me, visible, onSelect }) {
         <div style={{
           width: 150, alignSelf: 'stretch', minHeight: 200, marginTop: 28,
           border: '2px dashed color-mix(in srgb, var(--muted) 38%, transparent)',
-          borderRadius: 10, transform: `rotate(${TILT}deg)`,
+          borderRadius: 10, transform: `rotate(${STICKER_TILT}deg)`,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           justifyContent: 'center', gap: 8, padding: 14,
         }}>
@@ -180,7 +179,7 @@ export default function GridPage({ onEditTag }) {
                 opacity: dim ? 0.4 : 1, cursor: 'pointer',
               }}>
                 <PersonCard person={p} accent={resolveAccent(p, i)} variant="sticker"
-                            tilt={i % 2 === 0 ? -TILT : TILT} waveState={waveState} />
+                            tilt={i % 2 === 0 ? -STICKER_TILT : STICKER_TILT} waveState={waveState} />
                 {p.you && <YouTag />}
               </div>
             );

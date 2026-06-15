@@ -7,10 +7,8 @@ import Toggle from '../components/Toggle';
 import PaintboxPicker from '../components/PaintboxPicker';
 import {
   PAINTBOX, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS,
-  NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, PARTY_CODE_MAX, MAX_STICKERS,
+  NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, PARTY_CODE_MAX, MAX_STICKERS, STICKER_TILT,
 } from '../constants';
-
-const TILT = 2;
 
 function Field({ label, count, max, children }) {
   return (
@@ -194,7 +192,7 @@ export default function ProfilePage() {
         background: 'var(--warm)', borderRadius: 'var(--r)',
         border: 'var(--hairline) solid var(--border)', marginBottom: 24,
       }}>
-        <PersonCard person={preview} accent={accentVar} variant="sticker" tilt={TILT} />
+        <PersonCard person={preview} accent={accentVar} variant="sticker" tilt={STICKER_TILT} />
       </div>
 
       {/* photo */}
