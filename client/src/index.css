@@ -1,18 +1,218 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=Nunito:wght@400;600;700;800&display=swap');
 
-@theme {
-  --color-brand:  #E63946;
-  --color-page:   #f5f5f0;
-  --color-ink:    #1a1a1a;
-  --color-dim:    #aaa;
-  --color-line:   #f0f0ec;
-  --font-caveat:  'Caveat', cursive;
+/* ============================================================
+   Nametag — Nabil Arnaoot design system
+   Tokens, primitives, and animations ported from the design
+   handoff (design_handoff_nametag_redesign/styles.css).
+   Cream is the shipped default; .theme-ink is kept available.
+   ============================================================ */
+
+:root, .theme-cream {
+  --bg:       #FFFBF5;
+  --surface:  #FFFFFF;
+  --warm:     #FFF5E8;
+  --warm2:    #FDECD6;
+  --text:     #3D2B1F;
+  --muted:    #9A8070;
+  --border:   #E8DDD0;
+  --field:    #FFFFFF;
+
+  --coral:    #FF4733;
+  --teal:     #06D6B8;
+  --mustard:  #FFB300;
+  --rose:     #FF3D9A;
+  --lavender: #A86BFF;
+
+  --sage:     #2ED573;  /* semantic success green — NOT a paintbox accent */
+
+  --primary:    var(--teal);  /* brand color */
+  --on-primary: #23170E;      /* text on filled primary — set at runtime for contrast */
+  --danger:     #FF5C47;      /* destructive actions only (delete account) */
+
+  --r:        14px;
+  --r-pill:   99px;
+  --r-sm:     3px;
+  --hairline: 1.5px;
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body:    'Nunito', system-ui, -apple-system, sans-serif;
+
+  --shadow-card:  0 3px 16px rgba(61,43,31,0.13);
+  --shadow-hover: 0 12px 32px rgba(61,43,31,0.10);
+  --shadow-port:  0 8px 32px rgba(61,43,31,0.16);
+  --dot:          rgba(61,43,31,0.10);
 }
+
+/* Dark-roast "ink" theme — warm, not black. Honors the paintbox. */
+.theme-ink {
+  --bg:       #271B12;
+  --surface:  #33251A;
+  --warm:     #3C2C20;
+  --warm2:    #46342650;
+  --text:     #FBF0E2;
+  --muted:    #C2A892;
+  --border:   #503D2D;
+  --field:    #2C2018;
+
+  --shadow-card:  0 4px 18px rgba(0,0,0,0.35);
+  --shadow-hover: 0 14px 34px rgba(0,0,0,0.40);
+  --shadow-port:  0 10px 34px rgba(0,0,0,0.45);
+  --dot:          rgba(255,243,226,0.10);
+
+  /* deepened paintbox — same hues, less glow against the ink bg */
+  --coral:    #E04330;
+  --teal:     #0ABFA6;
+  --mustard:  #E0A000;
+  --rose:     #E83387;
+  --lavender: #955EE8;
+
+  --sage:     #2BBD68;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { min-height: 100vh; }
 
 body {
   margin: 0;
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.na-app {
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--bg);
   min-height: 100vh;
-  background-color: var(--color-page);
-  font-family: system-ui, -apple-system, sans-serif;
+  position: relative;
+}
+
+/* ── Type roles ─────────────────────────────────────────── */
+.t-display {
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: 1.0;
+  letter-spacing: -1.5px;
+  color: var(--text);
+}
+.t-display em, .coral-em { font-style: italic; color: var(--primary); }
+.t-h2 { font-family: var(--font-display); font-weight: 900; line-height: 1.08; letter-spacing: -0.8px; }
+.t-h3 { font-family: var(--font-display); font-weight: 700; line-height: 1.2; }
+.t-quote { font-family: var(--font-display); font-weight: 700; font-style: italic; line-height: 1.5; }
+.t-kicker {
+  font-size: .7rem; font-weight: 800; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--primary);
+}
+.t-label {
+  font-size: .64rem; font-weight: 800; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--muted);
+}
+.t-body { line-height: 1.7; color: var(--muted); }
+.t-body strong { color: var(--text); font-weight: 700; }
+
+/* ── Dotted-grid hero texture ───────────────────────────── */
+.dotgrid {
+  background-image: radial-gradient(var(--dot) 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
+}
+
+/* ── Generic primitives ─────────────────────────────────── */
+.hairline { border: var(--hairline) solid var(--border); }
+
+.na-btn {
+  font-family: var(--font-body);
+  font-weight: 800;
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 14px 22px;
+  font-size: 15px;
+  cursor: pointer;
+  background: var(--primary);
+  color: var(--on-primary);
+  transition: opacity .15s ease, transform .15s ease;
+  letter-spacing: .01em;
+}
+.na-btn:hover { opacity: .88; }
+.na-btn:active { transform: translateY(1px); }
+.na-btn:disabled { cursor: default; }
+.na-btn--ghost {
+  background: transparent; color: var(--text);
+  border: var(--hairline) solid var(--border);
+}
+
+.na-field {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--field);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--r);
+  padding: 13px 15px;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.na-field::placeholder { color: var(--muted); font-weight: 600; opacity: .8; }
+.na-field:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+/* chip / pill */
+.na-chip {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: var(--r-pill);
+  padding: 7px 14px;
+  border: var(--hairline) solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: all .14s ease;
+  line-height: 1;
+}
+.na-chip[data-on="true"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+/* scrollbars hidden */
+.no-sb { scrollbar-width: none; }
+.no-sb::-webkit-scrollbar { display: none; }
+
+/* tappable cards — gentle lift on hover/press */
+.nt-tappable { transition: transform .15s ease; }
+.nt-tappable:hover { transform: translateY(-2px); }
+.nt-tappable:active { transform: scale(.97); }
+
+/* entrance animations — gated so reduced-motion (and frozen-animation
+   environments) land on the visible end state, not the hidden 'from'. */
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes nt-scrim-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes nt-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nt-pop   { animation: pop-in .4s ease both; }
+  .nt-scrim { animation: nt-scrim-in .22s ease both; }
+  .nt-sheet { animation: nt-sheet-up .32s cubic-bezier(.32,1.04,.42,1) both; }
+}
+
+/* loading skeleton pulse */
+@keyframes nt-pulse {
+  from { opacity: .45; }
+  to   { opacity: .95; }
 }
