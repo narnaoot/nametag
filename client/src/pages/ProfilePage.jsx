@@ -314,11 +314,7 @@ export default function ProfilePage() {
             </button>
           </div>
         ) : (
-          <div style={{
-            background: 'color-mix(in srgb, var(--danger) 9%, var(--surface))',
-            border: 'var(--hairline) solid color-mix(in srgb, var(--danger) 30%, transparent)',
-            borderRadius: 'var(--r)', padding: 16,
-          }}>
+          <div className="na-danger-card" style={{ padding: 16 }}>
             <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--danger)' }}>Delete your account?</div>
             <div className="t-body" style={{ fontSize: 12.5, margin: '6px 0 12px' }}>
               This erases your profile, photo, and account immediately. There’s no undo.

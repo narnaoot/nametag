@@ -149,10 +149,8 @@ export default function GridPage({ onEditTag }) {
 
       {/* location error */}
       {locationError && !loading && (
-        <div style={{
-          background: 'color-mix(in srgb, var(--danger) 9%, var(--surface))',
-          border: 'var(--hairline) solid color-mix(in srgb, var(--danger) 30%, transparent)',
-          borderRadius: 'var(--r)', padding: '12px 14px', marginBottom: 20,
+        <div className="na-danger-card" style={{
+          padding: '12px 14px', marginBottom: 20,
           fontWeight: 700, fontSize: 13, color: 'var(--text)',
         }}>{locationError}</div>
       )}

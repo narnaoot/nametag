@@ -193,6 +193,13 @@ body {
   display: flex; flex-direction: column; align-items: center;
 }
 
+/* danger-tinted card — the only place red appears as chrome */
+.na-danger-card {
+  background: color-mix(in srgb, var(--danger) 9%, var(--surface));
+  border: var(--hairline) solid color-mix(in srgb, var(--danger) 30%, transparent);
+  border-radius: var(--r);
+}
+
 /* tappable cards — gentle lift on hover/press */
 .nt-tappable { transition: transform .15s ease; }
 .nt-tappable:hover { transform: translateY(-2px); }
