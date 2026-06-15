@@ -50,46 +50,33 @@ export default function ProfilePage() {
   const loadedRef = useRef(false);
   const autoSaveTimerRef = useRef(null);
 
-  // Apply a tag_color value: accept a paintbox key, otherwise keep the default.
-  function applyAccent(value) {
-    if (value && PAINTBOX[value]) setAccentKey(value);
-  }
-
   useEffect(() => {
+    // Hydrate every editable field from a profile source (on-device or server).
+    function applyProfile(src) {
+      setDisplayName(src.display_name || '');
+      const known = PRONOUN_OPTIONS.slice(0, -1).includes(src.pronouns);
+      if (known) { setPronounSelect(src.pronouns); }
+      else { setPronounSelect('custom'); setCustomPronouns(src.pronouns || ''); }
+      setTagline(src.tagline || '');
+      setRadius(src.radius_meters || 100);
+      setAlwaysVisible(src.always_visible !== false);
+      if (src.tag_color && PAINTBOX[src.tag_color]) setAccentKey(src.tag_color);
+      if (src.stickers) { try { setSelectedStickers(JSON.parse(src.stickers)); } catch { /* ignore */ } }
+      if (src.party_code !== undefined) setPartyCode(src.party_code || '');
+    }
+
     async function load() {
       const localPhoto = await loadLocalPhoto();
       if (localPhoto) setPhotoPreview(localPhoto);
 
+      // On-device copy is freshest; fall back to the server for first load.
       const p = await readLocalProfile();
-      if (p) {
-        setDisplayName(p.display_name || '');
-        const known = PRONOUN_OPTIONS.slice(0, -1).includes(p.pronouns);
-        if (known) setPronounSelect(p.pronouns);
-        else { setPronounSelect('custom'); setCustomPronouns(p.pronouns || ''); }
-        setTagline(p.tagline || '');
-        setRadius(p.radius_meters || 100);
-        setAlwaysVisible(p.always_visible !== false);
-        applyAccent(p.tag_color);
-        if (p.stickers) { try { setSelectedStickers(JSON.parse(p.stickers)); } catch { /* ignore */ } }
-        if (p.party_code !== undefined) setPartyCode(p.party_code || '');
-      }
+      if (p) applyProfile(p);
 
-      // Fall back to server for anything not in local storage.
       try {
         const profile = await getMyProfile();
         if (!profile) return;
-        if (!p) {
-          setDisplayName(profile.display_name || '');
-          const known = PRONOUN_OPTIONS.slice(0, -1).includes(profile.pronouns);
-          if (known) setPronounSelect(profile.pronouns || 'they/them');
-          else { setPronounSelect('custom'); setCustomPronouns(profile.pronouns || ''); }
-          setTagline(profile.tagline || '');
-          setRadius(profile.radius_meters || 100);
-          setAlwaysVisible(profile.always_visible !== false);
-          applyAccent(profile.tag_color);
-          if (profile.stickers) { try { setSelectedStickers(JSON.parse(profile.stickers)); } catch { /* ignore */ } }
-          if (profile.party_code !== undefined) setPartyCode(profile.party_code || '');
-        }
+        if (!p) applyProfile(profile);
         if (profile.photo_path && !localPhoto) setPhotoPreview(photoUrl(profile.photo_path));
       } catch {
         if (!p) setError('Failed to load your profile. Please refresh.');
