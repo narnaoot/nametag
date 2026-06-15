@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { updateProfile } from '../api';
 import { persistProfileLocally } from '../profileStorage';
 import { PersonCard } from '../components/Badge';
-import { ACCENT_ORDER, ONBOARDING_PRONOUNS, ONBOARDING_NAME_MAX } from '../constants';
+import PaintboxPicker from '../components/PaintboxPicker';
+import { ONBOARDING_PRONOUNS, ONBOARDING_NAME_MAX } from '../constants';
 
 // First-run "write your name on your tag" moment, shown right after register.
 // The badge preview fills in live as the user types.
@@ -83,17 +84,8 @@ export default function OnboardingPage({ onDone }) {
         </div>
 
         {/* paintbox */}
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 2 }}>
-          {ACCENT_ORDER.map(k => (
-            <button key={k} type="button" onClick={() => setAccentKey(k)} aria-label={k} style={{
-              width: 34, height: 34, borderRadius: '50%', cursor: 'pointer',
-              background: `var(--${k})`,
-              border: accentKey === k ? '3px solid var(--text)' : '3px solid transparent',
-              outline: 'var(--hairline) solid var(--border)',
-              transition: 'transform .12s ease',
-              transform: accentKey === k ? 'scale(1.12)' : 'none',
-            }} />
-          ))}
+        <div style={{ marginTop: 2 }}>
+          <PaintboxPicker value={accentKey} onChange={setAccentKey} justify="center" />
         </div>
 
         {error && <p style={{ color: 'var(--danger)', fontWeight: 700, fontSize: 13.5, textAlign: 'center', margin: 0 }}>{error}</p>}

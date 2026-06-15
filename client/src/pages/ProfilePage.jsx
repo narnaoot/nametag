@@ -4,8 +4,9 @@ import { useAuth } from '../useAuth';
 import { savePhotoLocally, loadLocalPhoto, persistProfileLocally, readLocalProfile } from '../profileStorage';
 import { PersonCard, Avatar } from '../components/Badge';
 import Toggle from '../components/Toggle';
+import PaintboxPicker from '../components/PaintboxPicker';
 import {
-  PAINTBOX, ACCENT_ORDER, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS,
+  PAINTBOX, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS,
   NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, PARTY_CODE_MAX, MAX_STICKERS,
 } from '../constants';
 
@@ -286,20 +287,7 @@ export default function ProfilePage() {
 
       {/* nametag color — the paintbox */}
       <Field label="Nametag color">
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          {ACCENT_ORDER.map(key => {
-            const on = accentKey === key;
-            return (
-              <button key={key} type="button" onClick={() => setAccentKey(key)} title={key} style={{
-                width: 34, height: 34, borderRadius: '50%', background: `var(--${key})`,
-                border: on ? '3px solid var(--text)' : '3px solid transparent',
-                boxShadow: on ? '0 0 0 2px var(--surface) inset' : 'none',
-                cursor: 'pointer', transition: 'transform .12s ease',
-                transform: on ? 'scale(1.08)' : 'none',
-              }} />
-            );
-          })}
-        </div>
+        <PaintboxPicker value={accentKey} onChange={setAccentKey} />
       </Field>
 
       {/* stickers */}
