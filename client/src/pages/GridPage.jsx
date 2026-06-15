@@ -33,10 +33,10 @@ function SkeletonGrid() {
   );
 }
 
-function YouTag() {
+function YouTag({ right = 18 }) {
   return (
     <span style={{
-      position: 'absolute', top: -6, right: 18, zIndex: 5,
+      position: 'absolute', top: -6, right, zIndex: 5,
       background: 'var(--text)', color: 'var(--bg)',
       fontWeight: 800, fontSize: 9, letterSpacing: '.12em',
       padding: '3px 8px', borderRadius: 99, textTransform: 'uppercase',
@@ -53,12 +53,7 @@ function EmptyNearby({ me, visible, onSelect }) {
           <div className="nt-tappable" onClick={() => onSelect(me)}
                style={{ cursor: 'pointer', opacity: visible ? 1 : 0.4, position: 'relative' }}>
             <PersonCard person={me} accent={resolveAccent(me, 0)} variant="sticker" tilt={-STICKER_TILT} />
-            <span style={{
-              position: 'absolute', top: -6, right: 12, zIndex: 5,
-              background: 'var(--text)', color: 'var(--bg)',
-              fontWeight: 800, fontSize: 9, letterSpacing: '.12em',
-              padding: '3px 8px', borderRadius: 99, textTransform: 'uppercase',
-            }}>You</span>
+            <YouTag right={12} />
           </div>
         )}
         {/* the free spot — a dashed ghost sticker */}
