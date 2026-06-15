@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { getMyProfile, updateProfile, photoUrl } from '../api';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../useAuth';
 import { savePhotoLocally, loadLocalPhoto, persistProfileLocally, readLocalProfile } from '../profileStorage';
 import { PersonCard, Avatar } from '../components/Badge';
 import Toggle from '../components/Toggle';

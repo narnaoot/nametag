@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { login, register, forgotPassword, resetPassword } from '../api';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../useAuth';
 import { PersonCard } from '../components/Badge';
 
 // Demo hero badge shown above the form — the "wordmark" moment.
