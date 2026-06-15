@@ -3,6 +3,7 @@ import { updateProfile } from '../api';
 import { persistProfileLocally } from '../profileStorage';
 import { PersonCard } from '../components/Badge';
 import PaintboxPicker from '../components/PaintboxPicker';
+import PronounChips from '../components/PronounChips';
 import { ONBOARDING_PRONOUNS, ONBOARDING_NAME_MAX, STICKER_TILT } from '../constants';
 
 // First-run "write your name on your tag" moment, shown right after register.
@@ -73,15 +74,9 @@ export default function OnboardingPage({ onDone }) {
                value={name} onChange={e => setName(e.target.value)}
                style={{ textAlign: 'center', fontWeight: 800, fontSize: 17 }} />
 
-        {/* pronouns */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-          {ONBOARDING_PRONOUNS.map(p => (
-            <button key={p} type="button" className="na-chip" data-on={pronouns === p ? 'true' : 'false'}
-                    onClick={() => setPronouns(prev => prev === p ? '' : p)}>
-              {p}
-            </button>
-          ))}
-        </div>
+        {/* pronouns — tap again to clear */}
+        <PronounChips options={ONBOARDING_PRONOUNS} value={pronouns} justify="center"
+                      onChange={p => setPronouns(prev => prev === p ? '' : p)} />
 
         {/* paintbox */}
         <div style={{ marginTop: 2 }}>

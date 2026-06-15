@@ -5,6 +5,7 @@ import { savePhotoLocally, loadLocalPhoto, persistProfileLocally, readLocalProfi
 import { PersonCard, Avatar } from '../components/Badge';
 import Toggle from '../components/Toggle';
 import PaintboxPicker from '../components/PaintboxPicker';
+import PronounChips from '../components/PronounChips';
 import {
   PAINTBOX, STICKER_OPTIONS, PRONOUN_OPTIONS, RADIUS_OPTIONS,
   NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, PARTY_CODE_MAX, MAX_STICKERS, STICKER_TILT,
@@ -216,15 +217,7 @@ export default function ProfilePage() {
       </Field>
 
       <Field label="Your pronouns">
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {PRONOUN_OPTIONS.map(opt => (
-            <button key={opt} type="button" className="na-chip"
-              data-on={(opt === 'custom' ? pronounSelect === 'custom' : pronounSelect === opt) ? 'true' : 'false'}
-              onClick={() => setPronounSelect(opt)}>
-              {opt === 'custom' ? '+ custom' : opt}
-            </button>
-          ))}
-        </div>
+        <PronounChips options={PRONOUN_OPTIONS} value={pronounSelect} onChange={setPronounSelect} />
         {pronounSelect === 'custom' && (
           <input className="na-field" style={{ marginTop: 10 }} value={customPronouns}
                  maxLength={PRONOUNS_MAX} onChange={e => setCustomPronouns(e.target.value)}
