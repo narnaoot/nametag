@@ -140,11 +140,14 @@ export function useNearbyPeople() {
     setMode(next);
     try {
       if (next === 'invisible') {
-        await setVisibility(false);   // clears server photo + location
+        await setVisibility(false);   // clears server photo + location + is_active
         setIsActive(false);
         setNearby([]);
-        // remember the intent so refreshes don't flip us back on
-        await pushProfileSafe({ always_visible: false });
+        setMyProfile(prev => (prev ? { ...prev, is_active: false, photo_path: null } : prev));
+        // Don't re-upload the profile here: it would restore the photo we just
+        // deleted, and reloading would re-derive the mode from the unchanged
+        // always_visible flag. Invisibility is a session state — like the
+        // design's "switches itself off when you leave", it isn't persisted.
       } else {
         const code = next === 'party' ? (partyCode || '').trim().toUpperCase() : '';
         await pushProfile({ always_visible: true, party_code: code });
@@ -152,18 +155,12 @@ export function useNearbyPeople() {
         await loadNearby();
         setIsActive(true);
         setLocationError('');
+        await loadMyProfile();
       }
-      await loadMyProfile();
     } catch (err) {
       setLocationError(err.message);
     }
   }, [shareLocation, loadNearby, loadMyProfile]);
-
-  // Going invisible only updates the always_visible flag; the profile body has
-  // already been NULLed server-side, so a full pushProfile would 400. Best-effort.
-  async function pushProfileSafe(overrides) {
-    try { await pushProfile(overrides); } catch { /* profile already cleared — fine */ }
-  }
 
   useEffect(() => {
     async function init() {
