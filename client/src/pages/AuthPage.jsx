@@ -117,7 +117,7 @@ export default function AuthPage({ onRegistered }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <button className="na-btn" onClick={() => { setAppleNote(true); setView('email'); }}> Continue with Apple</button>
+          <button className="na-btn" onClick={() => { setAppleNote(true); setView('email'); }}>Continue with Apple</button>
           <button className="na-btn na-btn--ghost" style={{ minHeight: 56, fontSize: 16, color: 'var(--text)' }}
                   onClick={() => { setAppleNote(false); setView('email'); }}>Continue with email</button>
           <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', lineHeight: 1.6, marginTop: 4 }}>
