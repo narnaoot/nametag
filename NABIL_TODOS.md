@@ -7,6 +7,28 @@ Updated at the end of every session.
 
 ---
 
+## 🎨 UI redesign — "nearby name tags" (Aug 2026, branch `claude/design-redesign-impl-7ebgg2`)
+
+The whole client was rebuilt to the Claude Design canvas in `redesign/`
+(Libre Caslon + Nunito; orchid = the app, coral = you; the wall of hand-tilted
+tags; three-way visibility control; new Privacy tab; two-step onboarding; party
+code sheet; responsive tablet/desktop). Backend untouched; 80 server tests still
+pass. Details in `client/REDESIGN.md`.
+
+**A handful of things need your call — see [`REDESIGN_QUESTIONS.md`](REDESIGN_QUESTIONS.md).** The most important:
+
+- **Privacy screen copy is unverified.** The first statement card is still the
+  design's literal placeholder. All four claims need engineering sign-off before
+  shipping — please provide the final wording.
+- **"Continue with Apple"** on Sign in has no backend; both buttons currently
+  open the email/password flow. Wire real Sign in with Apple, or drop it?
+- **You no longer pick your own tag colour** (you're always coral); other people
+  get a stable auto-colour. Confirm that's the intent.
+- Radius control, venue/place name, mutual-context row, party hosting — all
+  noted in the questions file with the best-guess I shipped.
+
+---
+
 ## ✅ Test the live app (do this soon)
 
 The codebase has had significant refactoring and new features added. Before going further, do a quick end-to-end smoke test on the live deployment:
