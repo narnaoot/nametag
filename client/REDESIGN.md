@@ -1,106 +1,118 @@
-# Nametag — UI Redesign (Nabil Arnaoot design system)
+# Nametag — UI Redesign ("nearby name tags")
 
-This implements the handoff in `design_handoff_nametag_redesign/README.md`. The
-HTML/Babel prototypes there were design references; this document records how
-they were recreated as real components in the React + Vite + Capacitor app.
+This implements the handoff in `redesign/README.md` and the Claude Design canvas
+`redesign/Nametag Redesign.dc.html`. The HTML there is a design reference; this
+document records how it was recreated as real components in the React + Vite +
+Capacitor app. It **supersedes** the earlier Playfair/teal redesign (which was
+built from `design_handoff_nametag_redesign/`).
 
-## Shipped decisions
+Open questions and best-guess decisions are in `../REDESIGN_QUESTIONS.md`.
 
-Per the handoff's "State Management" defaults:
+## The two colour rules
 
-- **Theme:** Cream (default). The Ink (dark) theme is fully tokenized in
-  `index.css` (`.theme-ink`) but not exposed as a user setting.
-- **Brand color:** Teal (`--primary: var(--teal)`). `--on-primary` is computed
-  at runtime from the brand color's luminance.
-- **Badge:** Sticker variant, per-person ("mixed") accent colors.
-- **Layout:** Nearby grid.
-- **Sign in:** Badge composition (hero nametag badge above the form).
+Everything follows from these:
 
-The prototype's Tweaks panel and iOS frame were scaffolding and were **not**
-ported. The Editorial badge / Stacked / Radar layouts live in the prototype
-only; the production `Badge` component still supports the editorial variant if
-we ever want it, but the screens ship sticker + grid.
+1. **Orchid is the app.** Chrome uses orchid: the accent word in every screen
+   title, the active tab, your avatar ring, primary buttons (`--orchid-dk` fill,
+   white text). Display-size accent words and avatar rings use the **brightened
+   orchid `#C462BC`** (`--brand`), because `--orchid` is too dark to read as an
+   accent at 40px.
+2. **Coral is you.** Your own tag is always coral, everywhere it appears, so you
+   find yourself on a wall at a glance. Coral is never used for chrome.
+
+Other people take a per-person identity colour from the paintbox. Two deliberate
+remaps: **orchid → citron** (orchid belongs to the app) and **teal → lavender**
+(teal clashed with the sage of the visibility card).
 
 ## Design system
 
-- **`src/index.css`** — all tokens, type roles (`.t-display`, `.t-h2`,
-  `.t-kicker`, …), primitives (`.na-btn`, `.na-field`, `.na-chip`), the
-  `.dotgrid` texture, `.nt-tappable`, and the entrance/skeleton keyframes.
-  Cream lives in `:root, .theme-cream`; Ink overrides in `.theme-ink`. Fonts
-  (Playfair Display + Nunito) load via the Google Fonts `@import`.
-- **`src/constants.js`** — the cream paintbox hex map (`PAINTBOX`),
-  `ACCENT_ORDER`, sticker/pronoun/radius options, and length limits. The Ink
-  palette and `--sage` live only in `index.css` (CSS vars are the source of
-  truth — no JS mirror to drift).
-- **`src/colors.js`** — pure helpers ported from the prototype:
-  - `lum()` / `bestOn()` — the contrast helper that picks `#FFFFFF` vs
-    `#23170E` for `--on-primary`. Applied on the app root in `App.jsx`.
-  - `resolveAccent(person, index)` — returns a `var(--key)` reference so the
-    Ink palette's deepened hues apply automatically. Falls back to a stable
-    per-index paintbox color when a person has no (or a legacy) accent.
-  - `distanceLabel(meters)` — `here` / `~N m` / `N min walk`.
-  - `toBadgePerson(profile, …)` — maps a server profile row onto the design's
-    person shape (see "Data mapping").
+- **`src/index.css`** — all tokens (`:root`), the type roles (`.t-display`,
+  `.t-h2`, `.t-h3`, `.t-quote`, `.t-kicker`, `.t-label`, `.t-body`), primitives
+  (`.na-btn`, `.na-btn--ghost`, `.na-field`, `.na-chip`, `.na-danger-card`), and
+  the restrained motion keyframes. Fonts (Libre Caslon Text + Nunito) load from
+  Google Fonts. `--primary` is `--orchid-dk`; `--brand` is `#C462BC`. There is
+  **no dark theme** (the spec doesn't define one).
+- **`src/constants.js`** — the paintbox key list and `ACCENT_VARS` trio map,
+  `PERSON_ACCENTS` (the colours other people can take), `ACCENT_REMAP`,
+  `BRAND_ACCENT`, the sticker vocabulary (`STICKER_OPTIONS` emoji + word,
+  `STICKER_LABELS`), pronoun options, length limits, and the on-device storage
+  keys (photo, profile, remembered names, hidden people).
+- **`src/colors.js`** — pure helpers: `resolveAccentKey` (you → coral; others →
+  stored `tag_color` remapped, else a stable hash of their id),
+  `accentTrio`/`personTrio` (→ `{hue, tint, deep}` CSS-var refs),
+  `visibleMinutes`/`visibleLabel` ("visible N min"), `initials`, and
+  `toBadgePerson` (server row → tag "person" shape). Distance and waves are gone.
 
-## Components & screens
+## Components
 
-| File | Recreates (prototype) | Notes |
+| File | What it is |
+|---|---|
+| `components/Avatar.jsx` | circular photo (or Caslon-initial fallback); white ring always, optional coloured ring reserved for you / an opened tag |
+| `components/Tag.jsx` | a name tag on the wall — tint fill, hello-my-name-is, Caslon name, pronoun pill in the person's hue, footer strip that vanishes when they wrote no line |
+| `components/VisibilityControl.jsx` | the one central three-way control (invisible \| nearby \| party) in the sage card; card turns to ink when invisible |
+| `components/DetailSheet.jsx` | a tag opened into a bottom sheet — grows keeping its tint/ring; "visible N min", optional mutual-context row, Remember / Hide |
+| `components/PartyCodeSheet.jsx` | the wide-tracked Caslon code entry |
+| `components/MyTagPreview.jsx` | your own tag, always coral (My tag) |
+| `components/StickerPicker.jsx` | square (radius 3px) emoji+word sticker chips, coral when picked |
+| `components/PronounChips.jsx` | single-select pronoun chips (orchid-dk when selected) |
+| `components/TabBar.jsx` | three tabs: Nearby / My tag / Privacy; active = orchid-lt pill + orchid underline |
+
+## Screens
+
+| File | Canvas id | Notes |
 |---|---|---|
-| `components/Badge.jsx` | `badge.jsx` | `Avatar` (photo or initial monogram), `StickerBadge`, `EditorialCard`, `WaveChip`, `PersonCard`. |
-| `components/DetailSheet.jsx` | `detail-sheet.jsx` | Slide-up person sheet + Say-hi / Wave-back / Edit-my-tag action. |
-| `components/TabBar.jsx` | `screens-app.jsx → TabBar` | Fixed bottom tabs, primary underline. |
-| `components/Toggle.jsx` | `screens-app.jsx → Toggle` | Pill switch (visibility banner + settings). |
-| `pages/AuthPage.jsx` | `screens-auth.jsx → AuthScreen` (badge) | login / register / forgot / reset wired to `api.js`. Register → onboarding. |
-| `pages/OnboardingPage.jsx` | `onboarding.jsx` | First-run "write your name"; live badge preview; saves to server + on-device. |
-| `pages/GridPage.jsx` | `screens-app.jsx → Nearby` | Real data via `useNearbyPeople`; self badge first, nearest-first; skeleton/empty states; wave state. |
-| `pages/ProfilePage.jsx` | `screens-app.jsx → MyTag` | Live preview, paintbox, chips, stickers, danger-only delete; keeps auto-save, Capacitor photo, party code, sign out. |
-| `App.jsx` | `app.jsx` (assembly only) | Theme wrapper + `--on-primary` + register→onboarding→Nearby flow. |
+| `pages/AuthPage.jsx` | 12a | Sign in — "Put a name to the room." landing (hero tags + two buttons) → email/password flow. Keeps forgot/reset + `?reset=` deep link. |
+| `pages/OnboardingPage.jsx` | 12b, 12c | Two steps with a two-dash indicator. Step 1: type onto the coral tag + pronouns + one line. Step 2: photo + stickers + who-can-see-you. |
+| `pages/GridPage.jsx` | 12d | The wall — header ("N tags nearby", Nearby, Refresh, your orchid-ringed avatar), the visibility control, and the tilted two-column tag wall. Opening a tag → DetailSheet; choosing Party code → PartyCodeSheet. |
+| `pages/ProfilePage.jsx` | 12f | My tag — coral preview, the visibility control above three tap-to-edit rows (Name+pronouns / One line / Stickers), auto-save, on-device photo, sign out + delete. |
+| `pages/PrivacyPage.jsx` | 14a | Privacy tab — sage "Right now" card + four statement cards (first is the design's unverified placeholder) + "Read the whole policy". |
+
+## Central state — visibility
+
+`invisible | nearby | party` is the app's one three-way control, shown in four
+places (onboarding step 2, the wall, My tag, Privacy) as the same sage card. It's
+mapped onto the existing backend fields without a schema change:
+
+- **nearby** → `always_visible = true`, `party_code = ''`, location shared.
+- **party** → opens the code sheet first; on join, `party_code = <CODE>` (upper-
+  cased so matching is case-insensitive), `always_visible = true`.
+- **invisible** → `setVisibility(false)` (server NULLs photo + location + sets
+  `is_active = false`) and `always_visible = false` so refreshes don't flip you
+  back on. `useNearbyPeople` gates all location sharing on the mode.
+
+`src/hooks/useNearbyPeople.js` owns the mode, derives it from the profile on
+load, and exposes `setVisibilityMode(next, { partyCode })`.
+
+## Remembered names & hidden people (replacing waves)
+
+The old "wave" feature is gone. The detail sheet now offers **Remember the name**
+(copied to the device — `profileStorage.rememberName`, a Privacy promise) and
+**Hide from me** (`profileStorage.hidePerson`, filtered client-side). Both persist
+via `@capacitor/preferences` (localStorage on web). No backend endpoint.
 
 ## Data mapping
 
-The prototype's seed shape `{ name, pronouns, tagline, accent, stickers[],
-photo, distance, wavedAtYou }` maps onto the existing backend like so:
+The tag "person" shape `{ id, name, pronouns, tagline, accent, stickers[], photo,
+visibleSince, you }` maps onto the backend:
 
-| Design field | Server field | Notes |
+| person field | server field | notes |
 |---|---|---|
-| `name` | `display_name` | |
-| `pronouns` | `pronouns` | |
-| `tagline` | `tagline` | |
-| `accent` (paintbox key) | `tag_color` | **Now stores the key** (e.g. `"teal"`), not a hex. Legacy hex values no longer match a key and fall back to a per-index paintbox color — no migration needed. |
-| `stickers[]` | `stickers` | JSON string in the DB; parsed in `toBadgePerson`. |
-| `photo` | `photo_path` | Resolved via `photoUrl()`; the user's own photo also comes from Capacitor Filesystem (`profileStorage.loadLocalPhoto`). |
-| `distance` | `distance_meters` | Nearby query only. |
-| `wavedAtYou` | — | No backend yet. Waves are **optimistic client state** in `GridPage`; incoming waves are stubbed off. Back this with a real endpoint later. |
+| name / pronouns / tagline | `display_name` / `pronouns` / `tagline` | |
+| accent | `tag_color` | you = coral (forced); others derived if unset/legacy |
+| stickers[] | `stickers` | emoji array in a JSON string; word looked up via `STICKER_LABELS` |
+| photo | `photo_path` | via `photoUrl()`; your own also from Capacitor Filesystem |
+| visibleSince | `location_updated_at` | drives "visible N min" |
 
-`src/profileStorage.js` centralizes the on-device persistence (Capacitor
-Filesystem photo + Preferences profile JSON) shared by Onboarding and My Tag,
-matching the existing privacy/restore flow in `useNearbyPeople`.
+Backend routes, schema, and tests are **unchanged**.
 
-## App icon
+## Not done yet / follow-ups
 
-`public/app-icon.svg` is the master icon — the dark "hello / my name is" sticker
-on a teal halftone field — and is wired as the web favicon. iOS app-icon PNGs
-are generated from the Xcode project, which is **not committed** (it's created
-by `npx cap add ios`). To regenerate after adding the iOS platform:
-
-```bash
-cd client
-npm run build
-npx cap add ios            # if ios/ doesn't exist yet
-# Produce a 1024×1024 PNG from the master, then run the assets tool:
-npx @capacitor/assets generate --iconBackgroundColor '#06D6B8' --iconBackgroundColorDark '#271B12'
-npx cap sync ios
-```
-
-(`@capacitor/assets` wants a PNG/larger raster at `assets/icon.png`; export
-`public/app-icon.svg` at 1024×1024 first, e.g. with `rsvg-convert` or any
-vector editor.)
-
-## Not ported / follow-ups
-
-- **Waves backend** — no messaging/notification endpoint exists; the wave UI is
-  client-only for now.
-- **Ink theme & brand-color switching** — fully tokenized but not surfaced as
-  user settings (per the handoff, optional).
-- **Editorial / Stacked / Radar** — prototype-only explorations; the sticker
-  grid ships.
+- **Tablet & desktop (12g/12h).** Phone is complete. The responsive wall (board
+  widens, tab bar folds into a header/rail) is not built yet — see
+  `../REDESIGN_QUESTIONS.md` #13.
+- **Verified Privacy copy** — the four statements need engineering sign-off; the
+  first is a placeholder (see `../REDESIGN_QUESTIONS.md` #10).
+- **Apple Sign in, venue detection, mutual context, party hosting, radius UI** —
+  best-guess decisions / out of scope, all in `../REDESIGN_QUESTIONS.md`.
+- **Real photography** — the sign-in hero uses `public/sample-face.webp`
+  (the canvas placeholder portrait) as decoration only.
