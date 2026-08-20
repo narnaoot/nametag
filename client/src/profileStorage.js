@@ -4,7 +4,9 @@
 // useNearbyPeople.reuploadFullProfile).
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
-import { LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY } from './constants';
+import {
+  LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY, LOCAL_REMEMBERED_KEY, LOCAL_HIDDEN_KEY,
+} from './constants';
 
 export async function savePhotoLocally(dataUrl) {
   try {
@@ -45,4 +47,50 @@ export async function readLocalProfile() {
   } catch {
     return null;
   }
+}
+
+// ── Remembered names — kept on the device only (a Privacy promise). ────────
+async function readList(key) {
+  try {
+    const { value } = await Preferences.get({ key });
+    const arr = value ? JSON.parse(value) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+async function writeList(key, arr) {
+  try { await Preferences.set({ key, value: JSON.stringify(arr) }); } catch { /* best-effort */ }
+}
+
+export function getRememberedNames() { return readList(LOCAL_REMEMBERED_KEY); }
+
+export async function rememberName(person) {
+  if (!person?.name) return;
+  const list = await readList(LOCAL_REMEMBERED_KEY);
+  const key = String(person.id ?? person.name);
+  if (list.some(p => String(p.id ?? p.name) === key)) return;
+  list.unshift({
+    id: person.id ?? null, name: person.name, pronouns: person.pronouns || '',
+    tagline: person.tagline || '', at: Date.now(),
+  });
+  await writeList(LOCAL_REMEMBERED_KEY, list);
+}
+
+export async function forgetName(idOrName) {
+  const list = await readList(LOCAL_REMEMBERED_KEY);
+  const key = String(idOrName);
+  await writeList(LOCAL_REMEMBERED_KEY, list.filter(p => String(p.id ?? p.name) !== key));
+}
+
+// ── Hidden people — filtered client-side, remembered on the device. ────────
+export function getHiddenIds() { return readList(LOCAL_HIDDEN_KEY); }
+
+export async function hidePerson(id) {
+  if (id == null) return;
+  const list = await readList(LOCAL_HIDDEN_KEY);
+  if (!list.includes(id)) { list.push(id); await writeList(LOCAL_HIDDEN_KEY, list); }
+}
+
+export async function unhidePerson(id) {
+  const list = await readList(LOCAL_HIDDEN_KEY);
+  await writeList(LOCAL_HIDDEN_KEY, list.filter(x => x !== id));
 }

@@ -1,23 +1,18 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { AuthProvider } from './AuthContext';
 import { useAuth } from './useAuth';
 import AuthPage from './pages/AuthPage';
 import OnboardingPage from './pages/OnboardingPage';
 import ProfilePage from './pages/ProfilePage';
 import GridPage from './pages/GridPage';
+import PrivacyPage from './pages/PrivacyPage';
 import TabBar from './components/TabBar';
-import { bestOn } from './colors';
-import { COLOR_PRIMARY } from './constants';
 import './index.css';
 
 function AppShell() {
   const { isLoggedIn } = useAuth();
-  const [tab, setTab] = useState('grid');
+  const [tab, setTab] = useState('grid');   // 'grid' | 'profile' | 'privacy'
   const [onboarding, setOnboarding] = useState(false);
-
-  // --on-primary is computed from the brand color's luminance (see colors.js).
-  // Teal leads all chrome; contrast picks white vs. ink ink automatically.
-  const onPrimary = useMemo(() => bestOn(COLOR_PRIMARY), []);
 
   let content;
   if (!isLoggedIn) {
@@ -25,22 +20,19 @@ function AppShell() {
   } else if (onboarding) {
     content = <OnboardingPage onDone={() => { setOnboarding(false); setTab('grid'); }} />;
   } else {
+    let page;
+    if (tab === 'grid') page = <GridPage onEditTag={() => setTab('profile')} />;
+    else if (tab === 'profile') page = <ProfilePage onDone={() => setTab('grid')} />;
+    else page = <PrivacyPage onChangeVisibility={() => setTab('grid')} />;
     content = (
       <>
-        {tab === 'grid'
-          ? <GridPage onEditTag={() => setTab('profile')} />
-          : <ProfilePage />}
+        {page}
         <TabBar tab={tab} onTab={setTab} />
       </>
     );
   }
 
-  return (
-    <div className="theme-cream na-app"
-         style={{ '--primary': 'var(--teal)', '--on-primary': onPrimary }}>
-      {content}
-    </div>
-  );
+  return <div className="na-app">{content}</div>;
 }
 
 export default function App() {

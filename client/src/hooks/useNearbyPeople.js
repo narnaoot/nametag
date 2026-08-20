@@ -1,46 +1,54 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Geolocation } from '@capacitor/geolocation';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import { getNearby, updateLocation, setVisibility, getMyProfile, updateProfile } from '../api';
-import { LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY } from '../constants';
+import { LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY, DEFAULT_RADIUS } from '../constants';
+import { getHiddenIds } from '../profileStorage';
 
-// Re-uploads the full profile (name, pronouns, photo, etc.) from on-device
-// storage. Called when the server copy has been cleaned up (user went inactive
-// or stale cleanup ran). Silent no-op if there's nothing stored locally.
-async function reuploadFullProfile() {
+// Derive the three-way visibility mode from a server profile row + live active
+// flag: invisible | nearby | party.
+function deriveMode(profile, active) {
+  const visible = profile ? (profile.always_visible !== false || active) : true;
+  if (!visible) return 'invisible';
+  return profile?.party_code ? 'party' : 'nearby';
+}
+
+// Push the full on-device profile back to the server (name, pronouns, photo,
+// stickers, …), optionally overriding visibility fields. Used to restore a
+// profile the privacy cleanup cleared, and to switch visibility state.
+async function pushProfile(overrides = {}) {
   try {
     const { value } = await Preferences.get({ key: LOCAL_PROFILE_KEY });
-    if (!value) return;
+    if (!value) return false;
     const p = JSON.parse(value);
-    if (!p.display_name || !p.pronouns) return; // incomplete — skip
+    const merged = { ...p, ...overrides };
+    if (!merged.display_name || !merged.pronouns) return false;
 
     const fd = new FormData();
-    fd.append('display_name', p.display_name);
-    fd.append('pronouns', p.pronouns);
-    fd.append('tagline', p.tagline || '');
-    fd.append('radius_meters', p.radius_meters ?? 100);
-    fd.append('always_visible', p.always_visible ?? true);
-    fd.append('tag_color', p.tag_color || '');
-    fd.append('stickers', p.stickers || '[]');
-    fd.append('party_code', p.party_code || '');
+    fd.append('display_name', merged.display_name);
+    fd.append('pronouns', merged.pronouns);
+    fd.append('tagline', merged.tagline || '');
+    fd.append('radius_meters', merged.radius_meters ?? DEFAULT_RADIUS);
+    fd.append('always_visible', merged.always_visible ?? true);
+    fd.append('tag_color', merged.tag_color || '');
+    fd.append('stickers', merged.stickers || '[]');
+    fd.append('party_code', merged.party_code || '');
 
-    // Include photo from Filesystem if available
     try {
       const result = await Filesystem.readFile({
-        path: LOCAL_PHOTO_PATH,
-        directory: Directory.Data,
-        encoding: Encoding.UTF8,
+        path: LOCAL_PHOTO_PATH, directory: Directory.Data, encoding: Encoding.UTF8,
       });
       const blob = await fetch(result.data).then(r => r.blob());
       fd.append('photo', new File([blob], 'photo.jpg', { type: blob.type }));
-    } catch {
-      // No local photo — upload profile data without it
-    }
+    } catch { /* no local photo — send without it */ }
 
+    // Also persist the overrides on-device so future restores keep them.
+    await Preferences.set({ key: LOCAL_PROFILE_KEY, value: JSON.stringify(merged) });
     await updateProfile(fd);
+    return true;
   } catch {
-    // Preferences empty, parse error, or upload failed — proceed without restoring
+    return false;
   }
 }
 
@@ -50,23 +58,32 @@ export function useNearbyPeople() {
   const [locationError, setLocationError] = useState('');
   const [loading, setLoading] = useState(true);
   const [isActive, setIsActive] = useState(false);
+  const [mode, setMode] = useState('nearby');
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [hiddenIds, setHiddenIds] = useState([]);
+  const modeRef = useRef('nearby');
+  modeRef.current = mode;
+
+  const loadHidden = useCallback(async () => { setHiddenIds(await getHiddenIds()); }, []);
 
   const loadMyProfile = useCallback(async () => {
     try {
       const profile = await getMyProfile();
       setMyProfile(profile);
       if (profile) {
-        setIsActive(profile.always_visible || profile.is_active);
-        // If sensitive fields were cleaned up server-side, restore from on-device data.
-        // Check both display_name and photo_path — cleanup.js can delete the photo
-        // without NULLing the name, so check each independently.
+        const active = profile.always_visible || profile.is_active;
+        setIsActive(active);
+        setMode(deriveMode(profile, active));
+        // Restore fields the privacy cleanup may have cleared.
         if (!profile.display_name || !profile.photo_path) {
-          await reuploadFullProfile();
-          const refreshed = await getMyProfile();
-          if (refreshed) {
-            setMyProfile(refreshed);
-            setIsActive(refreshed.always_visible || refreshed.is_active);
+          if (await pushProfile()) {
+            const refreshed = await getMyProfile();
+            if (refreshed) {
+              setMyProfile(refreshed);
+              const a2 = refreshed.always_visible || refreshed.is_active;
+              setIsActive(a2);
+              setMode(deriveMode(refreshed, a2));
+            }
           }
         }
       }
@@ -79,16 +96,12 @@ export function useNearbyPeople() {
     try {
       const perm = await Geolocation.requestPermissions();
       if (perm.location === 'denied') {
-        throw new Error('Location access denied. Please allow location access in Settings.');
+        throw new Error('Location access denied. Allow location in Settings to see who’s here.');
       }
     } catch (err) {
-      // requestPermissions() is not implemented on web — the browser will
-      // prompt automatically when getCurrentPosition is called, so proceed.
-      if (!err.message?.includes('denied')) {
-        // not a real denial — ignore and continue
-      } else {
-        throw err;
-      }
+      if (err.message?.includes('denied')) throw err;
+      // requestPermissions() isn't implemented on web — the browser prompts on
+      // getCurrentPosition, so proceed.
     }
     const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
     await updateLocation(pos.coords.latitude, pos.coords.longitude);
@@ -101,7 +114,7 @@ export function useNearbyPeople() {
       setNearby(people);
     } catch (err) {
       if (err.message === 'Share your location first') {
-        setLocationError("Share your location to see who's nearby.");
+        setLocationError('Share your location to see who’s here.');
       } else {
         console.error('[useNearbyPeople] loadNearby:', err);
       }
@@ -109,6 +122,7 @@ export function useNearbyPeople() {
   }, []);
 
   const refresh = useCallback(async () => {
+    if (modeRef.current === 'invisible') { setLoading(false); return; }
     setLoading(true);
     try {
       await shareLocation();
@@ -121,26 +135,42 @@ export function useNearbyPeople() {
     }
   }, [shareLocation, loadNearby]);
 
-  const toggleVisibility = useCallback(async (alwaysVisible) => {
-    if (alwaysVisible) return;
-    const newActive = !isActive;
+  // Switch the central visibility state. partyCode required for 'party'.
+  const setVisibilityMode = useCallback(async (next, { partyCode } = {}) => {
+    setMode(next);
     try {
-      if (newActive) {
-        // Going visible — restore full profile from on-device storage first
-        await reuploadFullProfile();
+      if (next === 'invisible') {
+        await setVisibility(false);   // clears server photo + location
+        setIsActive(false);
+        setNearby([]);
+        // remember the intent so refreshes don't flip us back on
+        await pushProfileSafe({ always_visible: false });
+      } else {
+        const code = next === 'party' ? (partyCode || '').trim().toUpperCase() : '';
+        await pushProfile({ always_visible: true, party_code: code });
+        await shareLocation();
+        await loadNearby();
+        setIsActive(true);
+        setLocationError('');
       }
-      await setVisibility(newActive);
-      setIsActive(newActive);
+      await loadMyProfile();
     } catch (err) {
-      console.error('[useNearbyPeople] toggleVisibility:', err);
+      setLocationError(err.message);
     }
-  }, [isActive]);
+  }, [shareLocation, loadNearby, loadMyProfile]);
 
-  // Initial load
+  // Going invisible only updates the always_visible flag; the profile body has
+  // already been NULLed server-side, so a full pushProfile would 400. Best-effort.
+  async function pushProfileSafe(overrides) {
+    try { await pushProfile(overrides); } catch { /* profile already cleared — fine */ }
+  }
+
   useEffect(() => {
     async function init() {
       setLoading(true);
+      await loadHidden();
       await loadMyProfile();
+      if (modeRef.current === 'invisible') { setLoading(false); return; }
       try {
         await shareLocation();
         setLocationError('');
@@ -152,22 +182,20 @@ export function useNearbyPeople() {
       }
     }
     init();
-    // loadMyProfile/shareLocation/loadNearby are stable useCallbacks, so this
-    // still runs only on mount.
-  }, [loadMyProfile, shareLocation, loadNearby]);
+  }, [loadHidden, loadMyProfile, shareLocation, loadNearby]);
 
-  // Refresh location + nearby every 60 seconds
+  // Re-read the room every 60s while visible.
   useEffect(() => {
     const interval = setInterval(async () => {
-      try {
-        await shareLocation();
-        await loadNearby();
-      } catch (err) {
-        setLocationError(err.message);
-      }
+      if (modeRef.current === 'invisible') return;
+      try { await shareLocation(); await loadNearby(); }
+      catch (err) { setLocationError(err.message); }
     }, 60_000);
     return () => clearInterval(interval);
   }, [shareLocation, loadNearby]);
 
-  return { nearby, myProfile, locationError, loading, isActive, lastUpdated, refresh, toggleVisibility };
+  return {
+    nearby, myProfile, locationError, loading, isActive, lastUpdated, mode,
+    hiddenIds, refresh, setVisibilityMode, reloadProfile: loadMyProfile, reloadHidden: loadHidden,
+  };
 }
