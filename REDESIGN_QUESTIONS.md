@@ -73,7 +73,13 @@ implemented and match the canvas.
     coral note), and invisible (a "you're invisible" state). These aren't
     designed yet — replace with real designs when ready.
 
-13. **Tablet & desktop (12g/12h).** Phone is complete and is the priority for a
-    location-first mobile app. Responsive tablet/desktop board layouts are
-    tracked in REDESIGN.md under "Not done yet"; say if you want them prioritised
-    for the web (Vercel) build.
+13. **Tablet & desktop (12g/12h) — built, with one adaptation.** The board is
+    responsive (2/3/4 columns), tablet widens the board with the visibility
+    control in the header, and desktop gets a left nav rail + centre board + a
+    right "Selected" panel so opening a tag never covers the room. The one
+    deviation from the canvas: it puts "where you are" / your own tag / the
+    stacked visibility control in the desktop **left** rail; I kept the left rail
+    as pure navigation (it's shared across tabs) and put visibility + your avatar
+    in the Nearby centre header instead. Happy to move them into the rail if you
+    prefer the exact canvas layout — a `stacked` VisibilityControl variant is
+    already there for it.

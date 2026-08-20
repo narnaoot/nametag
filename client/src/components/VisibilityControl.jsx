@@ -53,10 +53,37 @@ export default function VisibilityControl({
   place,
   partyCode,
   compact = false,
+  stacked = false,    // desktop rail: three vertical rows instead of a segmented pill
 }) {
   const p = palette(value);
   const copy = note || defaultNote(value, { place, partyCode });
   const segPad = compact ? '7px 4px' : '8px 4px';
+
+  if (stacked) {
+    return (
+      <div style={{ background: p.cardBg, border: `1.5px solid ${p.cardBorder}`,
+            borderRadius: 'var(--r)', padding: 11, transition: 'background .2s ease, border-color .2s ease' }}>
+        {label && <div className="t-label" style={{ fontSize: 9.5, padding: '0 3px 8px', color: p.labelColor }}>{label}</div>}
+        <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 12,
+              padding: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {MODES.map(([mode, text]) => {
+            const on = value === mode;
+            return (
+              <button key={mode} type="button" onClick={() => onChange && onChange(mode)} style={{
+                border: 'none', cursor: 'pointer', borderRadius: 9, padding: '8px 11px', textAlign: 'left',
+                fontFamily: 'var(--font-body)', fontWeight: 800, fontSize: 12,
+                background: on ? p.activeBg : 'transparent', color: on ? '#fff' : 'var(--muted)',
+                transition: 'background .15s ease, color .15s ease',
+              }}>{text}</button>
+            );
+          })}
+        </div>
+        <div style={{ marginTop: 9, padding: '0 3px', fontSize: 11, lineHeight: 1.5, color: p.note }}>
+          <span style={{ fontWeight: 800, color: p.lead }}>{copy.lead}</span>{copy.rest}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{

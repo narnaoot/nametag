@@ -63,7 +63,7 @@ remaps: **orchid → citron** (orchid belongs to the app) and **teal → lavende
 |---|---|---|
 | `pages/AuthPage.jsx` | 12a | Sign in — "Put a name to the room." landing (hero tags + two buttons) → email/password flow. Keeps forgot/reset + `?reset=` deep link. |
 | `pages/OnboardingPage.jsx` | 12b, 12c | Two steps with a two-dash indicator. Step 1: type onto the coral tag + pronouns + one line. Step 2: photo + stickers + who-can-see-you. |
-| `pages/GridPage.jsx` | 12d | The wall — header ("N tags nearby", Nearby, Refresh, your orchid-ringed avatar), the visibility control, and the tilted two-column tag wall. Opening a tag → DetailSheet; choosing Party code → PartyCodeSheet. |
+| `pages/GridPage.jsx` | 12d, 12g, 12h | The wall — responsive by viewport (see below). Header ("N tags nearby/here", Nearby, Refresh, your orchid-ringed avatar), the visibility control, and the tilted tag wall. Opening a tag → DetailSheet (phone/tablet) or the right rail (desktop); choosing Party code → PartyCodeSheet. |
 | `pages/ProfilePage.jsx` | 12f | My tag — coral preview, the visibility control above three tap-to-edit rows (Name+pronouns / One line / Stickers), auto-save, on-device photo, sign out + delete. |
 | `pages/PrivacyPage.jsx` | 14a | Privacy tab — sage "Right now" card + four statement cards (first is the design's unverified placeholder) + "Read the whole policy". |
 
@@ -105,11 +105,30 @@ visibleSince, you }` maps onto the backend:
 
 Backend routes, schema, and tests are **unchanged**.
 
+## Responsive — tablet (12g) & desktop (12h)
+
+`useViewport()` picks phone (`<768`), tablet (`768–1179`), desktop (`≥1180`).
+The wall (`components/Wall.jsx`) takes a column count that grows with width:
+2 / 3 / 4. Everything else is the same anatomy and the same rules — "more room".
+
+- **Tablet.** One wide centered board (max 820), the title at Caslon 56px, the
+  visibility control in the header; the bottom tab bar stays.
+- **Desktop.** A persistent left **nav rail** (`components/NavRail.jsx`, at the
+  App level) replaces the bottom tab bar; the centre column carries the header +
+  visibility + board; a right rail shows **Selected** — the opened tag as a
+  panel (`components/TagDetail.jsx`, shared with the phone sheet) so selecting a
+  tag never covers the room, plus the "nothing is kept once you leave" note.
+
+  *Adaptation:* the canvas puts "where you are", the stacked visibility control,
+  and your own tag in the desktop **left** rail. Because the left rail is
+  App-level navigation (shared across tabs) and the visibility/your-tag data
+  lives in the Nearby screen, those pieces sit in the Nearby **centre header**
+  instead. `VisibilityControl` has a `stacked` variant ready if we later move it
+  into the rail. My tag / Privacy / onboarding / auth stay centred at phone
+  width on all sizes (they're forms; width doesn't help them).
+
 ## Not done yet / follow-ups
 
-- **Tablet & desktop (12g/12h).** Phone is complete. The responsive wall (board
-  widens, tab bar folds into a header/rail) is not built yet — see
-  `../REDESIGN_QUESTIONS.md` #13.
 - **Verified Privacy copy** — the four statements need engineering sign-off; the
   first is a placeholder (see `../REDESIGN_QUESTIONS.md` #10).
 - **Apple Sign in, venue detection, mutual context, party hosting, radius UI** —
