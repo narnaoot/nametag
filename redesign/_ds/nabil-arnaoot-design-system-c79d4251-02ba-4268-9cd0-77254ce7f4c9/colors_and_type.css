@@ -1,0 +1,167 @@
+/* ============================================================
+   Nabil Arnaoot — Personal Site
+   colors_and_type.css — design tokens (color + type)
+   ------------------------------------------------------------
+   Lifted verbatim from the live site's :root (every page shares
+   the same block) and extended with semantic type roles.
+   Fonts: Libre Caslon Text (display/serif) + Nunito (body/sans),
+   both loaded from Google Fonts — see fonts/fonts.css.
+   ============================================================ */
+
+@import url("fonts/fonts.css");
+
+:root {
+  /* ── Surfaces & ink ──────────────────────────────────── */
+  --bg:       #FFFBF5;   /* page background — warm cream      */
+  --surface:  #FFFFFF;   /* cards, nav, raised panels         */
+  --warm:     #FFF5E8;   /* faint warm fill (outcome callouts)*/
+  --warm2:    #FDECD6;   /* stats strip, section tags, hovers */
+  --text:     #3D2B1F;   /* body + headings — dark roast brown*/
+  --muted:    #7C6151;   /* secondary text, labels, captions — AA on cream (~5.5:1) */
+  --border:   #E8DDD0;   /* 1.5px hairline on everything      */
+
+  /* ── The nine-accent paintbox ───────────────────────── */
+  /* Each accent travels as a TRIO: bright hue + tint + deep */
+  /* cut. TINT = fill. DEEP CUT (-dk) = readable text/button.*/
+  /* Bright hue = tint fills, 1.5px lines, glyphs, large      */
+  /* display emphasis only (see usage note below).           */
+  --coral:    #F5563F;   --coral-lt: #FBD5CE;   --coral-dk:  #9B3323;  /* primary      */
+  --teal:     #12C2B0;   --teal-lt:  #C2EFEA;   --teal-dk:   #14655D;  /* secondary    */
+  --mustard:  #F0A500;   --must-lt:  #FCE7B8;   --must-dk:   #7A5400;  /* tertiary     */
+  --sage:     #4FB870;   --sage-lt:  #CDEBD6;   --sage-dk:   #3C6349;  /* soft accent  */
+  --lavender: #9B6DE8;   --lav-lt:   #E4D8F8;   --lav-dk:    #5F4E9C;  /* about / quiet */
+  /* ── Four extended accents (fill the hue-wheel gaps) ── */
+  --denim:    #4A82B0;   --denim-lt: #D5E4EF;   --denim-dk:  #2E5B80;  /* blue  (teal→lavender gap)   */
+  --blush:    #D56A92;   --blush-lt: #F7D8E4;   --blush-dk:  #9E3D62;  /* rose  (lavender→coral gap)  */
+  --citron:   #97A24E;   --citron-lt:#E6EAC7;   --citron-dk: #5D6626;  /* green-gold (mustard→sage gap)*/
+  --orchid:   #A75FA0;   --orchid-lt:#EAD6E7;   --orchid-dk: #7E3F78;  /* magenta (lavender→blush gap)*/
+
+  /* ── Geometry ────────────────────────────────────────── */
+  --r:        14px;      /* card radius                       */
+  --r-pill:   99px;      /* chips, buttons, badges            */
+  --r-sm:     3px;       /* skill / project tags (square-ish) */
+  --hairline: 1.5px;     /* the house border weight           */
+
+  /* ── Type families ───────────────────────────────────── */
+  --font-display: 'Libre Caslon Text', Georgia, serif;
+  --font-body:    'Nunito', system-ui, -apple-system, sans-serif;
+
+  /* ── Spacing rhythm (observed on the live site) ──────── */
+  --gap-section: 80px;   /* vertical gap between page sections */
+  --pad-page:    72px;   /* top padding of .page              */
+  --maxw:        1080px; /* content column max width          */
+  --maxw-prose:  680px;  /* hero / reading column             */
+
+  /* ── Elevation ───────────────────────────────────────── */
+  --shadow-card:  0 3px 16px rgba(0,0,0,0.13);   /* thumbnails  */
+  --shadow-hover: 0 12px 32px rgba(0,0,0,0.08);  /* card lift   */
+  --shadow-port:  0 8px 32px rgba(0,0,0,0.16);   /* hero portrait*/
+  --shadow-avatar:0 4px 20px rgba(0,0,0,0.15);   /* round avatar*/
+}
+
+/* ============================================================
+   SEMANTIC TYPE ROLES
+   Apply these classes (or copy the rules) instead of
+   re-deriving sizes. Headings are ALWAYS Libre Caslon 700 with
+   tight tracking; body is Nunito with generous 1.65+ leading.
+   Emphasis is carried by COLOR + WEIGHT — never italic slant.
+
+   ── ACCENT USAGE (WCAG AA) ──────────────────────────────
+   TINT = fill.  DEEP CUT (-dk) = text.  The bright hue is for
+   tint fills, 1.5px lines/borders, icon glyphs, and LARGE
+   display emphasis only. Any accent used as readable text —
+   labels, kickers, links, small titles, body emphasis — and
+   any button with a white label uses its -dk cut. This keeps
+   every colored-text-on-colored-background pairing at AA.
+
+   Bright-as-text caveat: --coral/--orchid/--lavender/--denim/
+   --blush pass AA at LARGE display sizes; --teal/--mustard/
+   --sage/--citron do NOT — use -dk even at large sizes.
+   ============================================================ */
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Display — the big hero name / page title. Emphasis = a coral
+   word (color + weight), set upright — no italic slant. */
+.t-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.4rem, 6vw, 3.8rem);
+  line-height: 1.05;
+  letter-spacing: -1px;
+  color: var(--text);
+}
+.t-display em { font-style: normal; font-weight: 700; color: var(--coral); }
+
+/* H2 — section heading */
+.t-h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.7rem, 3.5vw, 2.4rem);
+  line-height: 1.15;
+  letter-spacing: -.5px;
+  color: var(--text);
+}
+
+/* H3 — card / project title (700, not 900) */
+.t-h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+/* Serif pull-quote / vignette — upright Caslon 400. Emphasis
+   lands on a coral 700 phrase (.t-quote em), never a slant. */
+.t-quote {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  line-height: 1.6;
+  color: var(--text);
+}
+.t-quote em { font-style: normal; font-weight: 700; color: var(--coral); }
+
+/* Kicker / eyebrow — uppercase, tracked, accent-colored,
+   usually preceded by a 40px accent rule. Small text → -dk cut. */
+.t-kicker {
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--coral-dk);
+}
+
+/* Label — small uppercase metadata (muted) */
+.t-label {
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Body copy — muted secondary paragraph */
+.t-body {
+  font-size: .92rem;
+  line-height: 1.75;
+  color: var(--muted);
+}
+.t-body strong { color: var(--text); font-weight: 700; }
+
+/* Stat number — Libre Caslon 700 in coral */
+.t-stat {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--coral);
+}

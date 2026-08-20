@@ -1,0 +1,9 @@
+/* ============================================================
+   styles.css — Nabil Arnaoot Design System entry point
+   ------------------------------------------------------------
+   The single stylesheet consumers should link. It pulls in the
+   canonical token + type layer (which itself loads the fonts),
+   so one <link rel="stylesheet" href="styles.css"> is enough.
+   ============================================================ */
+
+@import url("colors_and_type.css");

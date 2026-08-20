@@ -1,0 +1,17 @@
+/* ============================================================
+   fonts/fonts.css — Nabil Arnaoot site typefaces
+   ------------------------------------------------------------
+   The live site loads both faces from Google Fonts. They are
+   standard Google families (no custom/self-hosted webfonts in
+   the repo), so we link the same CDN here rather than vendoring
+   .ttf/.woff2 copies.
+
+   Libre Caslon Text — display / serif (400, 700, + italic 400)
+   Nunito            — body / sans   (400, 600, 700, 800)
+
+   If you need a fully offline copy, download the woff2 files
+   from fonts.google.com into this folder and swap the @import
+   for @font-face blocks.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Nunito:wght@400;600;700;800&display=swap');
