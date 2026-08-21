@@ -54,7 +54,7 @@ link.
 
 The codebase has had significant refactoring and new features added. Before going further, do a quick end-to-end smoke test on the live deployment:
 
-1. Go to [nametag-pi.vercel.app](https://nametag-pi.vercel.app)
+1. Go to [nametag.n4bil.com](https://nametag.n4bil.com) (or the underlying [nametag-pi.vercel.app](https://nametag-pi.vercel.app))
 2. Register a new account
 3. Fill in your profile — name, pronouns, photo, color, stickers
 4. Check the nearby grid loads (it'll be empty if no one else is around, that's fine)
@@ -162,7 +162,7 @@ Right now, reset links are logged to the Render console instead of emailed. To f
    - `SMTP_USER`
    - `SMTP_PASS`
    - `SMTP_FROM` — e.g. `Nametag <hello@yourdomain.com>`
-   - `APP_URL` — `https://nametag.vercel.app`
+   - `APP_URL` — `https://nametag.n4bil.com` (the app's public URL; used to build password-reset links)
 
 ---
 
