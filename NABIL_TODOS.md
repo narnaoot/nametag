@@ -7,13 +7,15 @@ Updated at the end of every session.
 
 ---
 
-## 🎨 UI redesign — "nearby name tags" (Aug 2026, branch `claude/design-redesign-impl-7ebgg2`)
+## 🎨 UI redesign — "nearby name tags" (Aug 2026, MERGED to `main` — PR #16)
 
 The whole client was rebuilt to the Claude Design canvas in `redesign/`
-(Libre Caslon + Nunito; orchid = the app, coral = you; the wall of hand-tilted
-tags; three-way visibility control; new Privacy tab; two-step onboarding; party
-code sheet; responsive tablet/desktop). Backend untouched; 80 server tests still
-pass. Details in `client/REDESIGN.md`.
+(Libre Caslon + Nunito; orchid = the app; the wall of hand-tilted tags;
+three-way visibility control; new Privacy tab; two-step onboarding; party
+code sheet; responsive tablet/desktop; you pick your own tag colour, with the
+orchid "you" ring marking your own tag). Backend untouched; 80 server tests still
+pass. It's live on `main` and will deploy to Vercel/Render on the next push.
+Details in `client/REDESIGN.md`.
 
 **Follow-up pass done** (Aug 2026) — your three calls are handled:
 

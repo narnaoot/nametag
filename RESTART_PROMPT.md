@@ -6,18 +6,19 @@ Paste this into Claude Code at the start of a new session to get up to speed qui
 
 ---
 
-## ⚠️ Latest: UI redesign in progress (branch `claude/design-redesign-impl-7ebgg2`)
+## ⚠️ Latest: UI redesign — MERGED to `main` (Aug 2026, PR #16)
 
 The client UI was rebuilt to the "nearby name tags" Claude Design canvas in
 `redesign/` — new type (Libre Caslon Text + Nunito), new colour rules (**orchid
-is the app, coral is you**), the wall of hand-tilted tags, a three-way visibility
-control, a Privacy tab, two-step onboarding, the party-code sheet, and responsive
-tablet/desktop layouts. This **supersedes** the earlier teal/Playfair design that
-the rest of this document describes. The backend, schema, and 80 server tests are
-unchanged. See **`client/REDESIGN.md`** for the implementation and
-**`REDESIGN_QUESTIONS.md`** for open decisions (unverified Privacy copy, Apple
-sign-in, etc.). Sections below still describe the backend/stack accurately; the
-frontend UI details are now historical.
+is the app**; coral is the default tag colour, and your own tag now wears the
+orchid "you" ring since colours are user-pickable), the wall of hand-tilted tags,
+a three-way visibility control, a Privacy tab, two-step onboarding, the
+party-code sheet, and responsive tablet/desktop layouts. This **supersedes** the
+earlier teal/Playfair design that the rest of this document describes. The
+backend, schema, and 80 server tests are unchanged. See **`client/REDESIGN.md`**
+for the implementation and **`REDESIGN_QUESTIONS.md`** for the remaining open
+decisions and the privacy audit. Sections below still describe the backend/stack
+accurately; the frontend UI details are now historical.
 
 ---
 
