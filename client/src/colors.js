@@ -16,19 +16,17 @@ function hash(str) {
   return Math.abs(h);
 }
 
-// Resolve a person to a paintbox key. You → coral. A stored tag_color is honored
-// (after the orchid/teal remap) if it names a real accent; otherwise a colour is
-// derived from the person's identity so the same person always looks the same.
+// Resolve a person to a paintbox key. Everyone can pick their own colour, so a
+// stored tag_color wins (orchid maps to citron — orchid is the app's). With no
+// choice, you default to coral and everyone else gets a stable colour derived
+// from their identity, so the same person always looks the same.
 export function resolveAccentKey(person, index = 0) {
-  if (person?.you) return 'coral';
   const stored = person?.accent;
   if (stored) {
     const remapped = ACCENT_REMAP[stored] || stored;
-    // never let another person be coral (you) or orchid (the app)
-    if (ACCENT_VARS[remapped] && remapped !== 'coral' && remapped !== 'orchid') {
-      return remapped;
-    }
+    if (ACCENT_VARS[remapped] && remapped !== 'orchid') return remapped;
   }
+  if (person?.you) return 'coral';
   const seed = person?.id != null ? String(person.id) : (person?.name || String(index));
   return PERSON_ACCENTS[hash(seed) % PERSON_ACCENTS.length];
 }

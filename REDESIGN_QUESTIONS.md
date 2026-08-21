@@ -6,20 +6,54 @@ existing app or backend, I took a best guess and kept going — each is listed h
 so you can confirm or redirect. Nothing here blocks the build; all screens are
 implemented and match the canvas.
 
+## ✅ Resolved in the follow-up pass (Aug 2026)
+
+- **#10 Privacy copy — rewritten to match reality.** The four cards now describe
+  what the code actually does (see the audit in "Actual privacy practices"
+  below). The placeholder is gone.
+- **#1 Sign in with Apple — dropped.** Too much setup for a web prototype (Apple
+  Developer account + Services ID + verified domain + signed client secret). The
+  Sign-in screen now has a single **Continue with email** button. Add Apple back
+  when there's a native app + developer account.
+- **#2 Tag colour — you pick it now.** Coral is the default, orchid is excluded
+  (it's the app's), and your own tag on the wall is marked with the orchid "you"
+  ring instead of by being coral.
+
+## Actual privacy practices (audited from the server code)
+
+Your stated goal was **on-device-only** storage. That is **not** the case today,
+and it can't fully be for a "who's near me" app — the server has to know people's
+locations to match co-present users. Here's the real split:
+
+- **On our server, persistently:** your **email** + a bcrypt **password hash**
+  (until you delete the account) + short-lived password-reset tokens.
+- **On our server, only while you're visible:** name, pronouns, one line,
+  stickers, colour, **photo file**, and your **single latest lat/lng** (+ a
+  timestamp; no history). Deleted the instant you go invisible, and auto-deleted
+  after 24 h without a refresh (`server/cleanup.js`). Account deletion hard-wipes
+  the row + photo file.
+- **On your device only (never sent to us):** your login token, a local copy of
+  your photo + profile (to restore your tag after cleanup), **remembered names**,
+  and **hidden people**.
+
+Two things worth hardening before real users (not blockers for a prototype):
+
+1. **Photos aren't actually cropped client-side.** The original image file is
+   uploaded and just displayed in a circle via CSS. The old design copy claimed
+   client-side cropping; I removed that claim. If you want it true, add a crop
+   step before upload.
+2. **Photo files are served at public `/uploads/user_<id>_<timestamp>.<ext>`
+   URLs** with no auth while they exist. Fine for a prototype; for launch,
+   consider signed/expiring URLs or auth-gated serving.
+
 ## Decisions I made (please confirm)
 
-1. **"Continue with Apple" on Sign in (12a).** There's no Apple OAuth backend.
-   Both landing buttons open the existing **email/password** flow; the Apple
-   button adds a small "Apple sign-in is coming soon — continue with email"
-   note. Keep email/password as the working path, or should we wire real Sign
-   in with Apple?
+1. ~~**"Continue with Apple"**~~ → **Resolved: dropped** (see above). Single
+   "Continue with email" button.
 
-2. **You no longer pick your own tag colour.** The rule "coral is you" means your
-   tag is always coral, so I removed the colour picker from My tag and
-   onboarding and force `tag_color: 'coral'` for yourself. Other people's
-   colours are derived **stably from their id** (excluding coral = you and
-   orchid = the app; teal→lavender, orchid→citron per the canvas). OK to drop
-   user colour choice entirely?
+2. ~~**You no longer pick your own tag colour.**~~ → **Resolved: you do** (see
+   above). Coral default, orchid excluded, orchid ring marks "you" on the wall.
+   `tag_color` stores your chosen key again.
 
 3. **The wall is a two-column staggered layout, not the fixed 6-tag composition.**
    The mock hand-places exactly six tags; live data has any number. I recreate
@@ -54,16 +88,11 @@ implemented and match the canvas.
 
 ## Needs your input / sign-off (from the README's own open questions)
 
-10. **Privacy statements are unverified (README open question #1).** The first
-    card is the literal placeholder from the design: *"These points need to be
-    modified to reflect actual privacy practices."* The other three claim (a)
-    nothing is retained after you leave including no record you were there, (b)
-    remembered names never leave the device and the other person is never
-    notified, (c) photos are cropped client-side before upload. These need
-    engineering sign-off before shipping — note the server currently keeps
-    photos/location transiently and NULLs them when you go invisible, and
-    request logs / analytics may count as "a record". **Please provide the
-    final, verified copy for all four cards.**
+10. ~~**Privacy statements are unverified.**~~ → **Resolved:** rewritten to match
+    the actual code (see "Actual privacy practices" above). Still worth a human
+    read to confirm the wording is one you're comfortable committing to publicly,
+    and to decide on the two hardening items (client-side crop, public photo
+    URLs).
 
 11. **"Read the whole policy" has no destination.** The row exists but doesn't
     navigate — there's no policy URL/route yet. Where should it go?

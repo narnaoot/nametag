@@ -5,6 +5,8 @@ import { Avatar } from '../components/Avatar';
 import VisibilityControl from '../components/VisibilityControl';
 import PartyCodeSheet from '../components/PartyCodeSheet';
 import StickerPicker from '../components/StickerPicker';
+import PaintboxPicker from '../components/PaintboxPicker';
+import { accentTrio } from '../colors';
 import {
   ONBOARDING_PRONOUNS, ONBOARDING_NAME_MAX, TAGLINE_MAX, DEFAULT_RADIUS, PLACE_FALLBACK,
 } from '../constants';
@@ -38,6 +40,7 @@ export default function OnboardingPage({ onDone }) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [pronouns, setPronouns] = useState('');
+  const [accentKey, setAccentKey] = useState('coral');
   const [customOpen, setCustomOpen] = useState(false);
   const [tagline, setTagline] = useState('');
   const [stickers, setStickers] = useState([]);
@@ -51,6 +54,7 @@ export default function OnboardingPage({ onDone }) {
   const fileInputRef = useRef(null);
 
   const place = PLACE_FALLBACK;
+  const trio = accentTrio(accentKey);
 
   function pickPronoun(p) {
     setCustomOpen(false);
@@ -77,7 +81,7 @@ export default function OnboardingPage({ onDone }) {
     const fields = {
       display_name: name.trim() || 'Someone', pronouns: pronouns || 'they/them',
       tagline: tagline.trim(), radius_meters: DEFAULT_RADIUS,
-      always_visible: alwaysVisible, tag_color: 'coral',
+      always_visible: alwaysVisible, tag_color: accentKey,
       stickers: JSON.stringify(stickers), party_code: visMode === 'party' ? partyCode.trim() : '',
     };
     try {
@@ -113,22 +117,28 @@ export default function OnboardingPage({ onDone }) {
           </div>
         </div>
 
-        {/* type onto the coral tag */}
-        <div style={{ marginTop: 26, background: 'var(--coral-lt)', border: '1.5px solid var(--border)',
+        {/* type onto your tag, in the colour you pick */}
+        <div style={{ marginTop: 26, background: trio.tint, border: '1.5px solid var(--border)',
               borderRadius: 'var(--r-tag)', boxShadow: 'var(--shadow-card)', transform: 'rotate(-1.4deg)',
               padding: '20px 18px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
           <div style={{ fontWeight: 700, fontSize: 9, letterSpacing: '.17em', textTransform: 'uppercase',
                 color: 'var(--muted)' }}>hello my name is</div>
-          <div style={{ width: '100%', borderBottom: '1.5px solid var(--coral)', paddingBottom: 6 }}>
+          <div style={{ width: '100%', borderBottom: `1.5px solid ${trio.hue}`, paddingBottom: 6 }}>
             <input autoFocus value={name} maxLength={ONBOARDING_NAME_MAX}
               onChange={e => setName(e.target.value)} placeholder="Maya"
               style={{ width: '100%', textAlign: 'center', border: 'none', outline: 'none',
                 background: 'none', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 42,
-                letterSpacing: '-1.2px', color: 'var(--text)', caretColor: 'var(--coral)', lineHeight: 1.1 }} />
+                letterSpacing: '-1.2px', color: 'var(--text)', caretColor: trio.hue, lineHeight: 1.1 }} />
           </div>
           <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
             First name or a nickname — whatever you’d say out loud.
           </div>
+        </div>
+
+        {/* colour */}
+        <div style={{ marginTop: 22, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="t-label" style={{ fontSize: 10 }}>Your tag colour</div>
+          <PaintboxPicker value={accentKey} onChange={setAccentKey} />
         </div>
 
         {/* pronouns */}
@@ -192,7 +202,7 @@ export default function OnboardingPage({ onDone }) {
       <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 18 }}>
         <div onClick={() => fileInputRef.current?.click()} style={{ cursor: 'pointer' }}>
           <Avatar person={{ photo: photoPreview, name: name || '?' }} size={112} border={3}
-                  ring="var(--coral)" shadow="var(--shadow-raise)" tint="var(--coral-lt)" deep="var(--coral-dk)" />
+                  ring={trio.hue} shadow="var(--shadow-raise)" tint={trio.tint} deep={trio.deep} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button type="button" onClick={() => fileInputRef.current?.click()} style={{ background: 'var(--surface)',

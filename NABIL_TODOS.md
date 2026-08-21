@@ -15,17 +15,24 @@ tags; three-way visibility control; new Privacy tab; two-step onboarding; party
 code sheet; responsive tablet/desktop). Backend untouched; 80 server tests still
 pass. Details in `client/REDESIGN.md`.
 
-**A handful of things need your call — see [`REDESIGN_QUESTIONS.md`](REDESIGN_QUESTIONS.md).** The most important:
+**Follow-up pass done** (Aug 2026) — your three calls are handled:
 
-- **Privacy screen copy is unverified.** The first statement card is still the
-  design's literal placeholder. All four claims need engineering sign-off before
-  shipping — please provide the final wording.
-- **"Continue with Apple"** on Sign in has no backend; both buttons currently
-  open the email/password flow. Wire real Sign in with Apple, or drop it?
-- **You no longer pick your own tag colour** (you're always coral); other people
-  get a stable auto-colour. Confirm that's the intent.
-- Radius control, venue/place name, mutual-context row, party hosting — all
-  noted in the questions file with the best-guess I shipped.
+- **Privacy copy rewritten to match what the code actually does.** Your
+  "on-device only" goal is **not** the current reality (and can't fully be — a
+  "who's near me" app needs a server to know locations). The honest split, plus
+  two things to harden (photos aren't cropped client-side; photo files sit at
+  public `/uploads/...` URLs), is written up in
+  [`REDESIGN_QUESTIONS.md`](REDESIGN_QUESTIONS.md) → "Actual privacy practices".
+  Give the new copy a read to confirm you're happy committing to it publicly.
+- **Sign in with Apple: dropped** for the web prototype (needs a paid Apple
+  Developer account + domain/secret setup). Sign-in is now a single "Continue
+  with email". Add Apple back when you go native.
+- **Tag colour: people pick their own again** (coral default; your tag gets the
+  orchid "you" ring on the wall so you can still spot yourself).
+
+Still open (best-guess shipped, see the questions file): venue/place name,
+mutual-context row, party hosting, radius UI, and a real "Read the whole policy"
+link.
 
 ---
 

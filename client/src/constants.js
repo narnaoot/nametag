@@ -24,15 +24,17 @@ export const ACCENT_VARS = {
   teal:     { hue: '--teal',     lt: '--teal-lt',   dk: '--teal-dk' },
 };
 
-// Identity colours other people can take. Coral is reserved for you; orchid is
-// the app. Teal is dropped (it clashed with the sage visibility card — the mock
-// remaps teal→lavender). These five match the canonical board (Theo lavender,
-// Priya citron, Jonas mustard, Lin denim, Ruthie blush).
+// Colours a person can choose for their own tag. Coral is the default (and was
+// once reserved for "you"); orchid is left out because it's the app's own
+// colour. Everything else in the paintbox is fair game.
+export const TAG_COLORS = ['coral', 'lavender', 'mustard', 'sage', 'denim', 'blush', 'citron', 'teal'];
+
+// When someone hasn't chosen a colour, other people are auto-assigned one of
+// these (a stable hash of their id), so the board stays varied.
 export const PERSON_ACCENTS = ['lavender', 'citron', 'mustard', 'denim', 'blush', 'sage'];
 
-// Two deliberate remaps for any stored/legacy tag_color: orchid belongs to the
-// app, and teal clashes with the sage card.
-export const ACCENT_REMAP = { orchid: 'citron', teal: 'lavender' };
+// Orchid belongs to the app, so any stored/legacy orchid tag maps to citron.
+export const ACCENT_REMAP = { orchid: 'citron' };
 
 // The brightened orchid used for display-size accent words + your avatar ring.
 export const BRAND_ACCENT = '#C462BC';

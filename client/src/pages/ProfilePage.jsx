@@ -9,10 +9,16 @@ import VisibilityControl from '../components/VisibilityControl';
 import PartyCodeSheet from '../components/PartyCodeSheet';
 import StickerPicker from '../components/StickerPicker';
 import PronounChips from '../components/PronounChips';
+import PaintboxPicker from '../components/PaintboxPicker';
 import {
   PRONOUN_OPTIONS, NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, MAX_STICKERS,
-  DEFAULT_RADIUS, PLACE_FALLBACK,
+  DEFAULT_RADIUS, PLACE_FALLBACK, TAG_COLORS,
 } from '../constants';
+
+const COLOR_NAMES = {
+  coral: 'Coral', lavender: 'Lavender', mustard: 'Mustard', sage: 'Sage',
+  denim: 'Denim', blush: 'Blush', citron: 'Citron', teal: 'Teal',
+};
 
 // A tap-to-edit row: label + current value + →, expanding to an inline editor.
 function EditRow({ label, value, open, onToggle, children }) {
@@ -47,6 +53,7 @@ export default function ProfilePage({ onDone }) {
   const [customPronouns, setCustomPronouns] = useState('');
   const [tagline, setTagline] = useState('');
   const [radius, setRadius] = useState(DEFAULT_RADIUS);
+  const [accentKey, setAccentKey] = useState('coral');
   const [alwaysVisible, setAlwaysVisible] = useState(true);
   const [partyCode, setPartyCode] = useState('');
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -71,6 +78,7 @@ export default function ProfilePage({ onDone }) {
       else { setPronounSelect('custom'); setCustomPronouns(src.pronouns || ''); }
       setTagline(src.tagline || '');
       setRadius(src.radius_meters || DEFAULT_RADIUS);
+      if (src.tag_color && TAG_COLORS.includes(src.tag_color)) setAccentKey(src.tag_color);
       setAlwaysVisible(src.always_visible !== false);
       if (src.stickers) { try { setSelectedStickers(JSON.parse(src.stickers)); } catch { /* ignore */ } }
       if (src.party_code !== undefined) setPartyCode(src.party_code || '');
@@ -127,7 +135,7 @@ export default function ProfilePage({ onDone }) {
     setError(''); setLoading(true);
     const fields = {
       display_name: name, pronouns, tagline: tagline.trim(), radius_meters: radius,
-      always_visible: alwaysVisible, tag_color: 'coral',
+      always_visible: alwaysVisible, tag_color: accentKey,
       stickers: JSON.stringify(selectedStickers), party_code: partyCode.trim(),
     };
     const fd = new FormData();
@@ -147,7 +155,7 @@ export default function ProfilePage({ onDone }) {
     autoSaveTimerRef.current = setTimeout(() => doSave({ silent: true }), 700);
     return () => clearTimeout(autoSaveTimerRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayName, pronounSelect, customPronouns, tagline, radius, alwaysVisible, selectedStickers, partyCode, photoFile]);
+  }, [displayName, pronounSelect, customPronouns, tagline, radius, accentKey, alwaysVisible, selectedStickers, partyCode, photoFile]);
 
   async function handleDeleteAccount() {
     setDeleting(true);
@@ -157,7 +165,7 @@ export default function ProfilePage({ onDone }) {
 
   const preview = {
     name: displayName || ' ', pronouns: pronouns || '', tagline,
-    stickers: selectedStickers, photo: photoPreview, you: true,
+    stickers: selectedStickers, photo: photoPreview, accent: accentKey, you: true,
   };
   const place = PLACE_FALLBACK;
 
@@ -226,6 +234,13 @@ export default function ProfilePage({ onDone }) {
                  open={editing === 'stickers'} onToggle={() => setEditing(e => e === 'stickers' ? null : 'stickers')}>
           <div style={{ marginTop: 12 }}>
             <StickerPicker value={selectedStickers} onChange={setSelectedStickers} />
+          </div>
+        </EditRow>
+
+        <EditRow label="Tag colour" value={COLOR_NAMES[accentKey] || 'Coral'}
+                 open={editing === 'colour'} onToggle={() => setEditing(e => e === 'colour' ? null : 'colour')}>
+          <div style={{ marginTop: 14 }}>
+            <PaintboxPicker value={accentKey} onChange={setAccentKey} />
           </div>
         </EditRow>
       </div>

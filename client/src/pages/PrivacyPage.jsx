@@ -8,26 +8,25 @@ import { PLACE_FALLBACK } from '../constants';
 // plain statements about what is true always — no tint coding, because these
 // are not categories and colouring them would imply a ranking.
 
-// NOTE: these claims are NOT signed off by engineering. The first card is a
-// placeholder from the design and MUST be replaced with a verified statement
-// before shipping. See redesign/README.md → "Open questions".
+// These four statements describe the app's ACTUAL behaviour (server routes +
+// cleanup.js + on-device storage), not aspirations. If you change how data is
+// stored, change these too. See REDESIGN_QUESTIONS.md for the audit.
 const STATEMENTS = [
   {
-    claim: 'These points need to be modified to reflect actual privacy practices.',
-    detail: null,
-    placeholder: true,
+    claim: 'Your tag only lives on our server while you’re visible',
+    detail: 'Your name, one line, photo, and current location are kept just long enough to show you to people nearby. Go invisible and they’re deleted right away; leave them a day without opening the app and they’re deleted for you.',
   },
   {
-    claim: 'Nothing is kept after you leave',
-    detail: 'Visibility switches itself off, your tag disappears from the wall, and no record is kept that you were there.',
+    claim: 'There’s no feed, no history, no messages',
+    detail: 'Nametag doesn’t record where you’ve been, who you saw, or who saw you. There’s nothing to scroll back through — the room is only ever right now.',
   },
   {
-    claim: 'Names you remember stay on your phone',
-    detail: 'Saving a name copies it to your device. The other person is never told that you did.',
+    claim: 'Names you save stay on your phone',
+    detail: 'When you remember a name, it’s copied to your device and never sent to us. The other person is never told.',
   },
   {
-    claim: 'Your photo is only ever a small circle',
-    detail: 'It is cropped on your phone before it is sent, and never shown larger than it is on the tag.',
+    claim: 'Your account is only an email and a password',
+    detail: 'We keep your email and an encrypted password so you can sign back in. Delete your account and everything — your email, your tag, and your photo — is erased right away.',
   },
 ];
 
@@ -80,11 +79,8 @@ export default function PrivacyPage({ onChangeVisibility }) {
           <div key={i} style={{ background: 'var(--surface)', border: '1.5px solid var(--border)',
                 borderRadius: 'var(--r)', padding: '13px 15px' }}>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 16.5, color: 'var(--text)',
-                  lineHeight: 1.3, fontStyle: s.placeholder ? 'italic' : 'normal',
-                  opacity: s.placeholder ? 0.85 : 1 }}>{s.claim}</div>
-            {s.detail && (
-              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, lineHeight: 1.5 }}>{s.detail}</div>
-            )}
+                  lineHeight: 1.3 }}>{s.claim}</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, lineHeight: 1.5 }}>{s.detail}</div>
           </div>
         ))}
       </div>

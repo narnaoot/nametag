@@ -1,19 +1,19 @@
-// MyTagPreview.jsx — your own tag, always coral, exactly as the room sees it.
-// Used on My tag. Coral is you: this tint never appears on chrome.
+// MyTagPreview.jsx — your own tag, exactly as the room sees it, in the colour
+// you picked (coral by default). Used on My tag.
 import { Avatar } from './Avatar';
+import { personTrio } from '../colors';
 import { STICKER_LABELS } from '../constants';
 
-const CORAL = { hue: 'var(--coral)', tint: 'var(--coral-lt)', deep: 'var(--coral-dk)' };
-
 export default function MyTagPreview({ person, onPhotoClick }) {
+  const c = personTrio(person);
   return (
-    <div style={{ background: CORAL.tint, border: '1.5px solid var(--border)',
+    <div style={{ background: c.tint, border: '1.5px solid var(--border)',
                   borderRadius: 'var(--r)', boxShadow: 'var(--shadow-raise)',
                   transform: 'rotate(-1.4deg)', padding: '14px 20px 12px',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
       <div onClick={onPhotoClick} style={{ cursor: onPhotoClick ? 'pointer' : 'default' }}>
-        <Avatar person={person} size={74} border={3} ring={CORAL.hue}
-                shadow="var(--shadow-raise)" tint={CORAL.tint} deep={CORAL.deep} />
+        <Avatar person={person} size={74} border={3} ring={c.hue}
+                shadow="var(--shadow-raise)" tint={c.tint} deep={c.deep} />
       </div>
       <div style={{ fontWeight: 700, fontSize: 9, letterSpacing: '.18em',
                     textTransform: 'uppercase', color: 'var(--muted)', marginTop: 3 }}>
@@ -24,9 +24,9 @@ export default function MyTagPreview({ person, onPhotoClick }) {
         {person.name || ' '}
       </div>
       {person.pronouns && (
-        <div style={{ background: 'var(--surface)', border: `1.5px solid ${CORAL.hue}`,
+        <div style={{ background: 'var(--surface)', border: `1.5px solid ${c.hue}`,
                       borderRadius: 'var(--r-pill)', padding: '5px 13px', fontWeight: 800,
-                      fontSize: 12, color: CORAL.deep }}>{person.pronouns}</div>
+                      fontSize: 12, color: c.deep }}>{person.pronouns}</div>
       )}
       {person.tagline && (
         <div className="t-quote" style={{ fontSize: 15, lineHeight: 1.35, textAlign: 'center',
@@ -35,9 +35,9 @@ export default function MyTagPreview({ person, onPhotoClick }) {
       {person.stickers?.length > 0 && (
         <div style={{ display: 'flex', gap: 8, marginTop: 5, flexWrap: 'wrap', justifyContent: 'center' }}>
           {person.stickers.map((s, i) => (
-            <div key={i} style={{ background: 'var(--surface)', border: `1.5px solid ${CORAL.hue}`,
+            <div key={i} style={{ background: 'var(--surface)', border: `1.5px solid ${c.hue}`,
                   borderRadius: 'var(--r-pill)', padding: '5px 11px', fontWeight: 800, fontSize: 11,
-                  color: CORAL.deep, display: 'flex', gap: 5, alignItems: 'center' }}>
+                  color: c.deep, display: 'flex', gap: 5, alignItems: 'center' }}>
               <span style={{ fontSize: 12 }}>{s}</span>{STICKER_LABELS[s] || ''}
             </div>
           ))}

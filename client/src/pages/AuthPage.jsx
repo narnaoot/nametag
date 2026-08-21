@@ -3,11 +3,12 @@ import { login, register, forgotPassword, resetPassword } from '../api';
 import { useAuth } from '../useAuth';
 
 // Sign in — "Put a name to the room." Orchid takes the accent word and the
-// primary button, so the app's own colour is set before you have a tag. Coral
-// is already spoken for: the tag with your face on it.
+// primary button, so the app's own colour is set before you have a tag.
 //
-// NOTE: "Continue with Apple" has no OAuth backend yet — both buttons open the
-// email/password flow (the working path). See redesign notes / open questions.
+// The design showed "Continue with Apple", but Sign in with Apple needs an Apple
+// Developer account + Services ID + verified domain + a signed client secret —
+// too much for a web prototype — so the working path is email/password. Add the
+// Apple button back here when there's a native app + developer account.
 
 function MiniTag({ w, rot, tint, hue, dk, top, left, right, bottom, name, pron, nameSize = 26, photo, lift }) {
   return (
@@ -56,7 +57,6 @@ export default function AuthPage({ onRegistered }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [appleNote, setAppleNote] = useState(false);
 
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get('reset');
@@ -117,9 +117,7 @@ export default function AuthPage({ onRegistered }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <button className="na-btn" onClick={() => { setAppleNote(true); setView('email'); }}>Continue with Apple</button>
-          <button className="na-btn na-btn--ghost" style={{ minHeight: 56, fontSize: 16, color: 'var(--text)' }}
-                  onClick={() => { setAppleNote(false); setView('email'); }}>Continue with email</button>
+          <button className="na-btn" onClick={() => setView('email')}>Continue with email</button>
           <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', lineHeight: 1.6, marginTop: 4 }}>
             Nametag only shows you to people in the same place, and only while you’re visible.
           </div>
@@ -166,9 +164,6 @@ export default function AuthPage({ onRegistered }) {
                   boxShadow: mode === m ? '0 2px 8px rgba(61,43,31,0.1)' : 'none' }}>{label}</button>
           ))}
         </div>
-        {appleNote && (
-          <div className="t-body" style={{ fontSize: 12.5 }}>Apple sign-in is coming soon — continue with email for now.</div>
-        )}
         <input className="na-field" type="email" placeholder="you@email.com" required value={email}
                onChange={e => setEmail(e.target.value)} />
         <PwField value={password} onChange={setPassword} minLength={mode === 'register' ? 8 : undefined}

@@ -52,7 +52,10 @@ export function Tag({
     >
       <div style={{ padding: '13px 12px 10px', display: 'flex', flexDirection: 'column',
                     alignItems: 'center', gap: 5 }}>
+        {/* your own tag can be any colour now, so the orchid "you" ring — the
+            same one the header avatar wears — marks it on the wall */}
         <Avatar person={person} size={faceSize} border={2.5}
+                ring={person?.you ? 'var(--brand)' : null}
                 tint={trio.tint} deep={trio.deep} />
         <div style={{ fontWeight: 700, fontSize: 8, letterSpacing: '.17em',
                       textTransform: 'uppercase', color: 'var(--muted)', marginTop: 2 }}>

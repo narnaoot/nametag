@@ -17,12 +17,19 @@ Everything follows from these:
    white text). Display-size accent words and avatar rings use the **brightened
    orchid `#C462BC`** (`--brand`), because `--orchid` is too dark to read as an
    accent at 40px.
-2. **Coral is you.** Your own tag is always coral, everywhere it appears, so you
-   find yourself on a wall at a glance. Coral is never used for chrome.
+2. **The orchid ring is you.** Coral is the *default* tag colour, but people now
+   **pick their own** (`PaintboxPicker`, on My tag + onboarding), so coral no
+   longer means "you". Instead your own tag — on the wall and in the header —
+   wears the brightened-orchid ring, so you can still find yourself at a glance
+   in any colour.
 
-Other people take a per-person identity colour from the paintbox. Two deliberate
-remaps: **orchid → citron** (orchid belongs to the app) and **teal → lavender**
-(teal clashed with the sage of the visibility card).
+   *(The canvas reserved coral for "you"; Nabil asked for free colour choice, so
+   the "you" signal moved to the ring. Orchid stays out of the picker — it's the
+   app's.)*
+
+Other people take their chosen colour, or — if they haven't picked one — a stable
+per-person colour derived from their id. One remap: **orchid → citron** (orchid
+belongs to the app).
 
 ## Design system
 
@@ -65,7 +72,7 @@ remaps: **orchid → citron** (orchid belongs to the app) and **teal → lavende
 | `pages/OnboardingPage.jsx` | 12b, 12c | Two steps with a two-dash indicator. Step 1: type onto the coral tag + pronouns + one line. Step 2: photo + stickers + who-can-see-you. |
 | `pages/GridPage.jsx` | 12d, 12g, 12h | The wall — responsive by viewport (see below). Header ("N tags nearby/here", Nearby, Refresh, your orchid-ringed avatar), the visibility control, and the tilted tag wall. Opening a tag → DetailSheet (phone/tablet) or the right rail (desktop); choosing Party code → PartyCodeSheet. |
 | `pages/ProfilePage.jsx` | 12f | My tag — coral preview, the visibility control above three tap-to-edit rows (Name+pronouns / One line / Stickers), auto-save, on-device photo, sign out + delete. |
-| `pages/PrivacyPage.jsx` | 14a | Privacy tab — sage "Right now" card + four statement cards (first is the design's unverified placeholder) + "Read the whole policy". |
+| `pages/PrivacyPage.jsx` | 14a | Privacy tab — sage "Right now" card + four statement cards (rewritten to match the actual server behaviour) + "Read the whole policy". |
 
 ## Central state — visibility
 
@@ -98,7 +105,7 @@ visibleSince, you }` maps onto the backend:
 | person field | server field | notes |
 |---|---|---|
 | name / pronouns / tagline | `display_name` / `pronouns` / `tagline` | |
-| accent | `tag_color` | you = coral (forced); others derived if unset/legacy |
+| accent | `tag_color` | the colour you picked (coral by default); others derived from id if unset/legacy |
 | stickers[] | `stickers` | emoji array in a JSON string; word looked up via `STICKER_LABELS` |
 | photo | `photo_path` | via `photoUrl()`; your own also from Capacitor Filesystem |
 | visibleSince | `location_updated_at` | drives "visible N min" |
@@ -129,9 +136,12 @@ The wall (`components/Wall.jsx`) takes a column count that grows with width:
 
 ## Not done yet / follow-ups
 
-- **Verified Privacy copy** — the four statements need engineering sign-off; the
-  first is a placeholder (see `../REDESIGN_QUESTIONS.md` #10).
-- **Apple Sign in, venue detection, mutual context, party hosting, radius UI** —
-  best-guess decisions / out of scope, all in `../REDESIGN_QUESTIONS.md`.
+- **Privacy hardening** — the copy now matches reality, but two things are worth
+  fixing before real users: photos aren't cropped client-side (the original is
+  uploaded, shown in a circle via CSS), and photo files sit at public
+  `/uploads/...` URLs. See `../REDESIGN_QUESTIONS.md`.
+- **Venue detection, mutual context, party hosting, radius UI** — best-guess
+  decisions / out of scope, all in `../REDESIGN_QUESTIONS.md`. Sign in with Apple
+  was dropped for the web prototype (add it back with a native app + dev account).
 - **Real photography** — the sign-in hero uses `public/sample-face.webp`
   (the canvas placeholder portrait) as decoration only.
