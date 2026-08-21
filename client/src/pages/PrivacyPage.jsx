@@ -14,7 +14,7 @@ import { PLACE_FALLBACK } from '../constants';
 const STATEMENTS = [
   {
     claim: 'Your tag only lives on our server while you’re visible',
-    detail: 'Your name, one line, photo, and current location are kept just long enough to show you to people nearby. Go invisible and they’re deleted right away; leave them a day without opening the app and they’re deleted for you.',
+    detail: 'Your name, one line, current location, and a photo — cropped to a small circle on your phone before it’s sent — are kept just long enough to show you to people nearby. Go invisible and they’re deleted right away; leave them a day without opening the app and they’re deleted for you.',
   },
   {
     claim: 'There’s no feed, no history, no messages',

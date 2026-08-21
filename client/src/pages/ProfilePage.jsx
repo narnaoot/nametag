@@ -4,6 +4,7 @@ import { useAuth } from '../useAuth';
 import {
   savePhotoLocally, loadLocalPhoto, persistProfileLocally, readLocalProfile,
 } from '../profileStorage';
+import { cropToSquare } from '../imageCrop';
 import MyTagPreview from '../components/MyTagPreview';
 import VisibilityControl from '../components/VisibilityControl';
 import PartyCodeSheet from '../components/PartyCodeSheet';
@@ -104,14 +105,22 @@ export default function ProfilePage({ onDone }) {
   const visMode = !alwaysVisible ? 'invisible' : (partyCode ? 'party' : 'nearby');
 
   function handlePickPhoto() { fileInputRef.current?.click(); }
-  function handleFileChange(e) {
+  async function handleFileChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    const reader = new FileReader();
-    reader.onload = async (ev) => { setPhotoPreview(ev.target.result); await savePhotoLocally(ev.target.result); };
-    reader.readAsDataURL(file);
-    setPhotoFile(file);
+    try {
+      // Crop to a small square on-device before it's ever uploaded.
+      const { dataUrl, file: cropped } = await cropToSquare(file);
+      setPhotoPreview(dataUrl);
+      await savePhotoLocally(dataUrl);
+      setPhotoFile(cropped);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = async (ev) => { setPhotoPreview(ev.target.result); await savePhotoLocally(ev.target.result); };
+      reader.readAsDataURL(file);
+      setPhotoFile(file);
+    }
   }
 
   function handleVisibility(next) {

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { updateProfile } from '../api';
 import { persistProfileLocally, savePhotoLocally } from '../profileStorage';
+import { cropToSquare } from '../imageCrop';
 import { Avatar } from '../components/Avatar';
 import VisibilityControl from '../components/VisibilityControl';
 import PartyCodeSheet from '../components/PartyCodeSheet';
@@ -60,14 +61,21 @@ export default function OnboardingPage({ onDone }) {
     setCustomOpen(false);
     setPronouns(prev => (prev === p ? '' : p));
   }
-  function handleFileChange(e) {
+  async function handleFileChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    const reader = new FileReader();
-    reader.onload = async (ev) => { setPhotoPreview(ev.target.result); await savePhotoLocally(ev.target.result); };
-    reader.readAsDataURL(file);
-    setPhotoFile(file);
+    try {
+      const { dataUrl, file: cropped } = await cropToSquare(file);
+      setPhotoPreview(dataUrl);
+      await savePhotoLocally(dataUrl);
+      setPhotoFile(cropped);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = async (ev) => { setPhotoPreview(ev.target.result); await savePhotoLocally(ev.target.result); };
+      reader.readAsDataURL(file);
+      setPhotoFile(file);
+    }
   }
   function handleVisibility(next) {
     if (next === 'party') { setShowParty(true); return; }

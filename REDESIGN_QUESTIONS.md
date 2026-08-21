@@ -36,15 +36,16 @@ locations to match co-present users. Here's the real split:
   your photo + profile (to restore your tag after cleanup), **remembered names**,
   and **hidden people**.
 
-Two things worth hardening before real users (not blockers for a prototype):
+Hardening:
 
-1. **Photos aren't actually cropped client-side.** The original image file is
-   uploaded and just displayed in a circle via CSS. The old design copy claimed
-   client-side cropping; I removed that claim. If you want it true, add a crop
-   step before upload.
+1. ~~**Photos aren't cropped client-side.**~~ → **Done (Aug 2026).** Picked
+   photos are now cropped to a centered square and downscaled to a 320px JPEG
+   **on-device before upload** (`client/src/imageCrop.js`), so the tag's small
+   circle is all that's ever sent (a 1200×800 pick → ~2 KB). The Privacy copy now
+   truthfully says the photo is cropped on your phone before it's sent.
 2. **Photo files are served at public `/uploads/user_<id>_<timestamp>.<ext>`
    URLs** with no auth while they exist. Fine for a prototype; for launch,
-   consider signed/expiring URLs or auth-gated serving.
+   consider signed/expiring URLs or auth-gated serving. *(Still open.)*
 
 ## Decisions I made (please confirm)
 
