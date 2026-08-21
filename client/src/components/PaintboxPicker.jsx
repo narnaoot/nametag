@@ -1,20 +1,21 @@
-// PaintboxPicker.jsx — the five-swatch paintbox accent picker, shared by
-// Onboarding and My Tag. Selected swatch gets a text-colored ring + slight
-// scale-up. `value`/`onChange` work in paintbox keys (e.g. "teal").
-import { ACCENT_ORDER } from '../constants';
+// PaintboxPicker.jsx — pick the colour of your own tag. A row of paintbox
+// swatches (the app's own orchid is left out). The selected swatch gets a ring
+// in its own hue.
+import { accentTrio } from '../colors';
+import { TAG_COLORS } from '../constants';
 
 export default function PaintboxPicker({ value, onChange, justify = 'flex-start' }) {
   return (
-    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: justify }}>
-      {ACCENT_ORDER.map(key => {
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: justify }}>
+      {TAG_COLORS.map(key => {
+        const trio = accentTrio(key);
         const on = value === key;
         return (
-          <button key={key} type="button" onClick={() => onChange(key)} aria-label={key} title={key} style={{
-            width: 34, height: 34, borderRadius: '50%', background: `var(--${key})`,
-            border: on ? '3px solid var(--text)' : '3px solid transparent',
-            outline: 'var(--hairline) solid var(--border)',
-            cursor: 'pointer', transition: 'transform .12s ease',
-            transform: on ? 'scale(1.12)' : 'none',
+          <button key={key} type="button" onClick={() => onChange(key)} aria-label={key} style={{
+            width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', padding: 0,
+            background: trio.hue, border: '2px solid var(--surface)',
+            boxShadow: on ? `0 0 0 2px var(--bg), 0 0 0 4px ${trio.hue}` : '0 1px 3px rgba(0,0,0,.18)',
+            transform: on ? 'scale(1.08)' : 'none', transition: 'transform .12s ease, box-shadow .12s ease',
           }} />
         );
       })}

@@ -1,0 +1,114 @@
+# Redesign — questions & best-guess decisions for Nabil
+
+Implementing `redesign/README.md` (the "nearby name tags" Claude Design canvas)
+in the React/Vite/Capacitor client. Where the design didn't map cleanly onto the
+existing app or backend, I took a best guess and kept going — each is listed here
+so you can confirm or redirect. Nothing here blocks the build; all screens are
+implemented and match the canvas.
+
+## ✅ Resolved in the follow-up pass (Aug 2026)
+
+- **#10 Privacy copy — rewritten to match reality.** The four cards now describe
+  what the code actually does (see the audit in "Actual privacy practices"
+  below). The placeholder is gone.
+- **#1 Sign in with Apple — dropped.** Too much setup for a web prototype (Apple
+  Developer account + Services ID + verified domain + signed client secret). The
+  Sign-in screen now has a single **Continue with email** button. Add Apple back
+  when there's a native app + developer account.
+- **#2 Tag colour — you pick it now.** Coral is the default, orchid is excluded
+  (it's the app's), and your own tag on the wall is marked with the orchid "you"
+  ring instead of by being coral.
+
+## Actual privacy practices (audited from the server code)
+
+Your stated goal was **on-device-only** storage. That is **not** the case today,
+and it can't fully be for a "who's near me" app — the server has to know people's
+locations to match co-present users. Here's the real split:
+
+- **On our server, persistently:** your **email** + a bcrypt **password hash**
+  (until you delete the account) + short-lived password-reset tokens.
+- **On our server, only while you're visible:** name, pronouns, one line,
+  stickers, colour, **photo file**, and your **single latest lat/lng** (+ a
+  timestamp; no history). Deleted the instant you go invisible, and auto-deleted
+  after 24 h without a refresh (`server/cleanup.js`). Account deletion hard-wipes
+  the row + photo file.
+- **On your device only (never sent to us):** your login token, a local copy of
+  your photo + profile (to restore your tag after cleanup), **remembered names**,
+  and **hidden people**.
+
+Two things worth hardening before real users (not blockers for a prototype):
+
+1. **Photos aren't actually cropped client-side.** The original image file is
+   uploaded and just displayed in a circle via CSS. The old design copy claimed
+   client-side cropping; I removed that claim. If you want it true, add a crop
+   step before upload.
+2. **Photo files are served at public `/uploads/user_<id>_<timestamp>.<ext>`
+   URLs** with no auth while they exist. Fine for a prototype; for launch,
+   consider signed/expiring URLs or auth-gated serving.
+
+## Decisions I made (please confirm)
+
+1. ~~**"Continue with Apple"**~~ → **Resolved: dropped** (see above). Single
+   "Continue with email" button.
+
+2. ~~**You no longer pick your own tag colour.**~~ → **Resolved: you do** (see
+   above). Coral default, orchid excluded, orchid ring marks "you" on the wall.
+   `tag_color` stores your chosen key again.
+
+3. **The wall is a two-column staggered layout, not the fixed 6-tag composition.**
+   The mock hand-places exactly six tags; live data has any number. I recreate
+   the hand-laid feel (unequal tilts, shadows, widths, photo sizes; the right
+   column dropped ~24px so nothing lines up) in a robust two-column wall. "You"
+   (coral) always leads. Acceptable, or do you want a different dynamic layout?
+
+4. **Radius control removed from the UI.** My tag (12f) shows only Name / One
+   line / Stickers. The old 50 m–1 km radius selector is gone from the UI; the
+   value is kept server-side at the stored/default 100 m so the nearby query
+   still works. Re-add a radius control somewhere, or leave it out?
+
+5. **Pronoun editing lives inside the "Name" row.** 12f has no pronouns row, but
+   pronouns still need to be editable after onboarding. I put the pronoun chips
+   in the Name row's inline editor. Prefer a dedicated Pronouns row instead?
+
+6. **No venue name.** The mock says "Ritual Coffee"; we have no place detection,
+   so the header reads "N tags nearby" and copy uses "nearby". Want venue
+   detection (needs a places API + backend), or keep it generic?
+
+7. **Mutual-context row (12e).** "Theo is here too — you were both at the same
+   open mic last week." No backend produces this, so the row only renders when
+   context data is supplied (never, in production, right now). Is a
+   mutual-context feature planned, or should I drop the row?
+
+8. **Party code has no "create/host" flow.** 13a assumes a host tells you a code
+   out loud. Party code just filters the existing nearby query. Hosting is
+   undesigned (README open question #2) — confirm out of scope for now.
+
+9. **Ink/dark theme dropped.** The old app carried an unused dark "ink" theme.
+   The new spec has no dark theme, so I removed it. Confirm.
+
+## Needs your input / sign-off (from the README's own open questions)
+
+10. ~~**Privacy statements are unverified.**~~ → **Resolved:** rewritten to match
+    the actual code (see "Actual privacy practices" above). Still worth a human
+    read to confirm the wording is one you're comfortable committing to publicly,
+    and to decide on the two hardening items (client-side crop, public photo
+    URLs).
+
+11. **"Read the whole policy" has no destination.** The row exists but doesn't
+    navigate — there's no policy URL/route yet. Where should it go?
+
+12. **Empty / error / permission states (README open question #3).** I built
+    minimal versions: nobody nearby ("this spot's free"), location denied (a
+    coral note), and invisible (a "you're invisible" state). These aren't
+    designed yet — replace with real designs when ready.
+
+13. **Tablet & desktop (12g/12h) — built, with one adaptation.** The board is
+    responsive (2/3/4 columns), tablet widens the board with the visibility
+    control in the header, and desktop gets a left nav rail + centre board + a
+    right "Selected" panel so opening a tag never covers the room. The one
+    deviation from the canvas: it puts "where you are" / your own tag / the
+    stacked visibility control in the desktop **left** rail; I kept the left rail
+    as pure navigation (it's shared across tabs) and put visibility + your avatar
+    in the Nearby centre header instead. Happy to move them into the rail if you
+    prefer the exact canvas layout — a `stacked` VisibilityControl variant is
+    already there for it.

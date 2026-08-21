@@ -7,6 +7,35 @@ Updated at the end of every session.
 
 ---
 
+## 🎨 UI redesign — "nearby name tags" (Aug 2026, branch `claude/design-redesign-impl-7ebgg2`)
+
+The whole client was rebuilt to the Claude Design canvas in `redesign/`
+(Libre Caslon + Nunito; orchid = the app, coral = you; the wall of hand-tilted
+tags; three-way visibility control; new Privacy tab; two-step onboarding; party
+code sheet; responsive tablet/desktop). Backend untouched; 80 server tests still
+pass. Details in `client/REDESIGN.md`.
+
+**Follow-up pass done** (Aug 2026) — your three calls are handled:
+
+- **Privacy copy rewritten to match what the code actually does.** Your
+  "on-device only" goal is **not** the current reality (and can't fully be — a
+  "who's near me" app needs a server to know locations). The honest split, plus
+  two things to harden (photos aren't cropped client-side; photo files sit at
+  public `/uploads/...` URLs), is written up in
+  [`REDESIGN_QUESTIONS.md`](REDESIGN_QUESTIONS.md) → "Actual privacy practices".
+  Give the new copy a read to confirm you're happy committing to it publicly.
+- **Sign in with Apple: dropped** for the web prototype (needs a paid Apple
+  Developer account + domain/secret setup). Sign-in is now a single "Continue
+  with email". Add Apple back when you go native.
+- **Tag colour: people pick their own again** (coral default; your tag gets the
+  orchid "you" ring on the wall so you can still spot yourself).
+
+Still open (best-guess shipped, see the questions file): venue/place name,
+mutual-context row, party hosting, radius UI, and a real "Read the whole policy"
+link.
+
+---
+
 ## ✅ Test the live app (do this soon)
 
 The codebase has had significant refactoring and new features added. Before going further, do a quick end-to-end smoke test on the live deployment:

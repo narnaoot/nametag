@@ -1,56 +1,76 @@
-// Color + accent helpers ported from the design handoff (app.jsx + badge.jsx).
-import { PAINTBOX, ACCENT_ORDER } from './constants';
+// Colour + accent helpers for the redesign.
+//
+// Two rules: your own tag is always CORAL; everyone else takes a stable
+// identity colour from PERSON_ACCENTS. Orchid (the app) and teal (clashes with
+// the sage visibility card) are remapped out via ACCENT_REMAP.
+import {
+  ACCENT_VARS, ACCENT_REMAP, PERSON_ACCENTS,
+} from './constants';
 import { photoUrl } from './api';
 
-// ── Contrast helper (ported from app.jsx lum/bestOn) ──────────────────────
-// --on-primary is computed from the active primary's relative luminance so
-// overlaid text always has enough contrast. Bright accents (mustard) land on
-// dark ink; the rest land on white — decided by the math, not by hand.
-function lum(hex) {
-  const c = hex.replace('#', '');
-  const ch = (i) => {
-    const x = parseInt(c.slice(i, i + 2), 16) / 255;
-    return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
-  };
-  return 0.2126 * ch(0) + 0.7152 * ch(2) + 0.0722 * ch(4);
+// Stable string hash → non-negative int, for deriving a per-person colour.
+function hash(str) {
+  let h = 0;
+  const s = String(str || '');
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
 }
 
-export function bestOn(hex) {
-  const L = lum(hex);
-  const onWhite = 1.05 / (L + 0.05);
-  const onDark = (L + 0.05) / (lum('#23170E') + 0.05);
-  return onWhite >= onDark ? '#FFFFFF' : '#23170E';
+// Resolve a person to a paintbox key. Everyone can pick their own colour, so a
+// stored tag_color wins (orchid maps to citron — orchid is the app's). With no
+// choice, you default to coral and everyone else gets a stable colour derived
+// from their identity, so the same person always looks the same.
+export function resolveAccentKey(person, index = 0) {
+  const stored = person?.accent;
+  if (stored) {
+    const remapped = ACCENT_REMAP[stored] || stored;
+    if (ACCENT_VARS[remapped] && remapped !== 'orchid') return remapped;
+  }
+  if (person?.you) return 'coral';
+  const seed = person?.id != null ? String(person.id) : (person?.name || String(index));
+  return PERSON_ACCENTS[hash(seed) % PERSON_ACCENTS.length];
 }
 
-// ── Accent resolution ─────────────────────────────────────────────────────
-// Returns a CSS var reference (e.g. "var(--teal)") so the Ink theme's deepened
-// paintbox applies automatically wherever the accent is used. Per-person
-// "mixed" mode: use the person's own accent key, falling back to a stable
-// per-index paintbox color when their key is missing/legacy.
-export function resolveAccent(person, index = 0) {
-  const key = person?.accent && PAINTBOX[person.accent]
-    ? person.accent
-    : ACCENT_ORDER[index % ACCENT_ORDER.length];
-  return `var(--${key})`;
+// A paintbox key → { hue, tint, deep } as CSS-var references.
+export function accentTrio(key) {
+  const v = ACCENT_VARS[key] || ACCENT_VARS.coral;
+  return { hue: `var(${v.hue})`, tint: `var(${v.lt})`, deep: `var(${v.dk})` };
 }
 
-// First initial for the monogram avatar.
+// Convenience: resolve a person straight to their trio.
+export function personTrio(person, index = 0) {
+  return accentTrio(resolveAccentKey(person, index));
+}
+
+// First initial, for the no-photo fallback avatar.
 export function initials(name) {
   const parts = String(name || '').trim().split(/\s+/);
   return (parts[0]?.[0] || '?').toUpperCase();
 }
 
-// ── Distance label (ported from badge.jsx distanceLabel) ──────────────────
-export function distanceLabel(d) {
-  if (d == null) return null;
-  if (d < 10) return 'here';
-  if (d < 100) return `~${Math.round(d / 5) * 5} m`;
-  return `${Math.max(1, Math.round(d / 80))} min walk`;
+// "visible 12 min" — the only honest number left on a tag (distance is gone,
+// because everyone here is within a room's width). Derived from when the
+// person's location was last refreshed.
+export function visibleMinutes(since) {
+  if (!since) return null;
+  const t = typeof since === 'number' ? since : Date.parse(since);
+  if (Number.isNaN(t)) return null;
+  return Math.max(0, Math.floor((Date.now() - t) / 60000));
 }
 
-// ── Server profile → badge person shape ───────────────────────────────────
-// Maps the app's profile rows (display_name, tag_color, stickers JSON, …) onto
-// the design's person shape ({ name, accent, stickers[], photo, distance }).
+export function visibleLabel(since) {
+  const m = visibleMinutes(since);
+  if (m == null) return null;
+  if (m < 1) return 'visible just now';
+  if (m < 60) return `visible ${m} min`;
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return rem ? `visible ${h} hr ${rem} min` : `visible ${h} hr`;
+}
+
+// ── Server profile row → tag "person" shape ───────────────────────────────
+// { id, name, pronouns, tagline, accent (paintbox key), stickers[], photo,
+//   visibleSince, you }. Distance and waves are gone in the redesign.
 export function toBadgePerson(profile, { selfPhoto, you = false } = {}) {
   if (!profile) return null;
   let stickers = [];
@@ -60,11 +80,10 @@ export function toBadgePerson(profile, { selfPhoto, you = false } = {}) {
     name: profile.display_name || '',
     pronouns: profile.pronouns || '',
     tagline: profile.tagline || '',
-    accent: profile.tag_color || null, // paintbox key stored in tag_color
+    accent: profile.tag_color || null,
     stickers,
     photo: selfPhoto || (profile.photo_path ? photoUrl(profile.photo_path) : null),
-    distance: profile.distance_meters ?? (you ? 0 : null),
-    wavedAtYou: !!profile.wavedAtYou,
+    visibleSince: profile.location_updated_at || null,
     you,
   };
 }
