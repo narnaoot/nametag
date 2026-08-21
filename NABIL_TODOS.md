@@ -36,6 +36,18 @@ Still open (best-guess shipped, see the questions file): venue/place name,
 mutual-context row, party hosting, radius UI, and a real "Read the whole policy"
 link.
 
+### Privacy — next up (added Aug 2026)
+
+1. **Write the full privacy policy.** The in-app Privacy screen has four plain
+   statements; we still need a real, complete policy document (what's collected,
+   why, retention, deletion, third parties: Render/Neon/Vercel, cookies/logs,
+   contact) and a URL for the "Read the whole policy" link to point at.
+2. **Do a full privacy review.** Audit the whole data path end-to-end against the
+   policy — account credentials, transient profile + location, the 24h cleanup,
+   the public `/uploads/…` photo URLs (harden to signed/auth-gated), platform
+   request logs/analytics, and the on-device stores (remembered names, hidden
+   people, local profile/photo). Confirm every claim we make is actually true.
+
 ---
 
 ## ✅ Test the live app (do this soon)
