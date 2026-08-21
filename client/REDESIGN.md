@@ -136,10 +136,9 @@ The wall (`components/Wall.jsx`) takes a column count that grows with width:
 
 ## Not done yet / follow-ups
 
-- **Privacy hardening** — the copy now matches reality, but two things are worth
-  fixing before real users: photos aren't cropped client-side (the original is
-  uploaded, shown in a circle via CSS), and photo files sit at public
-  `/uploads/...` URLs. See `../REDESIGN_QUESTIONS.md`.
+- **Privacy hardening** — photos are now cropped + downscaled on-device before
+  upload (`src/imageCrop.js`, wired into onboarding + My tag). Still open: photo
+  files sit at public `/uploads/...` URLs. See `../REDESIGN_QUESTIONS.md`.
 - **Venue detection, mutual context, party hosting, radius UI** — best-guess
   decisions / out of scope, all in `../REDESIGN_QUESTIONS.md`. Sign in with Apple
   was dropped for the web prototype (add it back with a native app + dev account).
