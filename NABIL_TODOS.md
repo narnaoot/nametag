@@ -14,7 +14,8 @@ The whole client was rebuilt to the Claude Design canvas in `redesign/`
 three-way visibility control; new Privacy tab; two-step onboarding; party
 code sheet; responsive tablet/desktop; you pick your own tag colour, with the
 orchid "you" ring marking your own tag). Backend untouched; 80 server tests still
-pass. It's live on `main` and will deploy to Vercel/Render on the next push.
+pass. It's deployed and **live at https://nametag.n4bil.com** (custom domain via
+Namecheap CNAME → Vercel; Render `APP_URL` set to match).
 Details in `client/REDESIGN.md`.
 
 **Follow-up pass done** (Aug 2026) — your three calls are handled:
