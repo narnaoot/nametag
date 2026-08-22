@@ -20,13 +20,19 @@ for the implementation and **`REDESIGN_QUESTIONS.md`** for the remaining open
 decisions and the privacy audit. Sections below still describe the backend/stack
 accurately; the frontend UI details are now historical.
 
+Since then (all on `main`): honest Privacy copy, dropped Apple sign-in, a
+user-pickable tag colour, on-device photo cropping before upload
+(`client/src/imageCrop.js`), and the fixed `.env.production` API URL. The app is
+**live on the custom domain https://nametag.n4bil.com** (Namecheap CNAME →
+Vercel; Render `APP_URL` set to match).
+
 ---
 
 ## What is this?
 
 **Nametag** is a location-based social discovery app — a digital "Hello, My Name Is" badge. Users share their name, pronouns, and a photo. When nearby people open the app, they see each other's badges — a wall of hand-tilted name tags.
 
-- **Live app**: https://nametag.n4bil.com _(custom domain via Namecheap → Vercel; being set up. Underlying Vercel URL: https://nametag-pi.vercel.app)_
+- **Live app**: https://nametag.n4bil.com _(live — custom domain via Namecheap CNAME → Vercel; underlying Vercel URL: https://nametag-pi.vercel.app. Render `APP_URL` set to the custom domain so reset links use it.)_
 - **API**: https://nametag.onrender.com
 - **Repo**: https://github.com/narnaoot/nametag (cloned at `/home/user/nametag`)
 
@@ -95,11 +101,17 @@ Everything below is **done and on `main`**:
 
 ## What still needs doing
 
-1. **SMTP email** — reset links are logged to the Render console. Set `SMTP_HOST/PORT/USER/PASS/FROM` + `APP_URL` env vars on Render to send real emails.
-2. **End-to-end test on live app** — register a user, set a profile, test nearby grid, test forgot-password flow on nametag.n4bil.com (or nametag-pi.vercel.app) / nametag.onrender.com.
-3. **iOS build** — needs a Mac with Xcode. Run `cd client && npx cap sync && npx cap open ios`. Codebase is clean and ready.
-4. **iOS Privacy strings** — `Info.plist` needs `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` before App Store submission.
-5. **Loading state on profile page** — no skeleton/placeholder while the profile loads on first open (the auto-save "Saving…" indicator shows at the top, but fields still pop in with a delay).
+1. **Full privacy policy + full privacy review** — write the complete policy (and a
+   destination for the in-app "Read the whole policy" link) and audit the whole
+   data path. See `NABIL_TODOS.md` → "Privacy — next up".
+2. **Harden photo serving** — photo files are still at public `/uploads/…` URLs;
+   move to signed/expiring or auth-gated serving before real users.
+3. **SMTP email** — reset links are logged to the Render console. Set `SMTP_HOST/PORT/USER/PASS/FROM` on Render to send real emails (`APP_URL` is already set to https://nametag.n4bil.com).
+4. **End-to-end test on live app** — register a user, set a profile, test nearby grid, test forgot-password flow on nametag.n4bil.com / nametag.onrender.com.
+5. **iOS build** — needs a Mac with Xcode. Run `cd client && npx cap sync && npx cap open ios`. Codebase is clean and ready.
+6. **iOS Privacy strings** — `Info.plist` needs `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` before App Store submission.
+7. **Loading state on profile page** — no skeleton/placeholder while the profile loads on first open (the auto-save "Saving…" indicator shows at the top, but fields still pop in with a delay).
+8. **Homepage link** — add a "Try Nametag →" link to https://nametag.n4bil.com on the n4bil.com site (repo `narnaoot/narnaoot.github.io`).
 
 ---
 
