@@ -98,10 +98,13 @@ Hardening:
 11. **"Read the whole policy" has no destination.** The row exists but doesn't
     navigate — there's no policy URL/route yet. Where should it go?
 
-12. **Empty / error / permission states (README open question #3).** I built
-    minimal versions: nobody nearby ("this spot's free"), location denied (a
-    coral note), and invisible (a "you're invisible" state). These aren't
-    designed yet — replace with real designs when ready.
+12. **Empty / error / permission states (README open question #3).** Built out
+    proper versions (Aug 2026): a **location-permission** state (📍 + "Turn on
+    location" + Try again) that distinguishes denied vs unavailable; **nobody
+    nearby** and a distinct **party-code-with-no-matches** empty state; a
+    **loading skeleton**; the "you're the first one here" note under your solo
+    tag; and the **invisible** state. Copy is my best guess — tweak wording when
+    you want, but the flows now hold together.
 
 13. **Tablet & desktop (12g/12h) — built, with one adaptation.** The board is
     responsive (2/3/4 columns), tablet widens the board with the visibility

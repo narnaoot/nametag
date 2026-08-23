@@ -21,26 +21,80 @@ const BOARD = {
 
 const CLOSING_NOTE = 'Nothing is kept once you leave — no messages, no history. Names you remember stay on your phone.';
 
-function EmptyWall({ place }) {
+function CenteredState({ children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingTop: 40 }}>
+      {children}
+    </div>
+  );
+}
+
+function EmptyWall({ place, mode, partyCode }) {
+  const party = mode === 'party';
+  return (
+    <CenteredState>
       <div style={{ width: 132, border: '2px dashed color-mix(in srgb, var(--muted) 34%, transparent)',
             borderRadius: 'var(--r-tag)', transform: 'rotate(-2deg)', padding: '22px 14px',
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 26 }}>👋</span>
+        <span style={{ fontSize: 26 }}>{party ? '🎉' : '👋'}</span>
         <span className="t-quote" style={{ fontSize: 14, color: 'var(--muted)' }}>this spot’s free</span>
       </div>
-      <div className="t-h2" style={{ fontSize: 26, marginTop: 26 }}>No tags yet</div>
-      <div className="t-body" style={{ fontSize: 14, maxWidth: 260, marginTop: 8 }}>
-        You’re the first one here. Stay visible — when someone arrives {place && place !== 'nearby' ? `at ${place}` : 'nearby'}, their tag shows up right beside yours.
+      <div className="t-h2" style={{ fontSize: 26, marginTop: 26 }}>{party ? 'No one’s joined yet' : 'No tags yet'}</div>
+      <div className="t-body" style={{ fontSize: 14, maxWidth: 268, marginTop: 8 }}>
+        {party ? (
+          <>No one nearby has entered the code{partyCode ? <> <strong>{partyCode}</strong></> : ''} yet. Share it with the people you want to see.</>
+        ) : (
+          <>You’re the first one here. Stay visible — when someone arrives {place && place !== 'nearby' ? `at ${place}` : 'nearby'}, their tag shows up right beside yours.</>
+        )}
       </div>
+    </CenteredState>
+  );
+}
+
+function LocationNeeded({ kind, onRetry }) {
+  const denied = kind === 'denied';
+  return (
+    <CenteredState>
+      <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'var(--sage-lt)',
+            border: '1.5px solid var(--sage)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 30 }}>📍</div>
+      <div className="t-h2" style={{ fontSize: 24, marginTop: 20 }}>
+        {denied ? 'Turn on location' : 'Couldn’t find you'}
+      </div>
+      <div className="t-body" style={{ fontSize: 14, maxWidth: 280, marginTop: 8 }}>
+        {denied
+          ? 'Nametag shows you the people in the room with you, so it needs your location while you’re here. Turn it on in your browser or device settings, then try again.'
+          : 'We couldn’t get your location just now. Check your connection and try again.'}
+      </div>
+      <button className="na-btn" style={{ marginTop: 22, minWidth: 180 }} onClick={onRetry}>Try again</button>
+    </CenteredState>
+  );
+}
+
+function WallSkeleton({ columns = 2 }) {
+  const tags = Array.from({ length: columns === 2 ? 4 : columns * 2 });
+  return (
+    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+      {Array.from({ length: columns }).map((_, c) => (
+        <div key={c} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 20, marginTop: c % 2 ? 24 : 0 }}>
+          {tags.slice(0, 2).map((_, i) => (
+            <div key={i} style={{ background: 'var(--surface)', border: '1.5px solid var(--border)',
+                  borderRadius: 'var(--r-tag)', padding: '13px 12px 16px', display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', gap: 8, animation: `nt-pulse 1.1s ease ${(c + i) * 0.15}s infinite alternate` }}>
+              <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--warm2)' }} />
+              <div style={{ width: '55%', height: 16, borderRadius: 6, background: 'var(--warm2)', marginTop: 4 }} />
+              <div style={{ width: '40%', height: 12, borderRadius: 99, background: 'var(--warm2)' }} />
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
 
 export default function GridPage({ onEditTag, layout = 'phone' }) {
   const {
-    nearby, myProfile, locationError, loading, lastUpdated, mode,
+    nearby, myProfile, locationErrorKind, loading, lastUpdated, mode,
     hiddenIds, refresh, setVisibilityMode, reloadHidden,
   } = useNearbyPeople();
   const [selfPhoto, setSelfPhoto] = useState(null);
@@ -78,19 +132,37 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
   async function handleHide(person) { await hidePerson(person.id); await reloadHidden(); setSel(null); }
   const isRemembered = (p) => remembered.some(r => String(r.id ?? r.name) === String(p?.id ?? p?.name));
 
-  const wall = !visible ? (
-    <div style={{ textAlign: 'center', paddingTop: 46 }}>
-      <div className="t-h2" style={{ fontSize: 24 }}>You’re invisible</div>
-      <div className="t-body" style={{ fontSize: 14, maxWidth: 260, margin: '8px auto 0' }}>
-        Your tag has left the wall. Switch to Nearby to see who’s here and be seen.
+  let wall;
+  if (!visible) {
+    wall = (
+      <div style={{ textAlign: 'center', paddingTop: 46 }}>
+        <div className="t-h2" style={{ fontSize: 24 }}>You’re invisible</div>
+        <div className="t-body" style={{ fontSize: 14, maxWidth: 260, margin: '8px auto 0' }}>
+          Your tag has left the wall. Switch to Nearby to see who’s here and be seen.
+        </div>
       </div>
-    </div>
-  ) : all.length === 0 ? (
-    <EmptyWall place={place} />
-  ) : (
-    <Wall people={all} columns={b.columns} gap={b.gap} faceBase={b.faceBase}
-          sizingWidth={b.sizingWidth} footFontSize={b.foot} onOpen={setSel} />
-  );
+    );
+  } else if (locationErrorKind) {
+    wall = <LocationNeeded kind={locationErrorKind} onRetry={refresh} />;
+  } else if (loading && all.length === 0) {
+    wall = <WallSkeleton columns={b.columns} />;
+  } else if (all.length === 0) {
+    wall = <EmptyWall place={place} mode={mode} partyCode={myProfile?.party_code} />;
+  } else {
+    wall = (
+      <>
+        <Wall people={all} columns={b.columns} gap={b.gap} faceBase={b.faceBase}
+              sizingWidth={b.sizingWidth} footFontSize={b.foot} onOpen={setSel} />
+        {others.length === 0 && !loading && (
+          <div className="t-body" style={{ textAlign: 'center', fontSize: 13.5, maxWidth: 300, margin: '26px auto 0' }}>
+            {mode === 'party'
+              ? <>No one else has entered the code{myProfile?.party_code ? <> <strong>{myProfile.party_code}</strong></> : ''} yet — share it to fill the wall.</>
+              : <>You’re the first one here. When someone else arrives, their tag appears beside yours.</>}
+          </div>
+        )}
+      </>
+    );
+  }
 
   const refreshPill = (
     <button onClick={refresh} disabled={loading} style={{ whiteSpace: 'nowrap', background: 'var(--surface)',
@@ -130,10 +202,6 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
           <div style={{ maxWidth: 420, marginTop: 16 }}>
             <VisibilityControl value={mode} onChange={handleMode} place={place} partyCode={myProfile?.party_code} />
           </div>
-          {locationError && !loading && (
-            <div className="na-danger-card" style={{ marginTop: 16, padding: '12px 14px', fontWeight: 700,
-                  fontSize: 13, color: 'var(--coral-dk)', maxWidth: 420 }}>{locationError}</div>
-          )}
           <div style={{ marginTop: 24 }}>{wall}</div>
         </div>
 
@@ -172,10 +240,6 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
         <div style={{ maxWidth: 460, marginTop: 16 }}>
           <VisibilityControl value={mode} onChange={handleMode} place={place} partyCode={myProfile?.party_code} />
         </div>
-        {locationError && !loading && (
-          <div className="na-danger-card" style={{ marginTop: 16, padding: '12px 14px', fontWeight: 700,
-                fontSize: 13, color: 'var(--coral-dk)', maxWidth: 460 }}>{locationError}</div>
-        )}
         <div style={{ marginTop: 24 }}>{wall}</div>
         {sel && (
           <DetailSheet person={sel} index={all.findIndex(p => p.id === sel.id)} remembered={isRemembered(sel)}
@@ -200,10 +264,6 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
       <div style={{ margin: '14px 20px 0' }}>
         <VisibilityControl value={mode} onChange={handleMode} place={place} partyCode={myProfile?.party_code} />
       </div>
-      {locationError && !loading && (
-        <div className="na-danger-card" style={{ margin: '14px 20px 0', padding: '12px 14px', fontWeight: 700,
-              fontSize: 13, color: 'var(--coral-dk)' }}>{locationError}</div>
-      )}
       <div style={{ padding: '18px 20px 0' }}>{wall}</div>
       {sel && (
         <DetailSheet person={sel} index={all.findIndex(p => p.id === sel.id)} remembered={isRemembered(sel)}
