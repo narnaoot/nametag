@@ -49,11 +49,12 @@ land before real users:
 2. **Privacy review — DONE (audit)** in [`PRIVACY_REVIEW.md`](PRIVACY_REVIEW.md).
    Top fixes it found, before real users:
    - **H1** — photos are at public, guessable `/uploads/…` URLs → signed URLs /
-     auth-gated / at least UUID filenames.
+     auth-gated / at least UUID filenames. *(still open)*
    - **H2** — password-reset links (with email) are logged to the Render console
-     when SMTP is off → enable SMTP + gate the log to non-prod.
-   - **M1** — no rate limiting on auth/writes.
-   - **M4** — fonts load from Google's CDN (leaks IP) → self-host (quick win).
+     when SMTP is off → enable SMTP + gate the log to non-prod. *(still open)*
+   - **M1** — ✅ done: auth rate-limited (`express-rate-limit`); room APIs
+     intentionally exempt (co-present users share an IP).
+   - **M4** — ✅ done: fonts self-hosted via `@fontsource` — no more Google CDN.
    Good news: no analytics/tracking, hard account deletion, data cleared on
    invisible + 24h cleanup, distances (not coordinates) exposed to others,
    on-device photo cropping. Full list + rankings in the review.

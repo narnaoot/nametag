@@ -82,10 +82,12 @@ non-production (`if (NODE_ENV !== 'production')`), or drop it entirely.
 
 ### Medium
 
-**M1 — No rate limiting.** `/auth/login`, `/register`, `/forgot-password`, and
-the location/nearby writes have no throttling → password brute-force, email
-enumeration probing, and location/write spam are all cheap.
-→ *Fix:* add `express-rate-limit` (stricter on auth, looser on reads).
+**M1 — No rate limiting.** ✅ **FIXED.** Added `express-rate-limit` to
+`/api/auth` (50 req / 15 min / IP) plus `trust proxy` for correct client IPs
+(`server/app.js`). The room APIs (`/api/profiles/*`) are deliberately **not**
+IP-limited, because co-present users share a venue Wi-Fi/NAT and a per-IP limit
+would throttle legitimate users. Per-account auth throttling is a future
+improvement (see M3).
 
 **M2 — Account enumeration via `/register`.** It returns `409 "Email already in
 use"`, so an attacker can test which emails have accounts. (`/forgot-password` is
@@ -98,11 +100,11 @@ expiry.
 → *Fix:* shorter access token + refresh token, or a token-version/denylist column
 checked in `middleware/auth.js`. At minimum, document it.
 
-**M4 — Google Fonts are loaded from Google's CDN.** `index.html` preconnects and
-`index.css` `@import`s from `fonts.googleapis.com` / `fonts.gstatic.com`, so
-Google receives every visitor's IP + User-Agent on load. That undercuts the
-"we don't let anyone track you" stance.
-→ *Fix (easy):* self-host Libre Caslon Text + Nunito as local WOFF2 files.
+**M4 — Google Fonts are loaded from Google's CDN.** ✅ **FIXED.** Libre Caslon
+Text + Nunito are now self-hosted via `@fontsource/*` (WOFF2 bundled from npm and
+served from our own origin, imported in `client/src/main.jsx`); the Google
+`@import` and preconnects were removed. Verified: **zero** requests to
+`fonts.googleapis.com` / `fonts.gstatic.com` at runtime.
 
 ### Low
 
@@ -144,6 +146,8 @@ issue (files can vanish on redeploy), not a privacy one. Already noted in
 - **Photos cropped/downscaled on-device** before upload (320px, ~2 KB).
 - **Remembered names and hidden people never leave the device.**
 - **HTTPS everywhere** (Vercel + Render).
+- **Auth is rate-limited** (M1) and **fonts are self-hosted** (M4) — no font CDN
+  sees visitor IPs.
 
 ---
 
@@ -154,7 +158,7 @@ issue (files can vanish on redeploy), not a privacy one. Already noted in
 | **Neon** | Postgres database | Account + profile + location + reset tokens |
 | **Render** | API host, uploads disk, logs | Everything transiting the API; photo files; request logs; reset-link logs (until SMTP) |
 | **Vercel** | Frontend hosting + edge | Request metadata / IPs for page loads |
-| **Google Fonts** | Font CDN | Visitor IP + User-Agent on each load (until self-hosted) |
+| ~~Google Fonts~~ | ~~Font CDN~~ | **Removed** — fonts are now self-hosted (M4) |
 | **Email provider** (Resend/SendGrid/…) | Password-reset email | Email addresses — *only once SMTP is configured* |
 | Namecheap | DNS for n4bil.com | DNS queries (not user account data) |
 
@@ -181,8 +185,8 @@ These should be listed in the privacy policy's "who we share with" section.
 Before real users:
 - [ ] **H1** — lock down photo serving (signed URLs / auth route / at least UUID filenames)
 - [ ] **H2** — configure SMTP; gate the reset-link console log to non-prod
-- [ ] **M1** — add rate limiting to auth + write endpoints
-- [ ] **M4** — self-host fonts (removes Google from the loop; quick win)
+- [x] **M1** — rate limiting on auth (done; room APIs intentionally exempt)
+- [x] **M4** — self-host fonts (done; no more Google font requests)
 
 Soon after:
 - [ ] **M2** — de-enumerate `/register`
