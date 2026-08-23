@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const multer = require('multer');
 const path = require('path');
+const crypto = require('crypto');
 const db = require('../db');
 const auth = require('../middleware/auth');
 const { deletePhotoFile } = require('../cleanup');
@@ -10,9 +11,12 @@ const { deletePhotoFile } = require('../cleanup');
 
 const storage = multer.diskStorage({
   destination: path.join(__dirname, '../uploads'),
+  // Random, unguessable filename that reveals nothing (no user id, no timestamp).
+  // Photos are served as static files, so a sequential name like
+  // user_<id>_<ts> could be enumerated by anyone; a 128-bit random token can't.
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `user_${req.user.userId}_${Date.now()}${ext}`);
+    const ext = (path.extname(file.originalname) || '.jpg').toLowerCase().replace(/[^.a-z0-9]/g, '');
+    cb(null, `${crypto.randomBytes(16).toString('hex')}${ext || '.jpg'}`);
   },
 });
 const upload = multer({

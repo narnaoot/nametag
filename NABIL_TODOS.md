@@ -47,11 +47,14 @@ land before real users:
    email, minimum age), give it a legal read, then host it (e.g. a
    `/privacy` page) and point the in-app "Read the whole policy" link at it.
 2. **Privacy review — DONE (audit)** in [`PRIVACY_REVIEW.md`](PRIVACY_REVIEW.md).
-   Top fixes it found, before real users:
-   - **H1** — photos are at public, guessable `/uploads/…` URLs → signed URLs /
-     auth-gated / at least UUID filenames. *(still open)*
-   - **H2** — password-reset links (with email) are logged to the Render console
-     when SMTP is off → enable SMTP + gate the log to non-prod. *(still open)*
+   Fixes (all four top items now addressed in code):
+   - **H1** — ✅ done: photo filenames are now unguessable 128-bit random tokens
+     (no user id / timestamp), so URLs can't be enumerated. *Optional further
+     hardening:* an auth-gated photo route / signed URLs.
+   - **H2** — ✅ done in code: prod no longer logs reset links. **You still need
+     to set the `SMTP_*` env vars on Render** so reset emails actually send (see
+     "SMTP email" below) — until then, production resets are requested but not
+     delivered.
    - **M1** — ✅ done: auth rate-limited (`express-rate-limit`); room APIs
      intentionally exempt (co-present users share an IP).
    - **M4** — ✅ done: fonts self-hosted via `@fontsource` — no more Google CDN.
