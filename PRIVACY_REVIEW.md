@@ -76,12 +76,12 @@ with short-lived signed URLs. The policy does not claim photos are
 access-controlled, so it's consistent either way.
 
 **H2 — Password-reset links (with the email) are written to the server log.**
-✅ **FIXED in code.** `sendResetEmail` no longer logs the link or email in
-production — it logs only a non-sensitive "SMTP not configured" warning; the
+✅ **FIXED (code + delivery).** `sendResetEmail` no longer logs the link or email
+in production — it logs only a non-sensitive "email not configured" warning; the
 dev/test convenience log is gated to non-production (`server/routes/auth.js`).
-→ *Still needed (config, not code):* set the `SMTP_*` env vars on Render so reset
-emails actually send in production. Until then, production reset requests succeed
-silently but no email is delivered. Tracked in `NABIL_TODOS.md`.
+Reset emails now send in production via **Resend's HTTPS API** (Render's free tier
+blocks outbound SMTP, so we call the API directly with a defensive `From`), and
+delivery is verified end-to-end.
 
 ### Medium
 
@@ -113,22 +113,27 @@ served from our own origin, imported in `client/src/main.jsx`); the Google
 
 ### Low
 
-**L1 — Reset tokens stored in plaintext.** `password_reset_tokens.token` is the
-raw value. DB exposure could allow use of unexpired (≤1h, single-use) tokens.
-→ *Fix:* store a SHA-256 hash; compare hashes.
+**L1 — Reset tokens stored in plaintext.** ✅ **FIXED.** Only a SHA-256 hash of
+the token is stored (`password_reset_tokens.token`); the raw value lives solely
+in the emailed link. On reset, the incoming token is hashed and compared, so a DB
+leak no longer yields usable reset links (`server/routes/auth.js`, `hashToken`).
 
-**L2 — CORS is fully open** (`app.use(cors())`). Acceptable for a public
-bearer-auth API, but any origin can call it.
-→ *Fix:* allowlist `https://nametag.n4bil.com`, the Vercel URL, and the Capacitor
-origin.
+**L2 — CORS is fully open** (`app.use(cors())`). ✅ **FIXED.** CORS is now an
+allowlist (`server/app.js`): the production domain(s), Vercel preview builds
+(`nametag-*.vercel.app`), the Capacitor native origins, and localhost dev; extra
+origins can be added via `CORS_ORIGINS`. No-Origin requests (curl, health checks)
+still pass. Any other browser origin gets no CORS headers.
 
 **L3 — Exact coordinates stored at full precision.** Not exposed to other users
 (good), but stored precisely.
 → *Consider:* truncating to ~3–4 decimals at rest — still enough for
 "same room," less precise if the DB leaks.
 
-**L4 — No API security headers** (no `helmet`). Frontend headers are handled by
-Vercel; the API could add `helmet` for defense-in-depth. (Low.)
+**L4 — No API security headers** (no `helmet`). ✅ **FIXED.** `helmet` is applied
+in `server/app.js` (nosniff, no `X-Powered-By`, frameguard, etc.). CSP is left off
+(this is a JSON/image API, not an HTML origin — the frontend's CSP is Vercel's
+job) and Cross-Origin-Resource-Policy is set to `cross-origin` so the frontend can
+still load `/uploads` photo `<img>`s.
 
 **L5 — Photos live on Render's ephemeral disk** — an availability/robustness
 issue (files can vanish on redeploy), not a privacy one. Already noted in
@@ -194,9 +199,9 @@ Before real users:
 - [x] **M4** — self-host fonts (done; no more Google font requests)
 
 Soon after:
-- [ ] **M2** — de-enumerate `/register`
+- [ ] **M2** — de-enumerate `/register` (needs an email-verification signup flow)
 - [ ] **M3** — shorten JWT / add revocation
-- [ ] **L1** — hash reset tokens · **L2** — restrict CORS · **L4** — add `helmet`
+- [x] **L1** — hash reset tokens · [x] **L2** — restrict CORS · [x] **L4** — add `helmet`
 
 Nice to have:
 - [ ] **L3** — truncate stored coordinate precision
