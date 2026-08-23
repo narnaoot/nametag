@@ -142,7 +142,7 @@ The wall (`components/Wall.jsx`) takes a column count that grows with width:
 - **Venue detection, mutual context, party hosting, radius UI** — best-guess
   decisions / out of scope, all in `../REDESIGN_QUESTIONS.md`. Sign in with Apple
   was dropped for the web prototype (add it back with a native app + dev account).
-- **Real photography** — the sign-in hero uses three small illustrated avatars
-  (`public/face-maya.svg`, `face-theo.svg`, `face-jonas.svg`) as decoration only;
-  real people upload their own photos. These are the only sample faces the app
-  ships (the old single `sample-face.webp` placeholder was removed).
+- **Real photography** — the sign-in hero uses three illustrated character
+  avatars (`public/face-maya.webp`, `face-jonas.webp`, `face-nabil.webp`, cropped
+  head-and-shoulders from provided character art) as decoration only; real people
+  upload their own photos. These are the only sample faces the app ships.
