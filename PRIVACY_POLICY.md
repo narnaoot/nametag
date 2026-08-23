@@ -107,10 +107,11 @@ provide their service to us:
 - **Neon** — database hosting (account and tag data).
 - **Render** — application hosting and photo storage.
 - **Vercel** — website hosting.
-- **Google Fonts** — serves the app's fonts; as a result Google may receive your
-  IP address when the app loads. *(We intend to self-host fonts to remove this.)*
 - **An email provider** — used to send password-reset emails **if/when** email is
   enabled. *(Reset emails are not yet enabled in this prototype.)*
+
+Our fonts are self-hosted, so no font provider (such as Google Fonts) receives
+your IP address.
 
 ## Security
 
@@ -164,5 +165,4 @@ Questions or requests: **[PRIVACY CONTACT EMAIL]**.
 ### Must be true (or this text changed) before publishing — see `PRIVACY_REVIEW.md`
 - Lock down public photo URLs (**H1**) — or don't imply photos are access-controlled.
 - Stop logging reset links / enable SMTP (**H2**).
-- Self-host fonts (**M4**) to make the "no third-party tracking" line clean, or
-  keep the Google Fonts disclosure above.
+- ~~Self-host fonts (**M4**)~~ — done; fonts no longer load from Google.
