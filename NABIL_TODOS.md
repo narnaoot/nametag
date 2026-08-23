@@ -37,30 +37,42 @@ Still open (best-guess shipped, see the questions file): venue/place name,
 mutual-context row, party hosting, radius UI, and a real "Read the whole policy"
 link.
 
-### Privacy — next up (added Aug 2026)
+### Privacy — status (updated Aug 2026)
 
-Both drafted — **your review + sign-off needed**, and the code fixes below should
-land before real users:
+**Review fixes shipped so far** (see [`PRIVACY_REVIEW.md`](PRIVACY_REVIEW.md)):
+- **H1** ✅ unguessable photo filenames · **H2** ✅ reset links no longer logged
+  **and email now sends via Resend** (verified end-to-end) · **M1** ✅ auth
+  rate-limited · **M4** ✅ fonts self-hosted · **L1** ✅ reset tokens hashed at
+  rest · **L2** ✅ CORS allowlist · **L4** ✅ helmet headers.
 
-1. **Privacy policy — DRAFTED** in [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md).
-   Fill the `[BRACKETED]` placeholders (effective date, legal name, contact
-   email, minimum age), give it a legal read, then host it (e.g. a
-   `/privacy` page) and point the in-app "Read the whole policy" link at it.
-2. **Privacy review — DONE (audit)** in [`PRIVACY_REVIEW.md`](PRIVACY_REVIEW.md).
-   Fixes (all four top items now addressed in code):
-   - **H1** — ✅ done: photo filenames are now unguessable 128-bit random tokens
-     (no user id / timestamp), so URLs can't be enumerated. *Optional further
-     hardening:* an auth-gated photo route / signed URLs.
-   - **H2** — ✅ done in code: prod no longer logs reset links. **You still need
-     to set the `SMTP_*` env vars on Render** so reset emails actually send (see
-     "SMTP email" below) — until then, production resets are requested but not
-     delivered.
-   - **M1** — ✅ done: auth rate-limited (`express-rate-limit`); room APIs
-     intentionally exempt (co-present users share an IP).
-   - **M4** — ✅ done: fonts self-hosted via `@fontsource` — no more Google CDN.
-   Good news: no analytics/tracking, hard account deletion, data cleared on
-   invisible + 24h cleanup, distances (not coordinates) exposed to others,
-   on-device photo cropping. Full list + rankings in the review.
+**The privacy policy is now in the app.** "Read the whole policy" on the Privacy
+tab opens a full, styled policy screen (`client/src/pages/PolicyDocument.jsx`).
+
+👉 **What still needs YOU:**
+1. **Confirm 4 values in the policy.** They're in one `POLICY_META` block at the
+   top of `PolicyDocument.jsx` (and mirrored in `PRIVACY_POLICY.md`):
+   - **owner / legal name** — currently "Nabil" (put your real name or entity)
+   - **contact email** — currently your account email (`nnabil@gmail.com`)
+   - **minimum age** — currently 13
+   - **effective date** — currently Aug 23, 2026
+   Then get a **legal read** before real users. Just tell Claude the values.
+2. **Decide on M2 (register enumeration).** `/register` still returns
+   "Email already in use," so someone can test which emails have accounts. The
+   robust fix is an **email-verification signup flow** (register → "check your
+   email" → verify → logged in), which changes the sign-up UX. Rate-limiting
+   bounds it for now. Want the verification flow? Say so and Claude will build it.
+3. **(Optional) A public policy URL** for App Store submission / external
+   sharing — the in-app screen covers the app itself, but the store listing needs
+   a public web URL. Easy to add a static page later.
+
+**Deploy note (CORS):** the API now allowlists origins. Defaults cover
+`nametag.n4bil.com`, `n4bil.com`, `www.n4bil.com`, `*.vercel.app` previews, and
+native/localhost. If the live app ever can't reach the API after a deploy, set
+`CORS_ORIGINS` (comma-separated) on Render to your exact frontend origin.
+
+**Remaining lower-priority items:** M3 (30-day JWT can't be revoked), L3
+(truncate stored coordinate precision), and a data-export endpoint. See the
+review for details.
 
 ---
 
@@ -164,19 +176,17 @@ Once you're happy with TestFlight:
 
 ---
 
-## 📧 Set up real email (password reset)
+## 📧 Real email (password reset) — ✅ DONE (Aug 2026)
 
-Right now, reset links are logged to the Render console instead of emailed. To fix:
+Reset emails now send in production via **Resend**. Render's free tier blocks
+outbound SMTP, so the server calls Resend's **HTTPS API** directly
+(`server/routes/auth.js`), reusing the Resend key. Verified sending domain:
+`send.n4bil.com`. Verified end-to-end (a real reset email was received).
 
-1. Sign up for a free transactional email service — [Resend](https://resend.com) is the easiest (free tier: 100 emails/day), [SendGrid](https://sendgrid.com) and [Mailgun](https://mailgun.com) also work
-2. Verify your sending domain (or use their sandbox domain for testing)
-3. Get your SMTP credentials and add these env vars in the Render dashboard:
-   - `SMTP_HOST`
-   - `SMTP_PORT` (usually `587`)
-   - `SMTP_USER`
-   - `SMTP_PASS`
-   - `SMTP_FROM` — e.g. `Nametag <hello@yourdomain.com>`
-   - `APP_URL` — `https://nametag.n4bil.com` (the app's public URL; used to build password-reset links)
+Relevant env vars on Render: `RESEND_API_KEY` (or the Resend key in `SMTP_PASS`),
+`SMTP_FROM` = `Nametag <noreply@send.n4bil.com>` (the code also strips stray
+quotes and defaults to this), and `APP_URL` = `https://nametag.n4bil.com` (used to
+build the reset link).
 
 ---
 
