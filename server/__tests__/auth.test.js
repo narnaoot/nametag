@@ -239,6 +239,30 @@ describe('POST /api/auth/forgot-password', () => {
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty('error', 'Email required');
   });
+
+  it('still returns 200 when the email send fails (no 500, no enumeration)', async () => {
+    const nodemailer = require('nodemailer');
+    const transportSpy = jest.spyOn(nodemailer, 'createTransport').mockReturnValue({
+      sendMail: jest.fn().mockRejectedValue(new Error('smtp down')),
+    });
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    process.env.SMTP_HOST = 'smtp.test'; // force makeTransport() to build a transport
+
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 42 }] })  // user lookup (email exists)
+      .mockResolvedValueOnce({ rows: [] });             // INSERT token
+
+    const res = await request(app)
+      .post('/api/auth/forgot-password')
+      .send({ email: 'user@example.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('ok', true);
+
+    delete process.env.SMTP_HOST;
+    transportSpy.mockRestore();
+    errSpy.mockRestore();
+  });
 });
 
 describe('POST /api/auth/reset-password', () => {

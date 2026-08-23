@@ -110,9 +110,17 @@ router.post('/forgot-password', async (req, res) => {
     );
 
     const appUrl = process.env.APP_URL || 'https://nametag.vercel.app';
-    await sendResetEmail(email.toLowerCase().trim(), `${appUrl}?reset=${token}`);
+    // Never let an email-send failure change the response: a 500 here only
+    // happens when the email IS registered, which would leak account existence
+    // (and expose SMTP misconfig to users). Swallow + log; always return 200.
+    try {
+      await sendResetEmail(email.toLowerCase().trim(), `${appUrl}?reset=${token}`);
+    } catch (err) {
+      console.error('[auth] Failed to send reset email:', err.message);
+    }
   }
 
+  // Always 200, whether or not the email exists — no account enumeration.
   res.json({ ok: true });
 });
 
