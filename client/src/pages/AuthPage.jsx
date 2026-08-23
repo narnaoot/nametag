@@ -107,13 +107,13 @@ export default function AuthPage({ onRegistered }) {
           </div>
         </div>
 
-        <div style={{ position: 'relative', height: 250 }}>
+        <div style={{ position: 'relative', height: 288 }}>
           <MiniTag w={150} rot={-6} tint="var(--lav-lt)" hue="var(--lavender)" dk="var(--lav-dk)"
-                   top={26} left={8} name="Theo" pron="he/him" />
-          <MiniTag w={156} rot={5} tint="var(--must-lt)" hue="var(--mustard)" dk="var(--must-dk)"
-                   top={4} right={4} name="Jonas" pron="he/him" />
-          <MiniTag w={170} rot={-2} tint="var(--coral-lt)" hue="var(--coral)" dk="var(--coral-dk)"
-                   bottom={0} left={78} name="Maya" pron="she/her" nameSize={30} photo="/sample-face.webp" lift />
+                   top={20} left={6} name="Theo" pron="he/him" nameSize={24} photo="/face-theo.svg" />
+          <MiniTag w={150} rot={5} tint="var(--must-lt)" hue="var(--mustard)" dk="var(--must-dk)"
+                   top={0} right={4} name="Jonas" pron="he/him" nameSize={24} photo="/face-jonas.svg" />
+          <MiniTag w={172} rot={-2} tint="var(--coral-lt)" hue="var(--coral)" dk="var(--coral-dk)"
+                   bottom={0} left={80} name="Maya" pron="she/her" nameSize={28} photo="/face-maya.svg" lift />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
