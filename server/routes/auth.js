@@ -12,6 +12,14 @@ const db = require('../db');
 // With neither configured, logs the link in dev and stays silent in prod.
 // ---------------------------------------------------------------------------
 const RESET_SUBJECT = 'Reset your Nametag password';
+
+// Reset tokens are stored only as a SHA-256 hash. The raw token lives only in
+// the emailed link, so a database leak can't be turned into a working reset
+// link (the attacker would still need the un-hashed value from the email).
+function hashToken(t) {
+  return crypto.createHash('sha256').update(t).digest('hex');
+}
+
 // Resolve the From address defensively: trim, strip a wrapping pair of quotes (a
 // very common env-value mistake that Resend rejects with a 422 format error),
 // and fall back to the verified sending domain.
@@ -144,12 +152,12 @@ router.post('/forgot-password', async (req, res) => {
   const user = result.rows[0];
 
   if (user) {
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = crypto.randomBytes(32).toString('hex'); // raw value → email only
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     await db.query(
       'INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
-      [user.id, token, expiresAt]
+      [user.id, hashToken(token), expiresAt]
     );
 
     const appUrl = process.env.APP_URL || 'https://nametag.vercel.app';
@@ -176,7 +184,7 @@ router.post('/reset-password', async (req, res) => {
   const result = await db.query(
     `SELECT * FROM password_reset_tokens
      WHERE token = $1 AND used = FALSE AND expires_at > NOW()`,
-    [token]
+    [hashToken(token)]
   );
   const row = result.rows[0];
   if (!row) return res.status(400).json({ error: 'Reset link is invalid or has expired' });

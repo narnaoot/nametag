@@ -107,8 +107,7 @@ provide their service to us:
 - **Neon** — database hosting (account and tag data).
 - **Render** — application hosting and photo storage.
 - **Vercel** — website hosting.
-- **An email provider** — used to send password-reset emails **if/when** email is
-  enabled. *(Reset emails are not yet enabled in this prototype.)*
+- **Resend** — email delivery, used to send password-reset emails.
 
 Our fonts are self-hosted, so no font provider (such as Google Fonts) receives
 your IP address.
@@ -166,8 +165,8 @@ Questions or requests: **[PRIVACY CONTACT EMAIL]**.
 - ~~Lock down public photo URLs (**H1**)~~ — done: photo URLs are now unguessable
   random tokens. (This policy doesn't claim photos are access-controlled; an
   auth-gated photo route is optional further hardening.)
-- ~~Stop logging reset links (**H2**)~~ — done: prod no longer logs them. Still
-  set the `SMTP_*` env vars so reset **emails actually send** in production.
+- ~~Stop logging reset links (**H2**)~~ — done: prod no longer logs them, and
+  reset emails now send in production via Resend.
 - ~~Self-host fonts (**M4**)~~ — done; fonts no longer load from Google.
 
 Remaining before real users are mostly your calls: fill the placeholders above,

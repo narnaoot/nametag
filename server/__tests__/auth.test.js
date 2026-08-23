@@ -231,6 +231,28 @@ describe('POST /api/auth/forgot-password', () => {
     expect(db.query.mock.calls[1][0]).toMatch(/INSERT INTO password_reset_tokens/);
   });
 
+  it('stores only a SHA-256 hash of the reset token, never the raw value', async () => {
+    const crypto = require('crypto');
+    const raw = Buffer.alloc(32, 7);           // deterministic 32-byte token
+    const rawHex = raw.toString('hex');        // what would go in the email link
+    const bytesSpy = jest.spyOn(crypto, 'randomBytes').mockReturnValue(raw);
+
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 42 }] })  // user lookup
+      .mockResolvedValueOnce({ rows: [] });             // INSERT token
+
+    await request(app)
+      .post('/api/auth/forgot-password')
+      .send({ email: 'user@example.com' });
+
+    const storedToken = db.query.mock.calls[1][1][1];  // INSERT params: [user_id, token, expires]
+    const expectedHash = crypto.createHash('sha256').update(rawHex).digest('hex');
+    expect(storedToken).toBe(expectedHash);
+    expect(storedToken).not.toBe(rawHex);              // the raw value is never persisted
+
+    bytesSpy.mockRestore();
+  });
+
   it('returns 400 when email is missing', async () => {
     const res = await request(app)
       .post('/api/auth/forgot-password')
@@ -289,6 +311,23 @@ describe('POST /api/auth/reset-password', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('ok', true);
+  });
+
+  it('looks up the reset token by its SHA-256 hash, not the raw value', async () => {
+    const crypto = require('crypto');
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 7, user_id: 99 }] }) // token lookup
+      .mockResolvedValueOnce({ rows: [] })                        // UPDATE password
+      .mockResolvedValueOnce({ rows: [] });                       // UPDATE token used
+
+    await request(app)
+      .post('/api/auth/reset-password')
+      .send({ token: 'raw-token-abc', password: 'newpassword123' });
+
+    const lookupParam = db.query.mock.calls[0][1][0];
+    const expectedHash = crypto.createHash('sha256').update('raw-token-abc').digest('hex');
+    expect(lookupParam).toBe(expectedHash);
+    expect(lookupParam).not.toBe('raw-token-abc');
   });
 
   it('returns 400 when password is shorter than 8 characters', async () => {

@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 
@@ -10,7 +11,44 @@ const app = express();
 // X-Forwarded-For. Trust the first hop so rate limiting keys on the real IP.
 app.set('trust proxy', 1);
 
-app.use(cors());
+// Security headers (defense-in-depth). This is a JSON API that also serves
+// /uploads images to the separate frontend origin, so: no CSP (we render no
+// HTML documents; the frontend's CSP is Vercel's job) and cross-origin
+// resource policy so the frontend can load photo <img>s from this origin.
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
+// CORS allowlist. The API is bearer-authenticated, but there's no reason for
+// arbitrary sites to script calls against it, so restrict browser origins to
+// our own frontends, Vercel preview builds, the native (Capacitor) origins,
+// and local dev. Extra origins can be added via CORS_ORIGINS (comma-separated).
+// Requests with no Origin (curl, health checks, native webviews that omit it)
+// are allowed through.
+const DEFAULT_ORIGINS = [
+  'https://nametag.n4bil.com',
+  'https://n4bil.com',
+  'https://www.n4bil.com',
+  'https://nametag-pi.vercel.app',
+];
+const ENV_ORIGINS = (process.env.CORS_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+const ALLOWED_ORIGINS = new Set([...DEFAULT_ORIGINS, ...ENV_ORIGINS]);
+const ALLOWED_ORIGIN_PATTERNS = [
+  /^https:\/\/nametag-[a-z0-9-]+\.vercel\.app$/, // Vercel preview deployments
+  /^capacitor:\/\/localhost$/,                    // iOS/Android native shell
+  /^ionic:\/\/localhost$/,
+  /^http:\/\/localhost(:\d+)?$/,                   // local dev
+];
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  return ALLOWED_ORIGIN_PATTERNS.some((re) => re.test(origin));
+}
+app.use(cors({
+  origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
+}));
+
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
