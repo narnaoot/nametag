@@ -23,7 +23,15 @@ function makeTransport() {
 async function sendResetEmail(toEmail, resetUrl) {
   const transport = makeTransport();
   if (!transport) {
-    console.log(`[auth] Password reset link for ${toEmail}: ${resetUrl}`);
+    // No SMTP configured. In production, never log reset links or emails — they'd
+    // sit in the server logs and a reset link lets someone change a password. In
+    // dev, log it for convenience. (Production resets can't be delivered until
+    // SMTP env vars are set — see NABIL_TODOS.md.)
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[auth] Password reset requested but SMTP is not configured; email not sent.');
+    } else {
+      console.log(`[auth] Password reset link for ${toEmail}: ${resetUrl}`);
+    }
     return;
   }
   await transport.sendMail({

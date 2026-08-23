@@ -163,6 +163,12 @@ Questions or requests: **[PRIVACY CONTACT EMAIL]**.
   `[MINIMUM AGE]`.
 
 ### Must be true (or this text changed) before publishing — see `PRIVACY_REVIEW.md`
-- Lock down public photo URLs (**H1**) — or don't imply photos are access-controlled.
-- Stop logging reset links / enable SMTP (**H2**).
+- ~~Lock down public photo URLs (**H1**)~~ — done: photo URLs are now unguessable
+  random tokens. (This policy doesn't claim photos are access-controlled; an
+  auth-gated photo route is optional further hardening.)
+- ~~Stop logging reset links (**H2**)~~ — done: prod no longer logs them. Still
+  set the `SMTP_*` env vars so reset **emails actually send** in production.
 - ~~Self-host fonts (**M4**)~~ — done; fonts no longer load from Google.
+
+Remaining before real users are mostly your calls: fill the placeholders above,
+get a legal read, and set up SMTP.

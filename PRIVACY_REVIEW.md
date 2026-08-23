@@ -64,21 +64,24 @@ Ranked by what matters most before putting this in front of real people.
 
 ### High
 
-**H1 — Photos are served at public, unauthenticated URLs.**
-`server/app.js` serves `/uploads` via `express.static`, and filenames are
-`user_<userId>_<timestamp>.<ext>` — guessable and shareable. A face photo can be
-fetched by anyone with (or guessing) the URL while it exists, with no auth check.
-→ *Fix:* serve photos through an authenticated route, or use object storage
-(S3/R2) with short-lived signed URLs, or at minimum randomize filenames (UUID)
-so they can't be enumerated. Until fixed, the privacy policy must **not** imply
-photos are access-controlled.
+**H1 — Photos are served at public, unauthenticated URLs.** ✅ **FIXED (to the
+sanctioned minimum).** Upload filenames are now a 128-bit random token with no
+user id or timestamp (`server/routes/profile.js`), so photo URLs can't be
+enumerated or guessed — you only learn one via the authenticated `/nearby` (or
+your own profile), and files are deleted on invisible / after 24h.
+→ *Residual / optional hardening:* the URL is still a bearer capability — anyone
+it's shared with (or who finds it in logs/history) can view the photo while it
+exists. For stronger control, move to an auth-gated photo route or object storage
+with short-lived signed URLs. The policy does not claim photos are
+access-controlled, so it's consistent either way.
 
 **H2 — Password-reset links (with the email) are written to the server log.**
-`server/routes/auth.js` logs `Password reset link for <email>: <url>` when SMTP
-is unconfigured (the current state). Reset URLs let someone set a new password;
-Render logs persist and are visible to anyone with dashboard access.
-→ *Fix:* configure SMTP so links are emailed, and gate the console fallback to
-non-production (`if (NODE_ENV !== 'production')`), or drop it entirely.
+✅ **FIXED in code.** `sendResetEmail` no longer logs the link or email in
+production — it logs only a non-sensitive "SMTP not configured" warning; the
+dev/test convenience log is gated to non-production (`server/routes/auth.js`).
+→ *Still needed (config, not code):* set the `SMTP_*` env vars on Render so reset
+emails actually send in production. Until then, production reset requests succeed
+silently but no email is delivered. Tracked in `NABIL_TODOS.md`.
 
 ### Medium
 
@@ -183,8 +186,8 @@ These should be listed in the privacy policy's "who we share with" section.
 ## 7. Prioritized remediation checklist
 
 Before real users:
-- [ ] **H1** — lock down photo serving (signed URLs / auth route / at least UUID filenames)
-- [ ] **H2** — configure SMTP; gate the reset-link console log to non-prod
+- [x] **H1** — unguessable photo filenames (done; auth-gated/signed URLs optional further hardening)
+- [x] **H2** — reset links no longer logged in prod (done in code; still set `SMTP_*` on Render to send emails)
 - [x] **M1** — rate limiting on auth (done; room APIs intentionally exempt)
 - [x] **M4** — self-host fonts (done; no more Google font requests)
 
