@@ -12,7 +12,16 @@ const db = require('../db');
 // With neither configured, logs the link in dev and stays silent in prod.
 // ---------------------------------------------------------------------------
 const RESET_SUBJECT = 'Reset your Nametag password';
-const FROM = () => process.env.SMTP_FROM || process.env.EMAIL_FROM || 'Nametag <no-reply@nametag.app>';
+// Resolve the From address defensively: trim, strip a wrapping pair of quotes (a
+// very common env-value mistake that Resend rejects with a 422 format error),
+// and fall back to the verified sending domain.
+function FROM() {
+  let v = (process.env.SMTP_FROM || process.env.EMAIL_FROM || '').trim();
+  if (v.length >= 2 && ((v[0] === '"' && v.endsWith('"')) || (v[0] === "'" && v.endsWith("'")))) {
+    v = v.slice(1, -1).trim();
+  }
+  return v || 'Nametag <noreply@send.n4bil.com>';
+}
 const resetText = (url) => `Click the link below to reset your password. It expires in 1 hour.\n\n${url}\n\nIf you didn't request this, ignore this email.`;
 const resetHtml = (url) => `<p>Click the link below to reset your Nametag password. It expires in 1 hour.</p>
            <p><a href="${url}">${url}</a></p>
