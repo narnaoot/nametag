@@ -17,6 +17,11 @@ function makeTransport() {
     port: Number(process.env.SMTP_PORT) || 587,
     secure: process.env.SMTP_SECURE === 'true',
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    // Fail fast instead of hanging if the SMTP server/handshake stalls (e.g. a
+    // port/TLS mismatch) — otherwise a stuck send would hang the HTTP request.
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
 }
 
@@ -110,17 +115,15 @@ router.post('/forgot-password', async (req, res) => {
     );
 
     const appUrl = process.env.APP_URL || 'https://nametag.vercel.app';
-    // Never let an email-send failure change the response: a 500 here only
-    // happens when the email IS registered, which would leak account existence
-    // (and expose SMTP misconfig to users). Swallow + log; always return 200.
-    try {
-      await sendResetEmail(email.toLowerCase().trim(), `${appUrl}?reset=${token}`);
-    } catch (err) {
-      console.error('[auth] Failed to send reset email:', err.message);
-    }
+    // Send in the background: don't await it, so a slow or stuck SMTP server
+    // can't hang the request. Failures are logged, never surfaced (a 500 here
+    // only happens when the email IS registered, which would leak existence).
+    sendResetEmail(email.toLowerCase().trim(), `${appUrl}?reset=${token}`)
+      .catch((err) => console.error('[auth] Failed to send reset email:', err.message));
   }
 
-  // Always 200, whether or not the email exists — no account enumeration.
+  // Always 200 right away, whether or not the email exists — no enumeration,
+  // no waiting on the mail server.
   res.json({ ok: true });
 });
 
