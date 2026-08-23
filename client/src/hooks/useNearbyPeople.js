@@ -56,6 +56,7 @@ export function useNearbyPeople() {
   const [nearby, setNearby] = useState([]);
   const [myProfile, setMyProfile] = useState(null);
   const [locationError, setLocationError] = useState('');
+  const [locationErrorKind, setLocationErrorKind] = useState(null); // 'denied' | 'unavailable' | null
   const [loading, setLoading] = useState(true);
   const [isActive, setIsActive] = useState(false);
   const [mode, setMode] = useState('nearby');
@@ -96,14 +97,28 @@ export function useNearbyPeople() {
     try {
       const perm = await Geolocation.requestPermissions();
       if (perm.location === 'denied') {
-        throw new Error('Location access denied. Allow location in Settings to see who’s here.');
+        const e = new Error('Location is off, so we can’t place you in the room.');
+        e.kind = 'denied';
+        throw e;
       }
     } catch (err) {
-      if (err.message?.includes('denied')) throw err;
+      if (err.kind === 'denied') throw err;
       // requestPermissions() isn't implemented on web — the browser prompts on
       // getCurrentPosition, so proceed.
     }
-    const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+    let pos;
+    try {
+      pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+    } catch (err) {
+      // GeolocationPositionError: 1 = denied, 2 = unavailable, 3 = timeout
+      const e = new Error(
+        err?.code === 1 ? 'Location is off, so we can’t place you in the room.'
+          : err?.code === 3 ? 'Couldn’t get your location in time — try again.'
+            : 'Couldn’t get your location — try again.'
+      );
+      e.kind = err?.code === 1 ? 'denied' : 'unavailable';
+      throw e;
+    }
     await updateLocation(pos.coords.latitude, pos.coords.longitude);
     setLastUpdated(new Date());
   }, []);
@@ -114,7 +129,8 @@ export function useNearbyPeople() {
       setNearby(people);
     } catch (err) {
       if (err.message === 'Share your location first') {
-        setLocationError('Share your location to see who’s here.');
+        setLocationError('Location is off, so we can’t place you in the room.');
+        setLocationErrorKind('denied');
       } else {
         console.error('[useNearbyPeople] loadNearby:', err);
       }
@@ -127,9 +143,9 @@ export function useNearbyPeople() {
     try {
       await shareLocation();
       await loadNearby();
-      setLocationError('');
+      setLocationError(''); setLocationErrorKind(null);
     } catch (err) {
-      setLocationError(err.message);
+      setLocationError(err.message); setLocationErrorKind(err.kind || 'unavailable');
     } finally {
       setLoading(false);
     }
@@ -154,11 +170,11 @@ export function useNearbyPeople() {
         await shareLocation();
         await loadNearby();
         setIsActive(true);
-        setLocationError('');
+        setLocationError(''); setLocationErrorKind(null);
         await loadMyProfile();
       }
     } catch (err) {
-      setLocationError(err.message);
+      setLocationError(err.message); setLocationErrorKind(err.kind || 'unavailable');
     }
   }, [shareLocation, loadNearby, loadMyProfile]);
 
@@ -170,10 +186,10 @@ export function useNearbyPeople() {
       if (modeRef.current === 'invisible') { setLoading(false); return; }
       try {
         await shareLocation();
-        setLocationError('');
+        setLocationError(''); setLocationErrorKind(null);
         await loadNearby();
       } catch (err) {
-        setLocationError(err.message);
+        setLocationError(err.message); setLocationErrorKind(err.kind || 'unavailable');
       } finally {
         setLoading(false);
       }
@@ -185,14 +201,14 @@ export function useNearbyPeople() {
   useEffect(() => {
     const interval = setInterval(async () => {
       if (modeRef.current === 'invisible') return;
-      try { await shareLocation(); await loadNearby(); }
-      catch (err) { setLocationError(err.message); }
+      try { await shareLocation(); await loadNearby(); setLocationError(''); setLocationErrorKind(null); }
+      catch (err) { setLocationError(err.message); setLocationErrorKind(err.kind || 'unavailable'); }
     }, 60_000);
     return () => clearInterval(interval);
   }, [shareLocation, loadNearby]);
 
   return {
-    nearby, myProfile, locationError, loading, isActive, lastUpdated, mode,
+    nearby, myProfile, locationError, locationErrorKind, loading, isActive, lastUpdated, mode,
     hiddenIds, refresh, setVisibilityMode, reloadProfile: loadMyProfile, reloadHidden: loadHidden,
   };
 }
