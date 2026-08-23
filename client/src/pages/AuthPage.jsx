@@ -109,11 +109,11 @@ export default function AuthPage({ onRegistered }) {
 
         <div style={{ position: 'relative', height: 288 }}>
           <MiniTag w={150} rot={-6} tint="var(--lav-lt)" hue="var(--lavender)" dk="var(--lav-dk)"
-                   top={20} left={6} name="Theo" pron="he/him" nameSize={24} photo="/face-theo.svg" />
+                   top={20} left={6} name="Nabil" pron="he/him" nameSize={24} photo="/face-nabil.webp" />
           <MiniTag w={150} rot={5} tint="var(--must-lt)" hue="var(--mustard)" dk="var(--must-dk)"
-                   top={0} right={4} name="Jonas" pron="he/him" nameSize={24} photo="/face-jonas.svg" />
+                   top={0} right={4} name="Jonas" pron="they/them" nameSize={24} photo="/face-jonas.webp" />
           <MiniTag w={172} rot={-2} tint="var(--coral-lt)" hue="var(--coral)" dk="var(--coral-dk)"
-                   bottom={0} left={80} name="Maya" pron="she/her" nameSize={28} photo="/face-maya.svg" lift />
+                   bottom={0} left={80} name="Maya" pron="she/her" nameSize={28} photo="/face-maya.webp" lift />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
