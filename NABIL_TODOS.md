@@ -39,15 +39,24 @@ link.
 
 ### Privacy — next up (added Aug 2026)
 
-1. **Write the full privacy policy.** The in-app Privacy screen has four plain
-   statements; we still need a real, complete policy document (what's collected,
-   why, retention, deletion, third parties: Render/Neon/Vercel, cookies/logs,
-   contact) and a URL for the "Read the whole policy" link to point at.
-2. **Do a full privacy review.** Audit the whole data path end-to-end against the
-   policy — account credentials, transient profile + location, the 24h cleanup,
-   the public `/uploads/…` photo URLs (harden to signed/auth-gated), platform
-   request logs/analytics, and the on-device stores (remembered names, hidden
-   people, local profile/photo). Confirm every claim we make is actually true.
+Both drafted — **your review + sign-off needed**, and the code fixes below should
+land before real users:
+
+1. **Privacy policy — DRAFTED** in [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md).
+   Fill the `[BRACKETED]` placeholders (effective date, legal name, contact
+   email, minimum age), give it a legal read, then host it (e.g. a
+   `/privacy` page) and point the in-app "Read the whole policy" link at it.
+2. **Privacy review — DONE (audit)** in [`PRIVACY_REVIEW.md`](PRIVACY_REVIEW.md).
+   Top fixes it found, before real users:
+   - **H1** — photos are at public, guessable `/uploads/…` URLs → signed URLs /
+     auth-gated / at least UUID filenames.
+   - **H2** — password-reset links (with email) are logged to the Render console
+     when SMTP is off → enable SMTP + gate the log to non-prod.
+   - **M1** — no rate limiting on auth/writes.
+   - **M4** — fonts load from Google's CDN (leaks IP) → self-host (quick win).
+   Good news: no analytics/tracking, hard account deletion, data cleared on
+   invisible + 24h cleanup, distances (not coordinates) exposed to others,
+   on-device photo cropping. Full list + rankings in the review.
 
 ---
 
