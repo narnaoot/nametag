@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getMyProfile } from '../api';
 import { PLACE_FALLBACK } from '../constants';
+import PolicyDocument from './PolicyDocument';
 
 // Privacy is a top-level tab, not a settings row, so it can be read before
 // anyone is asked to be visible. It opens with what is true right now (current
@@ -44,9 +45,12 @@ function stateCopy(profile, place) {
 
 export default function PrivacyPage({ onChangeVisibility }) {
   const [profile, setProfile] = useState(null);
+  const [showPolicy, setShowPolicy] = useState(false);
   useEffect(() => { getMyProfile().then(setProfile).catch(() => {}); }, []);
   const place = PLACE_FALLBACK;
   const now = stateCopy(profile, place);
+
+  if (showPolicy) return <PolicyDocument onBack={() => setShowPolicy(false)} />;
 
   return (
     <div className="no-sb na-screen" style={{ padding: '0 0 96px' }}>
@@ -86,7 +90,8 @@ export default function PrivacyPage({ onChangeVisibility }) {
       </div>
 
       <div style={{ padding: '16px 22px 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface)',
+        <div onClick={() => setShowPolicy(true)} className="nt-tappable" style={{ display: 'flex',
+              alignItems: 'center', gap: 12, background: 'var(--surface)',
               border: '1.5px solid var(--border)', borderRadius: 'var(--r)', padding: '12px 15px' }}>
           <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 13, color: 'var(--text)' }}>
             Read the whole policy
