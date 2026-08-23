@@ -94,8 +94,10 @@ improvement (see M3).
 
 **M2 — Account enumeration via `/register`.** It returns `409 "Email already in
 use"`, so an attacker can test which emails have accounts. (`/forgot-password` is
-correctly non-enumerating — always 200.)
-→ *Fix:* return a generic message, or move to an email-verification flow.
+non-enumerating — always 200; **now hardened** so even a mail-send failure can't
+turn into a 500 that reveals the email exists, with a regression test.)
+→ *Fix (register, still open):* return a generic message, or move to an
+email-verification flow.
 
 **M3 — JWT is long-lived (30 days) and cannot be revoked.** It's stateless;
 sign-out only deletes the token on the device. A leaked token stays valid until
