@@ -1,6 +1,7 @@
 # Redesign — questions & best-guess decisions for Nabil
 
-Implementing `redesign/README.md` (the "nearby name tags" Claude Design canvas)
+Implementing the "nearby name tags" Claude Design canvas (design source
+formerly in `redesign/`, since removed — in git history)
 in the React/Vite/Capacitor client. Where the design didn't map cleanly onto the
 existing app or backend, I took a best guess and kept going — each is listed here
 so you can confirm or redirect. Nothing here blocks the build; all screens are
