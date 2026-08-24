@@ -151,7 +151,7 @@ describe('POST /api/auth/login', () => {
   it('returns 200 with token and userId on valid credentials', async () => {
     const hash = await bcrypt.hash('correctpassword', 10);
     db.query.mockResolvedValueOnce({
-      rows: [{ id: 'user-uuid-10', email: 'eve@example.com', password_hash: hash, email_verified: true }],
+      rows: [{ id: 'user-uuid-10', email: 'eve@example.com', password_hash: hash, email_verified: true, token_version: 2 }],
     });
 
     const res = await request(app)
@@ -164,6 +164,7 @@ describe('POST /api/auth/login', () => {
 
     const payload = jwt.verify(res.body.token, process.env.JWT_SECRET);
     expect(payload.userId).toBe('user-uuid-10');
+    expect(payload.tv).toBe(2); // token carries the account's current version
   });
 
   it('returns 403 with needsVerification when the email is not verified', async () => {
@@ -374,6 +375,19 @@ describe('POST /api/auth/reset-password', () => {
     expect(lookupParam).not.toBe('raw-token-abc');
   });
 
+  it('bumps token_version on reset so existing sessions are revoked', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 7, user_id: 99 }] }) // token lookup
+      .mockResolvedValueOnce({ rows: [] })                        // UPDATE password + token_version
+      .mockResolvedValueOnce({ rows: [] });                       // UPDATE token used
+
+    await request(app)
+      .post('/api/auth/reset-password')
+      .send({ token: 'validtoken123', password: 'newpassword123' });
+
+    expect(db.query.mock.calls[1][0]).toMatch(/token_version = token_version \+ 1/);
+  });
+
   it('returns 400 when password is shorter than 8 characters', async () => {
     const res = await request(app)
       .post('/api/auth/reset-password')
@@ -410,9 +424,9 @@ describe('POST /api/auth/verify-email', () => {
   it('verifies the account and returns a JWT on a valid token', async () => {
     const crypto = require('crypto');
     db.query
-      .mockResolvedValueOnce({ rows: [{ id: 3, user_id: 77 }] }) // token lookup
-      .mockResolvedValueOnce({ rows: [] })                        // UPDATE users verified
-      .mockResolvedValueOnce({ rows: [] });                       // UPDATE token used
+      .mockResolvedValueOnce({ rows: [{ id: 3, user_id: 77 }] })       // token lookup
+      .mockResolvedValueOnce({ rows: [{ token_version: 0 }] })          // UPDATE users verified RETURNING
+      .mockResolvedValueOnce({ rows: [] });                            // UPDATE token used
 
     const res = await request(app).post('/api/auth/verify-email').send({ token: 'good-token' });
 
@@ -421,6 +435,7 @@ describe('POST /api/auth/verify-email', () => {
     expect(res.body).toHaveProperty('userId', 77);
     const payload = jwt.verify(res.body.token, process.env.JWT_SECRET);
     expect(payload.userId).toBe(77);
+    expect(payload.tv).toBe(0);
 
     // Looks the token up by its SHA-256 hash, not the raw value.
     const expectedHash = crypto.createHash('sha256').update('good-token').digest('hex');

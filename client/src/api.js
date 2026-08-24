@@ -20,6 +20,11 @@ let _token = null;
 export function setToken(t) { _token = t; }
 function getToken() { return _token; }
 
+// AuthContext registers a handler here so the app can sign out automatically
+// when the server rejects an authenticated request (expired or revoked token).
+let _onUnauthorized = null;
+export function setUnauthorizedHandler(fn) { _onUnauthorized = fn; }
+
 async function request(path, options = {}) {
   const token = getToken();
   const res = await fetch(`${BASE}${path}`, {
@@ -29,6 +34,11 @@ async function request(path, options = {}) {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
+  // A 401 on a request we authenticated means the token is no longer good
+  // (expired, or revoked by a password reset). Sign out so the user re-auths
+  // instead of getting stuck with a dead token. (Login/register carry no token,
+  // so their 401s never trigger this.)
+  if (res.status === 401 && token && _onUnauthorized) _onUnauthorized();
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = new Error(data.error || 'Request failed');

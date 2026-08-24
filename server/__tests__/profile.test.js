@@ -3,6 +3,10 @@ const jwt = require('jsonwebtoken');
 const app = require('../app');
 const db = require('../db');
 
+// The auth middleware's token-version (revocation) lookup is mocked so these
+// route tests keep their own db.query sequences; here every token is current.
+jest.mock('../middleware/tokenVersion', () => jest.fn().mockResolvedValue(0));
+
 // Spy on fs.promises.unlink so tests don't touch the real filesystem.
 // We use spyOn (not jest.mock) so that the rest of fs (mkdirSync etc.) stays intact for multer.
 const fs = require('fs');

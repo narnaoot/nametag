@@ -24,6 +24,11 @@ async function migrate() {
   await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT TRUE`);
   await db.query(`ALTER TABLE users ALTER COLUMN email_verified SET DEFAULT FALSE`);
 
+  // Token revocation: every issued JWT carries the account's token_version;
+  // the auth middleware rejects tokens whose version is stale. Bumping this
+  // (on password reset) invalidates all previously issued tokens.
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0`);
+
   await db.query(`
     CREATE TABLE IF NOT EXISTS email_verification_tokens (
       id SERIAL PRIMARY KEY,

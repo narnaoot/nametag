@@ -71,10 +71,12 @@ tab opens a full, styled policy screen (`client/src/pages/PolicyDocument.jsx`).
 native/localhost. If the live app ever can't reach the API after a deploy, set
 `CORS_ORIGINS` (comma-separated) on Render to your exact frontend origin.
 
-**Remaining lower-priority items:** M3 (30-day JWT can't be revoked), L3
-(truncate stored coordinate precision), and a data-export endpoint. These are
-the only privacy-review items left open — everything H1–M4 plus L1/L2/L4 is
-done. See the review for details.
+**Remaining lower-priority items:** L3 (truncate stored coordinate precision) and
+a data-export endpoint. Everything H1–M4 plus L1/L2/L4 is done — including M3
+(token revocation: a password reset now invalidates all existing sessions, and
+the app auto-signs-out on a rejected token). The only future auth refinement is
+refresh-token rotation to shorten the 30-day access token; not a blocker. See the
+review for details.
 
 ---
 
