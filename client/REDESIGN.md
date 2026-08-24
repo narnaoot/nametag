@@ -43,9 +43,10 @@ belongs to the app).
   is **no dark theme** (the spec doesn't define one).
 - **`src/lib/constants.js`** — the paintbox key list and `ACCENT_VARS` trio map,
   `PERSON_ACCENTS` (the colours other people can take), `ACCENT_REMAP`,
-  `BRAND_ACCENT`, the sticker vocabulary (`STICKER_OPTIONS` emoji + word,
+  the sticker vocabulary (`STICKER_OPTIONS` emoji + word,
   `STICKER_LABELS`), pronoun options, length limits, and the on-device storage
-  keys (photo, profile, remembered names, hidden people).
+  keys (photo, profile, remembered names, hidden people). (The brightened
+  orchid accent lives only as the `--brand` CSS var in `index.css`.)
 - **`src/lib/colors.js`** — pure helpers: `resolveAccentKey` (you → coral; others →
   stored `tag_color` remapped, else a stable hash of their id),
   `accentTrio`/`personTrio` (→ `{hue, tint, deep}` CSS-var refs),

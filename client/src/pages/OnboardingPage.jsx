@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import { updateProfile } from '../lib/api';
-import { persistProfileLocally, savePhotoLocally } from '../lib/profileStorage';
-import { cropToSquare } from '../lib/imageCrop';
+import { persistProfileLocally } from '../lib/profileStorage';
+import { preparePickedPhoto } from '../lib/imageCrop';
+import { normalizeProfileFields, toProfileFormData } from '../lib/profile';
 import { Avatar } from '../components/Avatar';
 import VisibilityControl from '../components/VisibilityControl';
 import PartyCodeSheet from '../components/PartyCodeSheet';
@@ -65,17 +66,9 @@ export default function OnboardingPage({ onDone }) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    try {
-      const { dataUrl, file: cropped } = await cropToSquare(file);
-      setPhotoPreview(dataUrl);
-      await savePhotoLocally(dataUrl);
-      setPhotoFile(cropped);
-    } catch {
-      const reader = new FileReader();
-      reader.onload = async (ev) => { setPhotoPreview(ev.target.result); await savePhotoLocally(ev.target.result); };
-      reader.readAsDataURL(file);
-      setPhotoFile(file);
-    }
+    const { dataUrl, file: prepared } = await preparePickedPhoto(file);
+    setPhotoPreview(dataUrl);
+    setPhotoFile(prepared);
   }
   function handleVisibility(next) {
     if (next === 'party') { setShowParty(true); return; }
@@ -86,17 +79,14 @@ export default function OnboardingPage({ onDone }) {
   async function finish() {
     setSaving(true); setError('');
     const alwaysVisible = visMode !== 'invisible';
-    const fields = {
+    const fields = normalizeProfileFields({
       display_name: name.trim() || 'Someone', pronouns: pronouns || 'they/them',
-      tagline: tagline.trim(), radius_meters: DEFAULT_RADIUS,
+      tagline, radius_meters: DEFAULT_RADIUS,
       always_visible: alwaysVisible, tag_color: accentKey,
-      stickers: JSON.stringify(stickers), party_code: visMode === 'party' ? partyCode.trim() : '',
-    };
+      stickers, party_code: visMode === 'party' ? partyCode : '',
+    });
     try {
-      const fd = new FormData();
-      Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
-      if (photoFile) fd.append('photo', photoFile);
-      await updateProfile(fd);
+      await updateProfile(toProfileFormData(fields, photoFile));
       await persistProfileLocally(fields);
       onDone();
     } catch (err) { setError(err.message || 'Something went wrong — try again.'); setSaving(false); }

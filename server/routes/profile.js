@@ -4,10 +4,24 @@ const path = require('path');
 const crypto = require('crypto');
 const db = require('../db');
 const auth = require('../middleware/auth');
-const { deletePhotoFile } = require('../cleanup');
+const { deletePhotoFile, CLEAR_PROFILE_SET } = require('../cleanup');
 
 // Async route errors propagate to the global error handler in app.js (Express 5
 // forwards rejected promises automatically), which returns 500 'Server error'.
+
+// Field limits (kept in step with client/src/lib/constants.js) and the radius
+// default, named here rather than scattered as magic numbers below.
+const TAGLINE_MAX = 60;
+const PARTY_CODE_MAX = 20;
+const DEFAULT_RADIUS = 100;
+
+// Fetch just a user's stored photo path — the row before deleting or replacing
+// the file, or undefined when the profile doesn't exist yet. Shared by the four
+// routes that touch the on-disk photo.
+async function fetchProfilePhoto(userId) {
+  const { rows } = await db.query('SELECT photo_path FROM profiles WHERE user_id = $1', [userId]);
+  return rows[0];
+}
 
 const storage = multer.diskStorage({
   destination: path.join(__dirname, '../uploads'),
@@ -44,19 +58,16 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
   }
 
   const photo_path = req.file ? `/uploads/${req.file.filename}` : undefined;
-  const radius = parseInt(radius_meters) || 100;
+  const radius = parseInt(radius_meters) || DEFAULT_RADIUS;
   const alwaysVisible = always_visible !== 'false' && always_visible !== false;
   const tagColor = tag_color || null;
   const stickersVal = stickers || null;
-  const taglineVal = tagline ? tagline.slice(0, 60) : null;
-  const partyCodeVal = party_code ? party_code.slice(0, 20).trim() || null : null;
+  const taglineVal = tagline ? tagline.slice(0, TAGLINE_MAX) : null;
+  const partyCodeVal = party_code ? party_code.slice(0, PARTY_CODE_MAX).trim() || null : null;
 
-  const existing = await db.query(
-    'SELECT id, photo_path FROM profiles WHERE user_id = $1',
-    [req.user.userId]
-  );
+  const existing = await fetchProfilePhoto(req.user.userId);
 
-  if (existing.rows.length === 0) {
+  if (!existing) {
     await db.query(
       `INSERT INTO profiles (user_id, display_name, pronouns, photo_path, radius_meters, always_visible, tag_color, stickers, tagline, party_code)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
@@ -65,7 +76,7 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
   } else {
     // Delete old photo from disk when a new one is uploaded
     if (req.file) {
-      await deletePhotoFile(existing.rows[0].photo_path);
+      await deletePhotoFile(existing.photo_path);
     }
     await db.query(
       `UPDATE profiles SET
@@ -92,11 +103,8 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
 router.post('/me/photo', auth, upload.single('photo'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No photo provided' });
   const photo_path = `/uploads/${req.file.filename}`;
-  const existing = await db.query(
-    'SELECT photo_path FROM profiles WHERE user_id = $1',
-    [req.user.userId]
-  );
-  await deletePhotoFile(existing.rows[0]?.photo_path);
+  const existing = await fetchProfilePhoto(req.user.userId);
+  await deletePhotoFile(existing?.photo_path);
   await db.query(
     'UPDATE profiles SET photo_path = $2, updated_at = NOW() WHERE user_id = $1',
     [req.user.userId, photo_path]
@@ -128,18 +136,10 @@ router.post('/me/visibility', auth, async (req, res) => {
   const newActive = !!is_active;
   if (!newActive) {
     // Privacy: delete server-side photo and NULL location when going invisible
-    const profile = await db.query(
-      'SELECT photo_path FROM profiles WHERE user_id = $1',
-      [req.user.userId]
-    );
-    await deletePhotoFile(profile.rows[0]?.photo_path);
+    const profile = await fetchProfilePhoto(req.user.userId);
+    await deletePhotoFile(profile?.photo_path);
     await db.query(
-      `UPDATE profiles
-       SET display_name = NULL, pronouns = NULL, tagline = NULL,
-           tag_color = NULL, stickers = NULL, photo_path = NULL,
-           lat = NULL, lng = NULL, location_updated_at = NULL,
-           is_active = FALSE
-       WHERE user_id = $1`,
+      `UPDATE profiles SET ${CLEAR_PROFILE_SET} WHERE user_id = $1`,
       [req.user.userId]
     );
   } else {
@@ -153,13 +153,10 @@ router.post('/me/visibility', auth, async (req, res) => {
 
 // Delete account — hard delete of user, profile, and photo file
 router.delete('/me', auth, async (req, res) => {
-  const profile = await db.query(
-    'SELECT photo_path FROM profiles WHERE user_id = $1',
-    [req.user.userId]
-  );
+  const profile = await fetchProfilePhoto(req.user.userId);
   // Delete user first (cascades to profile row), then clean up the file
   await db.query('DELETE FROM users WHERE id = $1', [req.user.userId]);
-  await deletePhotoFile(profile.rows[0]?.photo_path);
+  await deletePhotoFile(profile?.photo_path);
   res.json({ ok: true });
 });
 

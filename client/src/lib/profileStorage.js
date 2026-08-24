@@ -1,7 +1,7 @@
 // profileStorage.js — on-device persistence helpers for the user's own
 // profile, shared by Onboarding and My Tag. The local copy lets the app
 // restore the full profile after server-side privacy cleanup (see
-// useNearbyPeople.reuploadFullProfile).
+// useNearbyPeople.pushProfile).
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import {
@@ -75,12 +75,6 @@ export async function rememberName(person) {
   await writeList(LOCAL_REMEMBERED_KEY, list);
 }
 
-export async function forgetName(idOrName) {
-  const list = await readList(LOCAL_REMEMBERED_KEY);
-  const key = String(idOrName);
-  await writeList(LOCAL_REMEMBERED_KEY, list.filter(p => String(p.id ?? p.name) !== key));
-}
-
 // ── Hidden people — filtered client-side, remembered on the device. ────────
 export function getHiddenIds() { return readList(LOCAL_HIDDEN_KEY); }
 
@@ -88,9 +82,4 @@ export async function hidePerson(id) {
   if (id == null) return;
   const list = await readList(LOCAL_HIDDEN_KEY);
   if (!list.includes(id)) { list.push(id); await writeList(LOCAL_HIDDEN_KEY, list); }
-}
-
-export async function unhidePerson(id) {
-  const list = await readList(LOCAL_HIDDEN_KEY);
-  await writeList(LOCAL_HIDDEN_KEY, list.filter(x => x !== id));
 }
