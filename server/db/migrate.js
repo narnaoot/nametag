@@ -17,6 +17,24 @@ async function migrate() {
       ALTER COLUMN pronouns     DROP NOT NULL
   `);
 
+  // Email verification. ADD COLUMN with DEFAULT TRUE backfills every EXISTING
+  // user as verified (grandfathering accounts created before verification
+  // existed), then we flip the default to FALSE so NEW registrations start
+  // unverified. IF NOT EXISTS makes re-runs a no-op (existing rows untouched).
+  await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT TRUE`);
+  await db.query(`ALTER TABLE users ALTER COLUMN email_verified SET DEFAULT FALSE`);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS email_verification_tokens (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token TEXT UNIQUE NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
   console.log('Migration complete');
 }
 
