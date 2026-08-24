@@ -1,10 +1,11 @@
 # Nametag — UI Redesign ("nearby name tags")
 
-This implements the handoff in `redesign/README.md` and the Claude Design canvas
-`redesign/Nametag Redesign.dc.html`. The HTML there is a design reference; this
-document records how it was recreated as real components in the React + Vite +
-Capacitor app. It **supersedes** the earlier Playfair/teal redesign (which was
-built from `design_handoff_nametag_redesign/`).
+This implements the "nearby name tags" Claude Design handoff (the original
+design canvas and handoff snapshots lived in `redesign/` and
+`design_handoff_nametag_redesign/`, since removed — recoverable from git
+history). This document records how that design was recreated as real components
+in the React + Vite + Capacitor app. It **supersedes** the earlier Playfair/teal
+design.
 
 Open questions and best-guess decisions are in `../REDESIGN_QUESTIONS.md`.
 
@@ -40,12 +41,12 @@ belongs to the app).
   **self-hosted via `@fontsource`** (imported in `src/main.jsx`; no Google CDN —
   privacy review M4). `--primary` is `--orchid-dk`; `--brand` is `#C462BC`. There
   is **no dark theme** (the spec doesn't define one).
-- **`src/constants.js`** — the paintbox key list and `ACCENT_VARS` trio map,
+- **`src/lib/constants.js`** — the paintbox key list and `ACCENT_VARS` trio map,
   `PERSON_ACCENTS` (the colours other people can take), `ACCENT_REMAP`,
   `BRAND_ACCENT`, the sticker vocabulary (`STICKER_OPTIONS` emoji + word,
   `STICKER_LABELS`), pronoun options, length limits, and the on-device storage
   keys (photo, profile, remembered names, hidden people).
-- **`src/colors.js`** — pure helpers: `resolveAccentKey` (you → coral; others →
+- **`src/lib/colors.js`** — pure helpers: `resolveAccentKey` (you → coral; others →
   stored `tag_color` remapped, else a stable hash of their id),
   `accentTrio`/`personTrio` (→ `{hue, tint, deep}` CSS-var refs),
   `visibleMinutes`/`visibleLabel` ("visible N min"), `initials`, and
@@ -139,7 +140,7 @@ The wall (`components/Wall.jsx`) takes a column count that grows with width:
 ## Not done yet / follow-ups
 
 - **Privacy hardening** — photos are now cropped + downscaled on-device before
-  upload (`src/imageCrop.js`, wired into onboarding + My tag). Still open: photo
+  upload (`src/lib/imageCrop.js`, wired into onboarding + My tag). Still open: photo
   files sit at public `/uploads/...` URLs. See `../REDESIGN_QUESTIONS.md`.
 - **Venue detection, mutual context, party hosting, radius UI** — best-guess
   decisions / out of scope, all in `../REDESIGN_QUESTIONS.md`. Sign in with Apple

@@ -28,7 +28,7 @@ npm run lint     # eslint (should be clean)
 - **`VITE_API_URL`** — set in `.env.production` for native/hosted builds (e.g.
   `https://nametag.onrender.com/api`). On web, Vercel rewrites `/api` and
   `/uploads/*` to Render (`vercel.json`); on iOS these must be absolute URLs,
-  which `src/api.js` derives from `VITE_API_URL`.
+  which `src/lib/api.js` derives from `VITE_API_URL`.
 
 ## iOS (Capacitor)
 
@@ -49,14 +49,16 @@ App icon: `public/app-icon.svg` is the master. Generate the iOS icon set with
 ```
 src/
 ├── App.jsx           # shell, theme wrapper, register→onboarding→nearby flow
-├── AuthContext.jsx   # AuthProvider (JWT state via @capacitor/preferences)
-├── useAuth.js        # auth context object + useAuth hook
-├── api.js            # fetch wrapper + photoUrl()
-├── colors.js         # paintbox/accent + contrast helpers, profile→badge map
-├── constants.js      # design tokens, options, field limits
-├── profileStorage.js # on-device profile + photo persistence
+├── main.jsx          # entry point, @fontsource imports
 ├── index.css         # design-system tokens, type roles, primitives
-├── components/       # Badge, DetailSheet, TabBar, Toggle
+├── auth/             # AuthContext (JWT via @capacitor/preferences) + useAuth hook
+├── lib/              # non-UI plumbing:
+│   ├── api.js            # fetch wrapper + photoUrl()
+│   ├── colors.js         # paintbox/accent + contrast helpers, profile→badge map
+│   ├── constants.js      # design tokens, options, field limits
+│   ├── imageCrop.js      # on-device square crop before upload
+│   └── profileStorage.js # on-device profile + photo persistence
+├── components/       # Avatar, Tag, DetailSheet, TabBar, VisibilityControl, …
 ├── pages/            # AuthPage, OnboardingPage, GridPage (Nearby), ProfilePage (My Tag)
-└── hooks/            # useNearbyPeople
+└── hooks/            # useNearbyPeople, useViewport
 ```

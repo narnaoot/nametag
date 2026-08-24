@@ -54,7 +54,7 @@ no history table, no messaging** — presence is a single mutable row per user.
 - **Delete account** — `DELETE /me` hard-deletes the user (cascades to profile +
   reset tokens) and removes the photo file.
 - **Photos on device** — cropped to a 320px square **before upload**
-  (`client/src/imageCrop.js`); a local copy is kept to re-upload after cleanup.
+  (`client/src/lib/imageCrop.js`); a local copy is kept to re-upload after cleanup.
 
 ---
 

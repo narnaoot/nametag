@@ -9,7 +9,8 @@ Updated at the end of every session.
 
 ## 🎨 UI redesign — "nearby name tags" (Aug 2026, MERGED to `main` — PR #16)
 
-The whole client was rebuilt to the Claude Design canvas in `redesign/`
+The whole client was rebuilt to the Claude Design canvas (design source
+formerly in `redesign/`, since removed — in git history)
 (Libre Caslon + Nunito; orchid = the app; the wall of hand-tilted tags;
 three-way visibility control; new Privacy tab; two-step onboarding; party
 code sheet; responsive tablet/desktop; you pick your own tag colour, with the
