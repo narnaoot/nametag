@@ -42,8 +42,9 @@ link.
 **Review fixes shipped so far** (see [`PRIVACY_REVIEW.md`](PRIVACY_REVIEW.md)):
 - **H1** ✅ unguessable photo filenames · **H2** ✅ reset links no longer logged
   **and email now sends via Resend** (verified end-to-end) · **M1** ✅ auth
-  rate-limited · **M4** ✅ fonts self-hosted · **L1** ✅ reset tokens hashed at
-  rest · **L2** ✅ CORS allowlist · **L4** ✅ helmet headers.
+  rate-limited · **M2** ✅ register no longer enumerates (email-verification
+  signup flow) · **M4** ✅ fonts self-hosted · **L1** ✅ reset + verification
+  tokens hashed at rest · **L2** ✅ CORS allowlist · **L4** ✅ helmet headers.
 
 **The privacy policy is now in the app.** "Read the whole policy" on the Privacy
 tab opens a full, styled policy screen (`client/src/pages/PolicyDocument.jsx`).
@@ -56,11 +57,11 @@ tab opens a full, styled policy screen (`client/src/pages/PolicyDocument.jsx`).
    - **minimum age** — currently 13
    - **effective date** — currently Aug 23, 2026
    Then get a **legal read** before real users. Just tell Claude the values.
-2. **Decide on M2 (register enumeration).** `/register` still returns
-   "Email already in use," so someone can test which emails have accounts. The
-   robust fix is an **email-verification signup flow** (register → "check your
-   email" → verify → logged in), which changes the sign-up UX. Rate-limiting
-   bounds it for now. Want the verification flow? Say so and Claude will build it.
+2. **New: signup now requires email verification.** Creating an account sends a
+   verification link; you're signed in only after clicking it. Worth a quick
+   end-to-end test on the live app: register → receive the email → click →
+   onboarding. (Existing accounts were grandfathered as verified, so no one is
+   locked out.)
 3. **(Optional) A public policy URL** for App Store submission / external
    sharing — the in-app screen covers the app itself, but the store listing needs
    a public web URL. Easy to add a static page later.
@@ -71,8 +72,9 @@ native/localhost. If the live app ever can't reach the API after a deploy, set
 `CORS_ORIGINS` (comma-separated) on Render to your exact frontend origin.
 
 **Remaining lower-priority items:** M3 (30-day JWT can't be revoked), L3
-(truncate stored coordinate precision), and a data-export endpoint. See the
-review for details.
+(truncate stored coordinate precision), and a data-export endpoint. These are
+the only privacy-review items left open — everything H1–M4 plus L1/L2/L4 is
+done. See the review for details.
 
 ---
 
