@@ -7,10 +7,10 @@
 // before this is shown to real users. They're best-guess defaults; confirm them
 // (see NABIL_TODOS.md). Nothing else here is a placeholder.
 const POLICY_META = {
-  effectiveDate: 'August 23, 2026',
-  owner: 'Nabil',                    // owner / legal name shown in the policy (confirm)
-  contactEmail: 'nnabil@gmail.com',  // public privacy-contact address
-  minAge: 13,                        // minimum age to use Nametag
+  effectiveDate: 'August 24, 2026',
+  owner: 'Nabil Arnaoot',              // owner / legal name shown in the policy
+  contactEmail: 'privacy@n4bil.com',   // public privacy-contact (needs forwarding set up)
+  minAge: 16,                          // minimum age to use Nametag
   appUrl: 'https://nametag.n4bil.com',
 };
 
