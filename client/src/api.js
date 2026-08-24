@@ -30,7 +30,12 @@ async function request(path, options = {}) {
     },
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Request failed');
+  if (!res.ok) {
+    const err = new Error(data.error || 'Request failed');
+    err.status = res.status;
+    err.data = data; // carry flags like needsVerification to the caller
+    throw err;
+  }
   return data;
 }
 
@@ -50,6 +55,14 @@ export function register(email, password) {
 
 export function login(email, password) {
   return postJson('/auth/login', { email, password });
+}
+
+export function verifyEmail(token) {
+  return postJson('/auth/verify-email', { token });
+}
+
+export function resendVerification(email) {
+  return postJson('/auth/resend-verification', { email });
 }
 
 export function getMyProfile() {

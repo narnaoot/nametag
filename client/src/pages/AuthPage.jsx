@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { login, register, forgotPassword, resetPassword } from '../api';
+import { login, register, forgotPassword, resetPassword, verifyEmail, resendVerification } from '../api';
 import { useAuth } from '../useAuth';
 
 // Sign in — "Put a name to the room." Orchid takes the accent word and the
@@ -50,7 +50,8 @@ function PwField({ value, onChange, placeholder, minLength }) {
 export default function AuthPage({ onRegistered }) {
   const { signIn } = useAuth();
   const [view, setView] = useState('landing');           // 'landing' | 'email'
-  const [mode, setMode] = useState('login');             // login | register | forgot | reset
+  // login | register | forgot | reset | check-email | verifying | verify-failed
+  const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [resetToken, setResetToken] = useState('');
@@ -59,20 +60,50 @@ export default function AuthPage({ onRegistered }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const t = new URLSearchParams(window.location.search).get('reset');
-    if (t) { setResetToken(t); setMode('reset'); setView('email'); }
+    const params = new URLSearchParams(window.location.search);
+    const resetTok = params.get('reset');
+    if (resetTok) { setResetToken(resetTok); setMode('reset'); setView('email'); return; }
+
+    // A verification link: confirm the email, then sign in and go to onboarding.
+    const verifyTok = params.get('verify');
+    if (verifyTok) {
+      setView('email'); setMode('verifying');
+      verifyEmail(verifyTok)
+        .then(async (data) => {
+          window.history.replaceState({}, '', window.location.pathname);
+          if (onRegistered) onRegistered();  // fresh account → onboarding
+          await signIn(data.token);
+        })
+        .catch((err) => { setError(err.message); setMode('verify-failed'); });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function switchMode(m) { setMode(m); setError(''); setSuccess(''); }
 
   async function handleLoginRegister(e) {
-    e.preventDefault(); setError(''); setLoading(true);
+    e.preventDefault(); setError(''); setSuccess(''); setLoading(true);
     try {
-      const isRegister = mode === 'register';
-      const data = await (isRegister ? register : login)(email, password);
-      if (isRegister && onRegistered) onRegistered();
-      await signIn(data.token);
-    } catch (err) { setError(err.message); } finally { setLoading(false); }
+      if (mode === 'register') {
+        // Registration no longer logs you in — it sends a verification email.
+        await register(email, password);
+        setMode('check-email');
+      } else {
+        const data = await login(email, password);
+        await signIn(data.token);
+      }
+    } catch (err) {
+      // Unverified sign-in → route to the check-email panel (with resend).
+      if (err.data?.needsVerification) { setMode('check-email'); }
+      else { setError(err.message); }
+    } finally { setLoading(false); }
+  }
+
+  async function handleResend() {
+    setError(''); setSuccess(''); setLoading(true);
+    try { await resendVerification(email); setSuccess('Sent again — check your inbox.'); }
+    catch (err) { setError(err.message); }
+    finally { setLoading(false); }
   }
   async function handleForgot(e) {
     e.preventDefault(); setError(''); setLoading(true);
@@ -151,6 +182,41 @@ export default function AuthPage({ onRegistered }) {
         {!success && <button className="na-btn" type="submit" disabled={loading}>{loading ? 'Saving…' : 'Set new password'}</button>}
       </form>
     );
+  } else if (mode === 'check-email') {
+    form = (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="t-h3">Check your email</div>
+        <div className="t-body" style={{ fontSize: 13.5, marginTop: -6 }}>
+          We sent a verification link to <strong style={{ color: 'var(--text)' }}>{email || 'your email'}</strong>.
+          Open it to finish setting up your account — then you’ll be signed in.
+        </div>
+        {errLine}{okLine}
+        <button className="na-btn" type="button" onClick={handleResend} disabled={loading}>
+          {loading ? 'Sending…' : 'Resend email'}
+        </button>
+        <button type="button" onClick={() => switchMode('login')} style={{ background: 'none', border: 'none',
+              cursor: 'pointer', color: 'var(--muted)', fontWeight: 700, fontSize: 13 }}>Back to sign in</button>
+      </div>
+    );
+  } else if (mode === 'verifying') {
+    form = (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'center', padding: '8px 0' }}>
+        <div className="t-h3">Verifying…</div>
+        <div className="t-body" style={{ fontSize: 13.5 }}>Confirming your email and signing you in.</div>
+      </div>
+    );
+  } else if (mode === 'verify-failed') {
+    form = (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="t-h3">This link didn’t work</div>
+        <div className="t-body" style={{ fontSize: 13.5, marginTop: -6 }}>
+          That verification link is invalid or has expired. Create your account again to get a fresh link.
+        </div>
+        <button className="na-btn" type="button" onClick={() => switchMode('register')}>Back to create account</button>
+        <button type="button" onClick={() => switchMode('login')} style={{ background: 'none', border: 'none',
+              cursor: 'pointer', color: 'var(--muted)', fontWeight: 700, fontSize: 13 }}>Sign in instead</button>
+      </div>
+    );
   } else {
     form = (
       <form onSubmit={handleLoginRegister} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -185,7 +251,11 @@ export default function AuthPage({ onRegistered }) {
       <button onClick={() => setView('landing')} style={{ background: 'none', border: 'none', cursor: 'pointer',
             color: 'var(--muted)', fontWeight: 800, fontSize: 14, padding: 0, marginBottom: 24 }}>← Back</button>
       <div className="t-display" style={{ fontSize: 34, letterSpacing: '-1px', marginBottom: 22 }}>
-        {mode === 'register' ? <>Make your <em>tag</em></> : <>Welcome <em>back</em></>}
+        {mode === 'register' ? <>Make your <em>tag</em></>
+          : mode === 'check-email' ? <>Check your <em>inbox</em></>
+            : mode === 'verifying' ? <>One <em>moment</em></>
+              : mode === 'verify-failed' ? <>Link <em>expired</em></>
+                : <>Welcome <em>back</em></>}
       </div>
       <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 'var(--r)',
             boxShadow: 'var(--shadow-card)', padding: 22 }}>{form}</div>
