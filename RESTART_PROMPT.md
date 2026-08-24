@@ -2,29 +2,47 @@
 
 Paste this into Claude Code at the start of a new session to get up to speed quickly.
 
-**At the end of every session**, update this file, `README.md`, and `NABIL_TODOS.md` to reflect what was done and what's next, then commit and push.
+**At the end of every session**, update this file and `NABIL_TODOS.md` (and, when relevant, `PRIVACY_REVIEW.md` / `client/REDESIGN.md`) to reflect what was done and what's next, then commit and push.
 
 ---
 
-## ⚠️ Latest: UI redesign — MERGED to `main` (Aug 2026, PR #16)
+## ⚠️ Latest: Privacy, security & auth hardening — MERGED to `main` (Aug 2026)
+
+The most recent session focused on privacy/security and the auth flow. All on
+`main`, **105 server tests passing**:
+
+- **Email works** (password reset + email verification) via **Resend's HTTPS
+  API** — Render's free tier blocks outbound SMTP, so the server calls the API
+  directly (`server/routes/auth.js`). Verified sending domain `send.n4bil.com`.
+- **Email-verification signup flow** — registration no longer logs you in or
+  reveals whether an email exists; it sends a verification link, and you're
+  signed in only after clicking it (`?verify=<token>` → onboarding). Login is
+  gated on `email_verified`; there's a "Check your email" + resend UI.
+- **JWT revocation** — every token carries the account's `token_version`, checked
+  in `middleware/auth.js`; a password reset bumps it (revoking all sessions), and
+  the client auto-signs-out on a rejected token.
+- **Privacy review complete** (`PRIVACY_REVIEW.md`) — every High + Medium fixed
+  (H1 unguessable photo URLs, H2 email, M1 rate-limiting, M2 register
+  enumeration, M3 revocation, M4 self-hosted fonts) plus L1 (hashed reset +
+  verification tokens), L2 (CORS allowlist), L4 (helmet). Only L3 (coordinate
+  precision) and a data-export endpoint remain, both optional.
+- **Privacy policy live in-app** — `PRIVACY_POLICY.md` is written and rendered by
+  `client/src/pages/PolicyDocument.jsx`, reached from the Privacy tab's "Read the
+  whole policy" row. Owner: Nabil Arnaoot; contact: privacy@n4bil.com (alias
+  still needs mail forwarding set up); min age 16.
+
+### Earlier: UI redesign — MERGED (PR #16)
 
 The client UI was rebuilt to the "nearby name tags" Claude Design canvas in
-`redesign/` — new type (Libre Caslon Text + Nunito), new colour rules (**orchid
-is the app**; coral is the default tag colour, and your own tag now wears the
-orchid "you" ring since colours are user-pickable), the wall of hand-tilted tags,
-a three-way visibility control, a Privacy tab, two-step onboarding, the
-party-code sheet, and responsive tablet/desktop layouts. This **supersedes** the
-earlier teal/Playfair design that the rest of this document describes. The
-backend, schema, and 80 server tests are unchanged. See **`client/REDESIGN.md`**
-for the implementation and **`REDESIGN_QUESTIONS.md`** for the remaining open
-decisions and the privacy audit. Sections below still describe the backend/stack
-accurately; the frontend UI details are now historical.
-
-Since then (all on `main`): honest Privacy copy, dropped Apple sign-in, a
-user-pickable tag colour, on-device photo cropping before upload
-(`client/src/imageCrop.js`), and the fixed `.env.production` API URL. The app is
-**live on the custom domain https://nametag.n4bil.com** (Namecheap CNAME →
-Vercel; Render `APP_URL` set to match).
+`redesign/` — Libre Caslon Text + Nunito (**self-hosted via `@fontsource`**),
+colour rules (**orchid is the app**; user-pickable tag colours; your own tag
+wears the orchid "you" ring), the wall of hand-tilted tags, a three-way
+visibility control, a Privacy tab, two-step onboarding, the party-code sheet, and
+responsive tablet/desktop layouts. It **supersedes** the earlier teal/Playfair
+design. See **`client/REDESIGN.md`** and **`REDESIGN_QUESTIONS.md`**. The app is
+**live at https://nametag.n4bil.com** (Namecheap CNAME → Vercel; Render `APP_URL`
+set to match). Sections below describe the backend/stack accurately; older
+frontend-UI details are historical.
 
 ---
 
@@ -60,7 +78,8 @@ What this means concretely:
 | Frontend | React 19 + Vite + Tailwind CSS → Vercel |
 | Backend | Node.js + Express 5 → Render |
 | Database | PostgreSQL on Neon |
-| Auth | JWT (30-day, stored in `@capacitor/preferences`) |
+| Auth | JWT (30-day, stored in `@capacitor/preferences`); **revocable via `token_version`**; email-verified signup |
+| Email | Resend (HTTPS API) — password reset + email verification |
 | iOS | Capacitor 7 (`client/ios/`) |
 | File uploads | Multer — photos on Render persistent disk |
 
@@ -68,9 +87,10 @@ What this means concretely:
 
 ## Current state (as of last session)
 
-Everything below is **done and on `main`**:
+Everything below is **done and on `main`** (105 server tests passing):
 
-- Full auth flow: register, login, forgot password, reset password (email sends via SMTP if configured; logs to console in dev)
+- Full auth flow: register → **email verification** → login, forgot/reset password. Emails send via **Resend's HTTPS API** in production (logs the link to console in dev when no provider is set). Login is gated on `email_verified`; JWTs are revocable via `token_version` (a reset revokes existing sessions; client auto-signs-out on a 401).
+- Privacy/security hardening: unguessable photo filenames, auth rate-limiting, self-hosted fonts, CORS allowlist, helmet headers, hashed reset/verification tokens. Full audit in `PRIVACY_REVIEW.md`; user-facing policy in `PRIVACY_POLICY.md` + the in-app `PolicyDocument.jsx`.
 - Profile editor: display name, pronouns, tagline, photo, nametag color, emoji stickers (up to 3), radius, always-visible toggle
 - Nearby grid: Haversine distance in SQL (no PostGIS), 30-min activity window, bounding-box pre-filter
 - Location + visibility: `is_active` toggle on the grid screen; auto-refresh every 60s
@@ -101,17 +121,23 @@ Everything below is **done and on `main`**:
 
 ## What still needs doing
 
-1. **Full privacy policy + full privacy review** — write the complete policy (and a
-   destination for the in-app "Read the whole policy" link) and audit the whole
-   data path. See `NABIL_TODOS.md` → "Privacy — next up".
-2. **Harden photo serving** — photo files are still at public `/uploads/…` URLs;
-   move to signed/expiring or auth-gated serving before real users.
-3. **SMTP email** — reset links are logged to the Render console. Set `SMTP_HOST/PORT/USER/PASS/FROM` on Render to send real emails (`APP_URL` is already set to https://nametag.n4bil.com).
-4. **End-to-end test on live app** — register a user, set a profile, test nearby grid, test forgot-password flow on nametag.n4bil.com / nametag.onrender.com.
-5. **iOS build** — needs a Mac with Xcode. Run `cd client && npx cap sync && npx cap open ios`. Codebase is clean and ready.
-6. **iOS Privacy strings** — `Info.plist` needs `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` before App Store submission.
-7. **Loading state on profile page** — no skeleton/placeholder while the profile loads on first open (the auto-save "Saving…" indicator shows at the top, but fields still pop in with a delay).
-8. **Homepage link** — add a "Try Nametag →" link to https://nametag.n4bil.com on the n4bil.com site (repo `narnaoot/narnaoot.github.io`).
+**Privacy — remaining (all optional / lower priority):**
+1. **L3 — coordinate precision** — truncate stored lat/lng to ~3–4 decimals at rest (still fine for "same room," less precise if the DB leaks).
+2. **Data-export endpoint** — a formal GDPR/CCPA "access" request path (deletion already exists via `DELETE /me`).
+3. **Harden photo serving (H1 residual, optional)** — photo files are unguessable random URLs now, but still public bearer capabilities; auth-gated or signed URLs are optional further hardening.
+
+**Non-code, on Nabil (see `NABIL_TODOS.md`):**
+4. **`privacy@n4bil.com` forwarding** — set up mail forwarding for the policy contact alias so it actually receives mail (Namecheap Email Forwarding).
+5. **Legal read** of `PRIVACY_POLICY.md` before real users.
+6. **End-to-end test on live app** — register → verify email → onboarding → nearby → reset password, on nametag.n4bil.com.
+
+**iOS / product:**
+7. **iOS build** — needs a Mac with Xcode. `cd client && npx cap sync && npx cap open ios`.
+8. **iOS Privacy strings** — `Info.plist` needs `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription` before App Store submission.
+9. **Deep link for password reset / verification** — links open the web app in Safari; wire a custom URL scheme / Universal Link for native.
+10. **Homepage link** — add a "Try Nametag →" link to https://nametag.n4bil.com on the n4bil.com site (repo `narnaoot/narnaoot.github.io`).
+
+**Future auth refinement:** refresh-token rotation to shorten the 30-day access token (revocation is already in place, so this is not a blocker).
 
 ---
 
@@ -119,7 +145,8 @@ Everything below is **done and on `main`**:
 
 ```bash
 git log --oneline -10       # see recent commits
-cd server && npm test       # run the 70-test suite
+cd server && npm test       # run the 105-test suite
+cd client && npm run build  # confirm the client builds
 git status                  # check for anything uncommitted
 ```
 
@@ -134,22 +161,27 @@ client/src/
   api.js                 — fetch wrapper + photoUrl() helper
   constants.js           — shared field limits, colors, options
   pages/
-    AuthPage.jsx          — login / register / forgot / reset
-    ProfilePage.jsx       — profile editor
-    GridPage.jsx          — nearby people grid
+    AuthPage.jsx          — landing / login / register / verify / forgot / reset
+    OnboardingPage.jsx    — two-step first-run (tag, then photo + stickers)
+    GridPage.jsx          — the nearby wall (empty/error/skeleton states)
+    ProfilePage.jsx       — My tag editor (auto-save, on-device photo, delete)
+    PrivacyPage.jsx       — Privacy tab (state + four statements + policy link)
+    PolicyDocument.jsx    — the full in-app privacy policy screen
   hooks/
-    useNearbyPeople.js    — location, nearby fetch, 60s auto-refresh
-  designs/
-    DesignE.jsx           — PersonCard + NavBar components
+    useNearbyPeople.js    — location, nearby fetch, 60s auto-refresh, visibility
+  AuthContext.jsx         — JWT state; auto sign-out on a rejected token
 
 server/
   index.js               — entry point (runs migrations, starts server)
-  app.js                 — Express app (middleware + routes)
-  routes/auth.js         — /api/auth/* (register, login, forgot, reset)
-  routes/profile.js      — /api/profiles/* (me, location, visibility, nearby)
-  db/schema.sql          — table definitions
-  middleware/auth.js     — JWT verification
-  __tests__/             — Jest + Supertest suite
+  app.js                 — Express app (helmet, CORS allowlist, rate limit, routes)
+  routes/auth.js         — /api/auth/* (register, verify-email, resend-verification, login, forgot/reset)
+  routes/profile.js      — /api/profiles/* (me, location, visibility, nearby, photo, delete)
+  db/schema.sql          — table definitions (users, profiles, reset + verification tokens)
+  db/migrate.js          — idempotent migrations run on startup
+  middleware/auth.js     — JWT verification + token_version revocation check
+  middleware/tokenVersion.js — the revocation lookup (mockable in tests)
+  cleanup.js             — hourly stale-data + photo cleanup
+  __tests__/             — Jest + Supertest suite (105 tests)
 ```
 
 ---

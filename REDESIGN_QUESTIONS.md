@@ -43,9 +43,11 @@ Hardening:
    **on-device before upload** (`client/src/imageCrop.js`), so the tag's small
    circle is all that's ever sent (a 1200×800 pick → ~2 KB). The Privacy copy now
    truthfully says the photo is cropped on your phone before it's sent.
-2. **Photo files are served at public `/uploads/user_<id>_<timestamp>.<ext>`
-   URLs** with no auth while they exist. Fine for a prototype; for launch,
-   consider signed/expiring URLs or auth-gated serving. *(Still open.)*
+2. ~~**Photo files are served at public, guessable `/uploads/user_<id>_<ts>` URLs.**~~
+   → **Hardened (H1, Aug 2026).** Filenames are now unguessable 128-bit random
+   tokens, so URLs can't be enumerated. They're still public *bearer* URLs while
+   the file exists; signed/expiring or auth-gated serving is optional further
+   hardening for launch. See `PRIVACY_REVIEW.md` → H1.
 
 ## Decisions I made (please confirm)
 
@@ -95,8 +97,10 @@ Hardening:
     and to decide on the two hardening items (client-side crop, public photo
     URLs).
 
-11. **"Read the whole policy" has no destination.** The row exists but doesn't
-    navigate — there's no policy URL/route yet. Where should it go?
+11. ~~**"Read the whole policy" has no destination.**~~ → **Resolved (Aug 2026).**
+    The row now opens a full in-app policy screen (`client/src/pages/PolicyDocument.jsx`),
+    styled to the design system, mirroring `PRIVACY_POLICY.md`. A separate public
+    web URL (for App Store submission / external sharing) is still a nice-to-have.
 
 12. **Empty / error / permission states (README open question #3).** Built out
     proper versions (Aug 2026): a **location-permission** state (📍 + "Turn on
