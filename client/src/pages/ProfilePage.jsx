@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { getMyProfile, updateProfile, photoUrl, setVisibility } from '../api';
-import { useAuth } from '../useAuth';
+import { getMyProfile, updateProfile, photoUrl, setVisibility } from '../lib/api';
+import { useAuth } from '../auth/useAuth';
 import {
   savePhotoLocally, loadLocalPhoto, persistProfileLocally, readLocalProfile,
-} from '../profileStorage';
-import { cropToSquare } from '../imageCrop';
+} from '../lib/profileStorage';
+import { cropToSquare } from '../lib/imageCrop';
 import MyTagPreview from '../components/MyTagPreview';
 import VisibilityControl from '../components/VisibilityControl';
 import PartyCodeSheet from '../components/PartyCodeSheet';
@@ -14,7 +14,7 @@ import PaintboxPicker from '../components/PaintboxPicker';
 import {
   PRONOUN_OPTIONS, NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, MAX_STICKERS,
   DEFAULT_RADIUS, PLACE_FALLBACK, TAG_COLORS,
-} from '../constants';
+} from '../lib/constants';
 
 const COLOR_NAMES = {
   coral: 'Coral', lavender: 'Lavender', mustard: 'Mustard', sage: 'Sage',

@@ -1,8 +1,8 @@
 // PaintboxPicker.jsx — pick the colour of your own tag. A row of paintbox
 // swatches (the app's own orchid is left out). The selected swatch gets a ring
 // in its own hue.
-import { accentTrio } from '../colors';
-import { TAG_COLORS } from '../constants';
+import { accentTrio } from '../lib/colors';
+import { TAG_COLORS } from '../lib/constants';
 
 export default function PaintboxPicker({ value, onChange, justify = 'flex-start' }) {
   return (

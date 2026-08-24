@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getMyProfile } from '../api';
-import { PLACE_FALLBACK } from '../constants';
+import { getMyProfile } from '../lib/api';
+import { PLACE_FALLBACK } from '../lib/constants';
 import PolicyDocument from './PolicyDocument';
 
 // Privacy is a top-level tab, not a settings row, so it can be read before

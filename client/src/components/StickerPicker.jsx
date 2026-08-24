@@ -2,7 +2,7 @@
 // on purpose: stickers are content you pick, not a control you press, and every
 // other pill in the app is a control. Selected chips take the coral tint,
 // because the stickers land on your own (coral) tag.
-import { STICKER_OPTIONS, MAX_STICKERS } from '../constants';
+import { STICKER_OPTIONS, MAX_STICKERS } from '../lib/constants';
 
 export default function StickerPicker({ value = [], onChange, max = MAX_STICKERS }) {
   function toggle(emoji) {

@@ -1,8 +1,8 @@
 // MyTagPreview.jsx — your own tag, exactly as the room sees it, in the colour
 // you picked (coral by default). Used on My tag.
 import { Avatar } from './Avatar';
-import { personTrio } from '../colors';
-import { STICKER_LABELS } from '../constants';
+import { personTrio } from '../lib/colors';
+import { STICKER_LABELS } from '../lib/constants';
 
 export default function MyTagPreview({ person, onPhotoClick }) {
   const c = personTrio(person);

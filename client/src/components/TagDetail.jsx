@@ -4,8 +4,8 @@
 // room. The tag keeps its own tint and hue so it reads as picking a sticker off
 // the wall.
 import { Avatar } from './Avatar';
-import { personTrio, visibleLabel } from './../colors';
-import { STICKER_LABELS } from '../constants';
+import { personTrio, visibleLabel } from '../lib/colors';
+import { STICKER_LABELS } from '../lib/constants';
 
 function nameSize(name, base) {
   const len = (name || '').length;

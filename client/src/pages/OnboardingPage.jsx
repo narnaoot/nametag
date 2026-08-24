@@ -1,16 +1,16 @@
 import { useState, useRef } from 'react';
-import { updateProfile } from '../api';
-import { persistProfileLocally, savePhotoLocally } from '../profileStorage';
-import { cropToSquare } from '../imageCrop';
+import { updateProfile } from '../lib/api';
+import { persistProfileLocally, savePhotoLocally } from '../lib/profileStorage';
+import { cropToSquare } from '../lib/imageCrop';
 import { Avatar } from '../components/Avatar';
 import VisibilityControl from '../components/VisibilityControl';
 import PartyCodeSheet from '../components/PartyCodeSheet';
 import StickerPicker from '../components/StickerPicker';
 import PaintboxPicker from '../components/PaintboxPicker';
-import { accentTrio } from '../colors';
+import { accentTrio } from '../lib/colors';
 import {
   ONBOARDING_PRONOUNS, ONBOARDING_NAME_MAX, TAGLINE_MAX, DEFAULT_RADIUS, PLACE_FALLBACK,
-} from '../constants';
+} from '../lib/constants';
 
 // Two steps, both skippable. You type onto the tag itself in step 1; you give it
 // a face and choose who sees you in step 2. Progress is a two-dash indicator.
