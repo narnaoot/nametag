@@ -4,7 +4,7 @@
 // Caslon so it reads as something said out loud, not a password. Backing out is
 // worded as the state you land in, because the sheet arrives mid-decision.
 import { useState } from 'react';
-import { PARTY_CODE_MIN, PARTY_CODE_MAX } from '../constants';
+import { PARTY_CODE_MIN, PARTY_CODE_MAX } from '../lib/constants';
 
 export default function PartyCodeSheet({ initial = '', onJoin, onStayVisible, onClose }) {
   const [code, setCode] = useState(initial.toUpperCase());

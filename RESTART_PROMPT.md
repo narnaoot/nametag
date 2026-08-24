@@ -6,7 +6,19 @@ Paste this into Claude Code at the start of a new session to get up to speed qui
 
 ---
 
-## ⚠️ Latest: Privacy, security & auth hardening — MERGED to `main` (Aug 2026)
+## 🧹 Latest: iOS-readiness cleanup — structural refactor (Aug 2026)
+
+Pre-iOS tidy of the prototype (no behavior change):
+
+- **Removed design artifacts** — `redesign/`, `design_handoff_nametag_redesign/`,
+  and `temp/` (design snapshots + a stray export, not app code; in git history).
+- **Regrouped `client/src/`** — the flat root's non-UI modules now live in
+  `lib/` (`api`, `constants`, `colors`, `imageCrop`, `profileStorage`) and
+  `auth/` (`AuthContext`, `useAuth`); `App.jsx`, `main.jsx`, `index.css`,
+  `components/`, `pages/`, `hooks/` unchanged. Imports rewritten accordingly.
+  Verified with `vite build` + `eslint`. Server untouched.
+
+## ⚠️ Privacy, security & auth hardening — MERGED to `main` (Aug 2026)
 
 The most recent session focused on privacy/security and the auth flow. All on
 `main`, **105 server tests passing**:
@@ -33,8 +45,9 @@ The most recent session focused on privacy/security and the auth flow. All on
 
 ### Earlier: UI redesign — MERGED (PR #16)
 
-The client UI was rebuilt to the "nearby name tags" Claude Design canvas in
-`redesign/` — Libre Caslon Text + Nunito (**self-hosted via `@fontsource`**),
+The client UI was rebuilt to the "nearby name tags" Claude Design canvas
+(design source formerly in `redesign/`, since removed — in git history) —
+Libre Caslon Text + Nunito (**self-hosted via `@fontsource`**),
 colour rules (**orchid is the app**; user-pickable tag colours; your own tag
 wears the orchid "you" ring), the wall of hand-tilted tags, a three-way
 visibility control, a Privacy tab, two-step onboarding, the party-code sheet, and
@@ -103,7 +116,7 @@ Everything below is **done and on `main`** (105 server tests passing):
 - Auto-save on ProfilePage: save button removed; any field change debounces a save (700ms); "Saving…" / "Saved ✓" status appears next to the page title (always visible, not below the fold)
 - Token sync: `AuthContext` exposes token via `setToken()` — `api.js` reads from memory, not `localStorage`
 - Brand theme system: `index.css` has a Tailwind v4 `@theme` block (`--color-brand`, `--color-page`, `--color-ink`, `--color-dim`, `--font-caveat`) → utility classes throughout; `constants.js` exports matching JS values (`COLOR_BRAND`, `FONT_CAVEAT`, etc.) for computed/programmatic use
-- Constants: `NAME_MAX`, `PRONOUNS_MAX`, `TAGLINE_MAX`, `BANNER_COLORS`, `PRONOUN_OPTIONS`, `STICKER_OPTIONS`, `RADIUS_OPTIONS` all in `client/src/constants.js`
+- Constants: `NAME_MAX`, `PRONOUNS_MAX`, `TAGLINE_MAX`, `BANNER_COLORS`, `PRONOUN_OPTIONS`, `STICKER_OPTIONS`, `RADIUS_OPTIONS` all in `client/src/lib/constants.js`
 - `PersonCard` accepts a single `person` prop object (not 8 individual props); sticker JSON is memoized with `useMemo`
 - Error handling: background location refresh surfaces errors to the UI; profile load failure shows a message in the form; `api.js` URL stripping uses an end-anchored regex (`/\/api$/`)
 - Privacy data-minimisation implemented:

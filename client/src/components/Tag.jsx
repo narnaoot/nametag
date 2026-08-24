@@ -4,7 +4,7 @@
 // strip carries the person's own line and disappears entirely when they wrote
 // none.
 import { Avatar } from './Avatar';
-import { personTrio } from '../colors';
+import { personTrio } from '../lib/colors';
 
 // Size the Caslon name to the card width and the name's length so it never
 // wraps awkwardly. The mock hand-set 20–23px on a 154–172px card; this tracks.

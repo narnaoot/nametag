@@ -40,7 +40,7 @@ Hardening:
 
 1. ~~**Photos aren't cropped client-side.**~~ → **Done (Aug 2026).** Picked
    photos are now cropped to a centered square and downscaled to a 320px JPEG
-   **on-device before upload** (`client/src/imageCrop.js`), so the tag's small
+   **on-device before upload** (`client/src/lib/imageCrop.js`), so the tag's small
    circle is all that's ever sent (a 1200×800 pick → ~2 KB). The Privacy copy now
    truthfully says the photo is cropped on your phone before it's sent.
 2. ~~**Photo files are served at public, guessable `/uploads/user_<id>_<ts>` URLs.**~~

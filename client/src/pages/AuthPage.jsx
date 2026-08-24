@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { login, register, forgotPassword, resetPassword, verifyEmail, resendVerification } from '../api';
-import { useAuth } from '../useAuth';
+import { login, register, forgotPassword, resetPassword, verifyEmail, resendVerification } from '../lib/api';
+import { useAuth } from '../auth/useAuth';
 
 // Sign in — "Put a name to the room." Orchid takes the accent word and the
 // primary button, so the app's own colour is set before you have a tag.

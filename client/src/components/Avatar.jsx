@@ -2,7 +2,7 @@
 // detail sheet. A white ring (border) always; an optional coloured ring
 // (box-shadow spread) — reserved for "you" and for an opened tag. No photo
 // falls back to a Caslon initial on the person's tint.
-import { initials } from '../colors';
+import { initials } from '../lib/colors';
 
 export function Avatar({
   person,

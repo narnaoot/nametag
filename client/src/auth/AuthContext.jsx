@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Preferences } from '@capacitor/preferences';
-import { setToken as setApiToken, setUnauthorizedHandler, deleteAccount as deleteAccountApi } from './api';
+import { setToken as setApiToken, setUnauthorizedHandler, deleteAccount as deleteAccountApi } from '../lib/api';
 import { AuthContext } from './useAuth';
 
 const TOKEN_KEY = 'nametag_token';

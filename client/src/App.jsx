@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { AuthProvider } from './AuthContext';
-import { useAuth } from './useAuth';
+import { AuthProvider } from './auth/AuthContext';
+import { useAuth } from './auth/useAuth';
 import { useViewport } from './hooks/useViewport';
 import AuthPage from './pages/AuthPage';
 import OnboardingPage from './pages/OnboardingPage';

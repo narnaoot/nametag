@@ -2,15 +2,15 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNearbyPeople } from '../hooks/useNearbyPeople';
 import {
   loadLocalPhoto, getRememberedNames, rememberName, hidePerson,
-} from '../profileStorage';
-import { toBadgePerson, personTrio } from '../colors';
+} from '../lib/profileStorage';
+import { toBadgePerson, personTrio } from '../lib/colors';
 import { Avatar } from '../components/Avatar';
 import Wall from '../components/Wall';
 import VisibilityControl from '../components/VisibilityControl';
 import DetailSheet from '../components/DetailSheet';
 import TagDetail from '../components/TagDetail';
 import PartyCodeSheet from '../components/PartyCodeSheet';
-import { PLACE_FALLBACK } from '../constants';
+import { PLACE_FALLBACK } from '../lib/constants';
 
 // Board tuning per viewport — "the same board, more room".
 const BOARD = {

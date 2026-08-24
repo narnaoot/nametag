@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Geolocation } from '@capacitor/geolocation';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
-import { getNearby, updateLocation, setVisibility, getMyProfile, updateProfile } from '../api';
-import { LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY, DEFAULT_RADIUS } from '../constants';
-import { getHiddenIds } from '../profileStorage';
+import { getNearby, updateLocation, setVisibility, getMyProfile, updateProfile } from '../lib/api';
+import { LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY, DEFAULT_RADIUS } from '../lib/constants';
+import { getHiddenIds } from '../lib/profileStorage';
 
 // Derive the three-way visibility mode from a server profile row + live active
 // flag: invisible | nearby | party.
