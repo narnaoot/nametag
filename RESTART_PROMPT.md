@@ -6,7 +6,31 @@ Paste this into Claude Code at the start of a new session to get up to speed qui
 
 ---
 
-## 🧹 Latest: iOS-readiness cleanup — structural refactor (Aug 2026)
+## 🧹 Latest: iOS-readiness cleanup — dedup + dead code (Aug 2026)
+
+Behaviour-preserving cleanup pass (105 server tests still green, client builds
++ lints clean):
+
+- **One source of truth for the profile contract** — the "fields → FormData"
+  serialization was written three times (ProfilePage, OnboardingPage,
+  `useNearbyPeople.pushProfile`) and had started to drift. It now lives in
+  `client/src/lib/profile.js` (`normalizeProfileFields`, `toProfileFormData`)
+  with the visibility-mode rule (`visibilityMode`), reused by all three.
+- **Shared photo pick** — the crop-or-fallback pick handler (duplicated in
+  ProfilePage + OnboardingPage) is now `preparePickedPhoto()` in `lib/imageCrop.js`.
+- **Server dedup** — the four routes that touch the on-disk photo share a
+  `fetchProfilePhoto()` helper; the privacy field-wipe SQL used by both the
+  visibility route and the stale cleanup is now one shared `CLEAR_PROFILE_SET`
+  (exported from `cleanup.js`), so a new sensitive column can't be wiped in one
+  place and forgotten in the other. Field limits are named constants.
+- **Dead code removed** — `BRAND_ACCENT` (duplicated the `--brand` CSS var),
+  and the unused `forgetName` / `unhidePerson` storage helpers. Kept
+  intentionally: the tested `POST /me/photo` route + its `uploadPhoto()` client
+  wrapper (a ready photo-only endpoint for native), currently caller-less.
+- **Deferred:** the inline-style → CSS-token migration and the 4-way tag-card
+  unification (visually sensitive; best done together, as a later pass).
+
+## iOS-readiness cleanup — structural refactor (Aug 2026)
 
 Pre-iOS tidy of the prototype (no behavior change):
 
@@ -112,12 +136,12 @@ Everything below is **done and on `main`** (105 server tests passing):
 - Photo upload: uses standard `<input type="file">` on web (Capacitor Camera removed from ProfilePage — was breaking in browsers); Capacitor Camera still available for native iOS if needed
 - Show/hide password toggle on all auth forms (login, register, reset password)
 - Geolocation on web fixed: `Geolocation.requestPermissions()` threw "Not implemented on web" in Capacitor on browsers; now caught so `getCurrentPosition()` proceeds and browser prompts naturally
-- Nearby photo fix: `cleanup.js` can delete the server photo without NULLing `display_name`; `loadMyProfile` now triggers `reuploadFullProfile()` when either `display_name` or `photo_path` is missing
+- Nearby photo fix: `cleanup.js` can delete the server photo without NULLing `display_name`; `loadMyProfile` now triggers `pushProfile()` (in `useNearbyPeople`) when either `display_name` or `photo_path` is missing
 - Auto-save on ProfilePage: save button removed; any field change debounces a save (700ms); "Saving…" / "Saved ✓" status appears next to the page title (always visible, not below the fold)
 - Token sync: `AuthContext` exposes token via `setToken()` — `api.js` reads from memory, not `localStorage`
 - Brand theme system: `index.css` has a Tailwind v4 `@theme` block (`--color-brand`, `--color-page`, `--color-ink`, `--color-dim`, `--font-caveat`) → utility classes throughout; `constants.js` exports matching JS values (`COLOR_BRAND`, `FONT_CAVEAT`, etc.) for computed/programmatic use
 - Constants: `NAME_MAX`, `PRONOUNS_MAX`, `TAGLINE_MAX`, `BANNER_COLORS`, `PRONOUN_OPTIONS`, `STICKER_OPTIONS`, `RADIUS_OPTIONS` all in `client/src/lib/constants.js`
-- `PersonCard` accepts a single `person` prop object (not 8 individual props); sticker JSON is memoized with `useMemo`
+- The tag components (`Tag`, `MyTagPreview`) accept a single `person` prop object built by `toBadgePerson` in `lib/colors.js` (not many individual props); sticker JSON is parsed there and memoized in `GridPage` with `useMemo`
 - Error handling: background location refresh surfaces errors to the UI; profile load failure shows a message in the form; `api.js` URL stripping uses an end-anchored regex (`/\/api$/`)
 - Privacy data-minimisation implemented:
   - `server/cleanup.js` — `runCleanup()` runs hourly; finds profiles stale >24h, deletes photo files, NULLs location
@@ -128,7 +152,7 @@ Everything below is **done and on `main`** (105 server tests passing):
   - `useNearbyPeople`: re-uploads local photo when going visible or when server copy is missing
   - "Delete account" UI in ProfilePage with two-step confirmation
 - `@capacitor/filesystem` installed; `LOCAL_PHOTO_PATH` constant in `constants.js`
-- 80 tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
+- 105 server tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
 
 ---
 
@@ -170,9 +194,16 @@ git status                  # check for anything uncommitted
 ```
 client/src/
   App.jsx               — shell, tab nav, first-time user redirect
-  AuthContext.jsx        — JWT token state (@capacitor/preferences)
-  api.js                 — fetch wrapper + photoUrl() helper
-  constants.js           — shared field limits, colors, options
+  auth/
+    AuthContext.jsx       — JWT token state (@capacitor/preferences); auto sign-out on a rejected token
+    useAuth.js            — the context hook
+  lib/
+    api.js                — fetch wrapper + photoUrl() helper
+    constants.js          — shared field limits, colors, options
+    colors.js             — accent/paintbox resolution + toBadgePerson()
+    profile.js            — profile field contract (normalize + FormData) + visibilityMode()
+    profileStorage.js     — on-device profile/photo persistence + remembered/hidden lists
+    imageCrop.js          — on-device crop/downscale + preparePickedPhoto()
   pages/
     AuthPage.jsx          — landing / login / register / verify / forgot / reset
     OnboardingPage.jsx    — two-step first-run (tag, then photo + stickers)
@@ -182,7 +213,7 @@ client/src/
     PolicyDocument.jsx    — the full in-app privacy policy screen
   hooks/
     useNearbyPeople.js    — location, nearby fetch, 60s auto-refresh, visibility
-  AuthContext.jsx         — JWT state; auto sign-out on a rejected token
+    useViewport.js        — phone / tablet / desktop breakpoint
 
 server/
   index.js               — entry point (runs migrations, starts server)

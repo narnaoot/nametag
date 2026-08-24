@@ -9,6 +9,15 @@ const db = require('./db');
 const STALE_HOURS = 24;
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 
+// The columns wiped when a profile is minimised — going invisible (profile
+// route) or ageing out (stale cleanup below). This is the privacy
+// data-minimisation core, so it's defined once and shared by both callers: a
+// new sensitive column added here can't be forgotten in the other place.
+const CLEAR_PROFILE_SET = `display_name = NULL, pronouns = NULL, tagline = NULL,
+      tag_color = NULL, stickers = NULL, photo_path = NULL,
+      lat = NULL, lng = NULL, location_updated_at = NULL,
+      is_active = FALSE`;
+
 async function deletePhotoFile(photo_path) {
   if (!photo_path) return;
   try {
@@ -35,12 +44,7 @@ async function runCleanup() {
 
     const userIds = stale.rows.map(r => r.user_id);
     await db.query(
-      `UPDATE profiles
-       SET display_name = NULL, pronouns = NULL, tagline = NULL,
-           tag_color = NULL, stickers = NULL, photo_path = NULL,
-           lat = NULL, lng = NULL, location_updated_at = NULL,
-           is_active = FALSE
-       WHERE user_id = ANY($1)`,
+      `UPDATE profiles SET ${CLEAR_PROFILE_SET} WHERE user_id = ANY($1)`,
       [userIds]
     );
 
@@ -50,4 +54,4 @@ async function runCleanup() {
   }
 }
 
-module.exports = { runCleanup, deletePhotoFile };
+module.exports = { runCleanup, deletePhotoFile, CLEAR_PROFILE_SET };

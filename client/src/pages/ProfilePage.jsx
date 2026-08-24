@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { getMyProfile, updateProfile, photoUrl, setVisibility } from '../lib/api';
 import { useAuth } from '../auth/useAuth';
-import {
-  savePhotoLocally, loadLocalPhoto, persistProfileLocally, readLocalProfile,
-} from '../lib/profileStorage';
-import { cropToSquare } from '../lib/imageCrop';
+import { loadLocalPhoto, persistProfileLocally, readLocalProfile } from '../lib/profileStorage';
+import { preparePickedPhoto } from '../lib/imageCrop';
+import { normalizeProfileFields, toProfileFormData, visibilityMode } from '../lib/profile';
 import MyTagPreview from '../components/MyTagPreview';
 import VisibilityControl from '../components/VisibilityControl';
 import PartyCodeSheet from '../components/PartyCodeSheet';
@@ -102,25 +101,16 @@ export default function ProfilePage({ onDone }) {
   }, []);
 
   const pronouns = pronounSelect === 'custom' ? customPronouns.trim() : pronounSelect;
-  const visMode = !alwaysVisible ? 'invisible' : (partyCode ? 'party' : 'nearby');
+  const visMode = visibilityMode({ alwaysVisible, partyCode });
 
   function handlePickPhoto() { fileInputRef.current?.click(); }
   async function handleFileChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    try {
-      // Crop to a small square on-device before it's ever uploaded.
-      const { dataUrl, file: cropped } = await cropToSquare(file);
-      setPhotoPreview(dataUrl);
-      await savePhotoLocally(dataUrl);
-      setPhotoFile(cropped);
-    } catch {
-      const reader = new FileReader();
-      reader.onload = async (ev) => { setPhotoPreview(ev.target.result); await savePhotoLocally(ev.target.result); };
-      reader.readAsDataURL(file);
-      setPhotoFile(file);
-    }
+    const { dataUrl, file: prepared } = await preparePickedPhoto(file);
+    setPhotoPreview(dataUrl);
+    setPhotoFile(prepared);
   }
 
   function handleVisibility(next) {
@@ -142,16 +132,13 @@ export default function ProfilePage({ onDone }) {
     if (tagline.trim().length > TAGLINE_MAX) { if (!silent) setError(`One line must be ${TAGLINE_MAX} characters or fewer.`); return; }
 
     setError(''); setLoading(true);
-    const fields = {
-      display_name: name, pronouns, tagline: tagline.trim(), radius_meters: radius,
+    const fields = normalizeProfileFields({
+      display_name: name, pronouns, tagline, radius_meters: radius,
       always_visible: alwaysVisible, tag_color: accentKey,
-      stickers: JSON.stringify(selectedStickers), party_code: partyCode.trim(),
-    };
-    const fd = new FormData();
-    Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
-    if (photoFile) fd.append('photo', photoFile);
+      stickers: selectedStickers, party_code: partyCode,
+    });
     try {
-      await updateProfile(fd);
+      await updateProfile(toProfileFormData(fields, photoFile));
       await persistProfileLocally(fields);
       setSaved(true); setTimeout(() => setSaved(false), 2000);
     } catch (err) { setError(err.message); }

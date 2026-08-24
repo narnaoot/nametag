@@ -36,9 +36,6 @@ export const PERSON_ACCENTS = ['lavender', 'citron', 'mustard', 'denim', 'blush'
 // Orchid belongs to the app, so any stored/legacy orchid tag maps to citron.
 export const ACCENT_REMAP = { orchid: 'citron' };
 
-// The brightened orchid used for display-size accent words + your avatar ring.
-export const BRAND_ACCENT = '#C462BC';
-
 // Capacitor Filesystem path for the user's own profile photo (on-device copy).
 export const LOCAL_PHOTO_PATH = 'profile_photo';
 // Capacitor Preferences key for the user's full profile data (on-device copy).

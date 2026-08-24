@@ -3,15 +3,18 @@ import { Geolocation } from '@capacitor/geolocation';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import { getNearby, updateLocation, setVisibility, getMyProfile, updateProfile } from '../lib/api';
-import { LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY, DEFAULT_RADIUS } from '../lib/constants';
+import { LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY } from '../lib/constants';
 import { getHiddenIds } from '../lib/profileStorage';
+import { normalizeProfileFields, toProfileFormData, visibilityMode } from '../lib/profile';
 
 // Derive the three-way visibility mode from a server profile row + live active
-// flag: invisible | nearby | party.
+// flag: invisible | nearby | party. A missing profile reads as 'nearby'.
 function deriveMode(profile, active) {
-  const visible = profile ? (profile.always_visible !== false || active) : true;
-  if (!visible) return 'invisible';
-  return profile?.party_code ? 'party' : 'nearby';
+  if (!profile) return 'nearby';
+  return visibilityMode({
+    alwaysVisible: profile.always_visible !== false || active,
+    partyCode: profile.party_code,
+  });
 }
 
 // Push the full on-device profile back to the server (name, pronouns, photo,
@@ -21,31 +24,23 @@ async function pushProfile(overrides = {}) {
   try {
     const { value } = await Preferences.get({ key: LOCAL_PROFILE_KEY });
     if (!value) return false;
-    const p = JSON.parse(value);
-    const merged = { ...p, ...overrides };
+    const merged = { ...JSON.parse(value), ...overrides };
     if (!merged.display_name || !merged.pronouns) return false;
 
-    const fd = new FormData();
-    fd.append('display_name', merged.display_name);
-    fd.append('pronouns', merged.pronouns);
-    fd.append('tagline', merged.tagline || '');
-    fd.append('radius_meters', merged.radius_meters ?? DEFAULT_RADIUS);
-    fd.append('always_visible', merged.always_visible ?? true);
-    fd.append('tag_color', merged.tag_color || '');
-    fd.append('stickers', merged.stickers || '[]');
-    fd.append('party_code', merged.party_code || '');
+    const fields = normalizeProfileFields(merged);
 
+    let photoFile;
     try {
       const result = await Filesystem.readFile({
         path: LOCAL_PHOTO_PATH, directory: Directory.Data, encoding: Encoding.UTF8,
       });
       const blob = await fetch(result.data).then(r => r.blob());
-      fd.append('photo', new File([blob], 'photo.jpg', { type: blob.type }));
+      photoFile = new File([blob], 'photo.jpg', { type: blob.type });
     } catch { /* no local photo — send without it */ }
 
-    // Also persist the overrides on-device so future restores keep them.
-    await Preferences.set({ key: LOCAL_PROFILE_KEY, value: JSON.stringify(merged) });
-    await updateProfile(fd);
+    // Also persist the merged fields on-device so future restores keep them.
+    await Preferences.set({ key: LOCAL_PROFILE_KEY, value: JSON.stringify(fields) });
+    await updateProfile(toProfileFormData(fields, photoFile));
     return true;
   } catch {
     return false;

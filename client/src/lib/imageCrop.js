@@ -3,6 +3,7 @@
 // circle, only ever this small"), so there's no reason to send a full-resolution
 // image to the server — this keeps the Privacy promise true and minimises what
 // briefly lives server-side.
+import { savePhotoLocally } from './profileStorage';
 
 const OUT_SIZE = 320;   // px — plenty for a ~112px avatar at 2–3× DPR
 const QUALITY = 0.82;
@@ -52,5 +53,30 @@ export async function cropToSquare(source, { size = OUT_SIZE, quality = QUALITY,
   } finally {
     cleanup();
     if (img.close) img.close();   // release the ImageBitmap
+  }
+}
+
+function readAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => resolve(ev.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Prepare a just-picked file for the tag: crop it to a square (falling back to
+// the raw file if cropping isn't available), save the data URL as the on-device
+// copy, and return { dataUrl, file } for the live preview + the upload. Shared
+// by ProfilePage and OnboardingPage so the pick flow lives in one place.
+export async function preparePickedPhoto(file) {
+  try {
+    const { dataUrl, file: cropped } = await cropToSquare(file);
+    await savePhotoLocally(dataUrl);
+    return { dataUrl, file: cropped };
+  } catch {
+    const dataUrl = await readAsDataUrl(file);
+    await savePhotoLocally(dataUrl);
+    return { dataUrl, file };
   }
 }
