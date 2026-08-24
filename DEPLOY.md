@@ -38,8 +38,15 @@
    | `DATABASE_URL` | Your Neon connection string (Step 1) |
    | `JWT_SECRET` | Any long random string (e.g. generate with `openssl rand -hex 32`) |
    | `NODE_ENV` | `production` |
+   | `APP_URL` | Your app's public URL (e.g. `https://nametag.n4bil.com`) — used to build password-reset + email-verification links |
+   | `RESEND_API_KEY` | Resend API key (`re_…`) for sending email — see "Email" below |
+   | `SMTP_FROM` | The From address, e.g. `Nametag <noreply@send.n4bil.com>` (no surrounding quotes) |
+   | `CORS_ORIGINS` | *(optional)* extra allowed browser origins, comma-separated, if your frontend origin isn't already in the defaults |
 6. Click **Create Web Service**
 7. Wait for deploy (~2 min). Copy your Render URL (e.g. `https://nametag-api.onrender.com`)
+
+> The server runs its migrations automatically on startup (`db/migrate.js`), so
+> new columns/tables are applied on each deploy — no manual migration step.
 
 ---
 
@@ -65,6 +72,25 @@
 Your app will be live at `https://nametag-xxx.vercel.app` 🎉
 
 ---
+
+## Email (password reset + verification)
+
+Transactional email is sent via **[Resend](https://resend.com)**. Render's free
+tier blocks outbound SMTP, so the server calls Resend's **HTTPS API** directly
+(no SMTP port needed).
+
+1. Create a Resend account and **verify a sending domain** (this deploy uses
+   `send.n4bil.com`) by adding the DNS records Resend gives you.
+2. Create an API key and set it as **`RESEND_API_KEY`** on Render.
+3. Set **`SMTP_FROM`** to an address on the verified domain, e.g.
+   `Nametag <noreply@send.n4bil.com>` (no surrounding quotes — Resend rejects a
+   malformed From with a 422; the code also strips stray quotes defensively).
+4. Make sure **`APP_URL`** points at your public app URL so the links in emails
+   resolve correctly.
+
+Without an email provider configured, reset/verification requests still succeed
+but no email is sent (the link is logged to the console in dev only, never in
+production).
 
 ## Photo uploads note
 

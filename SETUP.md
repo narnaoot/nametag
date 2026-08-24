@@ -36,6 +36,13 @@ Open http://localhost:5173
 | DATABASE_URL   | Postgres connection string               |
 | JWT_SECRET     | Long random string for signing JWTs      |
 | PORT           | Server port (default: 3001)              |
+| APP_URL        | Base URL for reset/verification links (default `https://nametag.n4bil.com`) |
+| RESEND_API_KEY | *(optional in dev)* Resend API key for real emails; without it, links are logged to the console |
+| SMTP_FROM      | *(optional in dev)* From address, e.g. `Nametag <noreply@send.n4bil.com>` |
+
+> The server applies its migrations automatically on startup (`db/migrate.js`), so
+> the extra columns/tables (email verification, token revocation) are set up for
+> you after the initial `schema.sql` load.
 
 ## How it works
 

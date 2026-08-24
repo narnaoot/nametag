@@ -34,8 +34,8 @@ Details in `client/REDESIGN.md`.
   orchid "you" ring on the wall so you can still spot yourself).
 
 Still open (best-guess shipped, see the questions file): venue/place name,
-mutual-context row, party hosting, radius UI, and a real "Read the whole policy"
-link.
+mutual-context row, party hosting, and radius UI. (The "Read the whole policy"
+link is now wired to a full in-app policy screen — done.)
 
 ### Privacy — status (updated Aug 2026)
 
@@ -85,12 +85,13 @@ review for details.
 The codebase has had significant refactoring and new features added. Before going further, do a quick end-to-end smoke test on the live deployment:
 
 1. Go to [nametag.n4bil.com](https://nametag.n4bil.com) (or the underlying [nametag-pi.vercel.app](https://nametag-pi.vercel.app))
-2. Register a new account
-3. Fill in your profile — name, pronouns, photo, color, stickers
-4. Check the nearby grid loads (it'll be empty if no one else is around, that's fine)
-5. Test forgot password — enter your email, check the Render logs for the reset link (SMTP not set up yet), use the link
-6. Test "Delete account" — the button is now in the profile page, below the save button
-7. **Account re-use after deletion** — register an account, fill in a profile, delete the account, then immediately register again with the same email. Confirm no old data (name, photo, pronouns) carries over.
+2. Register a new account → you should land on a **"Check your email"** screen (registration no longer logs you straight in)
+3. Open the **verification email** (from Resend) and click the link → you should be signed in and dropped into onboarding
+4. Fill in your profile — name, pronouns, photo, color, stickers
+5. Check the nearby grid loads (it'll be empty if no one else is around, that's fine)
+6. Test forgot password — enter your email, receive the **reset email**, use the link. After resetting, confirm any older session is signed out (token revocation).
+7. Test "Delete account" — the button is in the My tag page
+8. **Account re-use after deletion** — register + verify, fill a profile, delete the account, then register again with the same email. Confirm no old data carries over.
 
 If anything looks broken, tell Claude what you see.
 
