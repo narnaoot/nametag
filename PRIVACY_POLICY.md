@@ -1,13 +1,14 @@
 # Nametag — Privacy Policy
 
-> **DRAFT — needs your review and a legal check before it's published or linked.**
+> **DRAFT — needs a legal check before it's published or linked.**
 > It describes how the app behaves **today** (verified against the code in
-> `PRIVACY_REVIEW.md`). Fill in every `[BRACKETED]` placeholder, and make sure the
-> High/Medium fixes in the review are done — or this text is adjusted — before you
-> put it in front of real people. Nametag is an **early prototype**.
+> `PRIVACY_REVIEW.md`). The placeholders are filled and the High/Medium review
+> fixes are done; still set up the `privacy@n4bil.com` contact address and get a
+> legal read before putting this in front of real people. Nametag is an
+> **early prototype**.
 
-**Last updated:** [EFFECTIVE DATE]
-**Contact:** [PRIVACY CONTACT EMAIL]
+**Last updated:** August 24, 2026
+**Contact:** privacy@n4bil.com
 
 ---
 
@@ -32,9 +33,9 @@ The rest of this document is the detail.
 
 ## Who we are
 
-Nametag ("we," "us") is an independent prototype operated by [OWNER / LEGAL NAME].
+Nametag ("we," "us") is an independent prototype operated by Nabil Arnaoot.
 The app is available at https://nametag.n4bil.com. Questions:
-[PRIVACY CONTACT EMAIL].
+privacy@n4bil.com.
 
 ## What we collect
 
@@ -129,7 +130,7 @@ strangers in the same room.
   app can't place you on the wall without it.
 - **Access and deletion:** you can view your own tag in the app and delete your
   account at any time. To make any other privacy request, contact
-  [PRIVACY CONTACT EMAIL].
+  privacy@n4bil.com.
 
 Depending on where you live (for example the EU/UK under GDPR, or California under
 the CCPA), you may have additional rights to access, correct, delete, or port your
@@ -137,7 +138,7 @@ data, and to object to certain processing. Contact us to exercise them.
 
 ## Children
 
-Nametag is not intended for anyone under [MINIMUM AGE, e.g. 13 / 16]. We do not
+Nametag is not intended for anyone under 16. We do not
 knowingly collect information from children under that age.
 
 ## International users
@@ -153,13 +154,17 @@ date above, and for significant changes we'll provide a more prominent notice.
 
 ## Contact
 
-Questions or requests: **[PRIVACY CONTACT EMAIL]**.
+Questions or requests: **privacy@n4bil.com**.
 
 ---
 
-### Placeholders to fill before publishing
-- `[EFFECTIVE DATE]`, `[OWNER / LEGAL NAME]`, `[PRIVACY CONTACT EMAIL]`,
-  `[MINIMUM AGE]`.
+### Before publishing
+- ~~Placeholders (effective date, owner, contact email, minimum age)~~ — filled
+  (Nabil Arnaoot; privacy@n4bil.com; 16; Aug 24, 2026).
+- **Set up `privacy@n4bil.com`** so it actually receives mail (a forwarding
+  alias to your inbox at your DNS/email provider). Until then, swap the contact
+  to a working address.
+- **Get a legal read** before real users.
 
 ### Must be true (or this text changed) before publishing — see `PRIVACY_REVIEW.md`
 - ~~Lock down public photo URLs (**H1**)~~ — done: photo URLs are now unguessable
