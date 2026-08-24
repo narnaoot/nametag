@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Preferences } from '@capacitor/preferences';
-import { setToken as setApiToken, deleteAccount as deleteAccountApi } from './api';
+import { setToken as setApiToken, setUnauthorizedHandler, deleteAccount as deleteAccountApi } from './api';
 import { AuthContext } from './useAuth';
 
 const TOKEN_KEY = 'nametag_token';
@@ -16,6 +16,17 @@ export function AuthProvider({ children }) {
       setApiToken(value);
       setReady(true);
     });
+  }, []);
+
+  // If the server rejects our token (expired or revoked), clear it so the app
+  // falls back to the sign-in screen instead of looping on a dead session.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      Preferences.remove({ key: TOKEN_KEY });
+      setToken(null);
+      setApiToken(null);
+    });
+    return () => setUnauthorizedHandler(null);
   }, []);
 
   async function signIn(newToken) {

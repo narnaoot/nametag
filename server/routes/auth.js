@@ -201,10 +201,14 @@ router.post('/verify-email', async (req, res) => {
   const row = result.rows[0];
   if (!row) return res.status(400).json({ error: 'Verification link is invalid or has expired' });
 
-  await db.query('UPDATE users SET email_verified = TRUE WHERE id = $1', [row.user_id]);
+  const updated = await db.query(
+    'UPDATE users SET email_verified = TRUE WHERE id = $1 RETURNING token_version',
+    [row.user_id]
+  );
   await db.query('UPDATE email_verification_tokens SET used = TRUE WHERE id = $1', [row.id]);
 
-  const token2 = jwt.sign({ userId: row.user_id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+  const tv = updated.rows[0] ? updated.rows[0].token_version : 0;
+  const token2 = jwt.sign({ userId: row.user_id, tv }, process.env.JWT_SECRET, { expiresIn: '30d' });
   res.json({ token: token2, userId: row.user_id });
 });
 
@@ -253,7 +257,7 @@ router.post('/login', async (req, res) => {
     });
   }
 
-  const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+  const token = jwt.sign({ userId: user.id, tv: user.token_version }, process.env.JWT_SECRET, { expiresIn: '30d' });
   res.json({ token, userId: user.id });
 });
 
@@ -309,7 +313,12 @@ router.post('/reset-password', async (req, res) => {
   if (!row) return res.status(400).json({ error: 'Reset link is invalid or has expired' });
 
   const hash = await bcrypt.hash(password, 10);
-  await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, row.user_id]);
+  // Bump token_version so any existing sessions (e.g. an attacker's) are revoked
+  // the moment the password is reset.
+  await db.query(
+    'UPDATE users SET password_hash = $1, token_version = token_version + 1 WHERE id = $2',
+    [hash, row.user_id]
+  );
   await db.query('UPDATE password_reset_tokens SET used = TRUE WHERE id = $1', [row.id]);
 
   res.json({ ok: true });

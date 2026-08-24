@@ -17,7 +17,7 @@ to fix before real users.
 |---|---|---|---|
 | Email | Neon `users.email` (lowercased) | Until account deletion | You; anyone with DB access; via `/register` an attacker can *test* if an email exists |
 | Password | Neon `users.password_hash` (bcrypt, cost 10) | Until account deletion | Nobody in cleartext |
-| Auth token (JWT) | **On device** (`@capacitor/preferences`) | 30 days (token expiry) | The device; anyone who exfiltrates it (valid till expiry) |
+| Auth token (JWT) | **On device** (`@capacitor/preferences`) | 30 days (token expiry) — **revocable**: a password reset invalidates it immediately via `token_version` | The device; anyone who exfiltrates it (valid till expiry or revocation) |
 | Display name, pronouns, one line, stickers, tag colour | Neon `profiles.*` | **Only while visible** — NULLed on invisible; auto-cleared after 24h stale; deleted with account | You; co-present users in your radius (via `/nearby`); DB access |
 | Photo | Render disk `/uploads/user_<id>_<ts>.<ext>` | Same as profile (deleted on invisible / 24h / account delete) | **Anyone with the URL** (public static, unauthenticated) |
 | Location (lat/lng) | Neon `profiles.lat/lng` — single latest point, overwritten each refresh; **no history** | NULLed on invisible / 24h / account delete | Server + DB access. **Not exposed raw to other users** — `/nearby` returns only `distance_meters` |
@@ -100,11 +100,14 @@ revealing nothing about whether the address exists. Login is gated on
 non-enumerating `/resend-verification` exists. (`/forgot-password` was already
 non-enumerating — always 200, with a regression test.)
 
-**M3 — JWT is long-lived (30 days) and cannot be revoked.** It's stateless;
-sign-out only deletes the token on the device. A leaked token stays valid until
-expiry.
-→ *Fix:* shorter access token + refresh token, or a token-version/denylist column
-checked in `middleware/auth.js`. At minimum, document it.
+**M3 — JWT couldn't be revoked.** ✅ **FIXED (revocation added).** Every JWT now
+carries the account's `token_version` (`users.token_version`), and the auth
+middleware rejects any token whose version is stale — so a **password reset bumps
+the version and instantly invalidates all existing sessions**, and a deleted
+account's token stops working immediately (the middleware also 401s when the user
+row is gone). The client auto-signs-out on such a 401. Tokens are still 30 days
+for prototype UX (documented tradeoff); with revocation in place, a shorter access
+token + refresh-token rotation is the remaining future improvement, not a blocker.
 
 **M4 — Google Fonts are loaded from Google's CDN.** ✅ **FIXED.** Libre Caslon
 Text + Nunito are now self-hosted via `@fontsource/*` (WOFF2 bundled from npm and
@@ -201,7 +204,8 @@ Before real users:
 
 Soon after:
 - [x] **M2** — de-enumerate `/register` (done: email-verification signup flow)
-- [ ] **M3** — shorten JWT / add revocation
+- [x] **M3** — token revocation (done: `token_version` in JWT, checked in
+  `middleware/auth.js`, bumped on reset; refresh-token rotation is future work)
 - [x] **L1** — hash reset tokens · [x] **L2** — restrict CORS · [x] **L4** — add `helmet`
 
 Nice to have:
