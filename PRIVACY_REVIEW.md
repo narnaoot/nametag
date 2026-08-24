@@ -92,12 +92,13 @@ IP-limited, because co-present users share a venue Wi-Fi/NAT and a per-IP limit
 would throttle legitimate users. Per-account auth throttling is a future
 improvement (see M3).
 
-**M2 — Account enumeration via `/register`.** It returns `409 "Email already in
-use"`, so an attacker can test which emails have accounts. (`/forgot-password` is
-non-enumerating — always 200; **now hardened** so even a mail-send failure can't
-turn into a 500 that reveals the email exists, with a regression test.)
-→ *Fix (register, still open):* return a generic message, or move to an
-email-verification flow.
+**M2 — Account enumeration via `/register`.** ✅ **FIXED.** Registration moved to
+an **email-verification flow**: `/register` always returns `{ ok, pending }` and
+sends an email (create + verify / resend / "you already have an account"),
+revealing nothing about whether the address exists. Login is gated on
+`email_verified`; verification tokens are hashed at rest (24h, single-use); a
+non-enumerating `/resend-verification` exists. (`/forgot-password` was already
+non-enumerating — always 200, with a regression test.)
 
 **M3 — JWT is long-lived (30 days) and cannot be revoked.** It's stateless;
 sign-out only deletes the token on the device. A leaked token stays valid until
@@ -199,7 +200,7 @@ Before real users:
 - [x] **M4** — self-host fonts (done; no more Google font requests)
 
 Soon after:
-- [ ] **M2** — de-enumerate `/register` (needs an email-verification signup flow)
+- [x] **M2** — de-enumerate `/register` (done: email-verification signup flow)
 - [ ] **M3** — shorten JWT / add revocation
 - [x] **L1** — hash reset tokens · [x] **L2** — restrict CORS · [x] **L4** — add `helmet`
 
