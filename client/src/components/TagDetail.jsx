@@ -4,6 +4,7 @@
 // room. The tag keeps its own tint and hue so it reads as picking a sticker off
 // the wall.
 import { Avatar } from './Avatar';
+import { Eyebrow, Pill } from './TagBits';
 import { personTrio, visibleLabel } from '../lib/colors';
 import { STICKER_LABELS } from '../lib/constants';
 
@@ -30,13 +31,11 @@ export default function TagDetail({
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9 }}>
         <Avatar person={person} size={photoSize} border={3} ring={trio.hue}
                 shadow="var(--shadow-raise)" tint={trio.tint} deep={trio.deep} />
-        <div style={{ fontWeight: 700, fontSize: 9.5, letterSpacing: '.18em', textTransform: 'uppercase',
-              color: 'var(--muted)', marginTop: 4 }}>hello my name is</div>
+        <Eyebrow style={{ fontSize: 9.5, letterSpacing: '.18em', marginTop: 4 }} />
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: nameSize(person.name, nameBase),
               letterSpacing: '-1.4px', lineHeight: 1, color: 'var(--text)', textAlign: 'center' }}>{person.name}</div>
         {person.pronouns && (
-          <div style={{ background: 'var(--surface)', border: `1.5px solid ${trio.hue}`, borderRadius: 'var(--r-pill)',
-                padding: '6px 14px', fontWeight: 800, fontSize: 12.5, color: trio.deep }}>{person.pronouns}</div>
+          <Pill hue={trio.hue} deep={trio.deep} style={{ padding: '6px 14px', fontSize: 12.5 }}>{person.pronouns}</Pill>
         )}
         {person.tagline && (
           <div className="t-quote" style={{ fontSize: 20, lineHeight: 1.45, textAlign: 'center',
@@ -45,11 +44,10 @@ export default function TagDetail({
         {person.stickers?.length > 0 && (
           <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
             {person.stickers.map((s, i) => (
-              <div key={i} style={{ background: 'var(--surface)', border: `1.5px solid ${trio.hue}`,
-                    borderRadius: 'var(--r-pill)', padding: '7px 13px', fontWeight: 800, fontSize: 12,
-                    color: trio.deep, display: 'flex', gap: 6, alignItems: 'center' }}>
+              <Pill key={i} hue={trio.hue} deep={trio.deep}
+                    style={{ padding: '7px 13px', fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
                 <span style={{ fontSize: 14 }}>{s}</span>{STICKER_LABELS[s] || ''}
-              </div>
+              </Pill>
             ))}
           </div>
         )}
@@ -62,8 +60,7 @@ export default function TagDetail({
       </div>
 
       {context && (
-        <div style={{ marginTop: 18, background: 'var(--surface)', border: '1.5px solid var(--border)',
-              borderRadius: 'var(--r)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="na-card" style={{ marginTop: 18, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
           {context.photo != null && (
             <Avatar person={{ photo: context.photo, name: context.name }} size={40} border={2}
                     ring="var(--lavender)" shadow="none" />

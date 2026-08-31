@@ -1,6 +1,7 @@
 // MyTagPreview.jsx — your own tag, exactly as the room sees it, in the colour
 // you picked (coral by default). Used on My tag.
 import { Avatar } from './Avatar';
+import { Eyebrow, Pill } from './TagBits';
 import { personTrio } from '../lib/colors';
 import { STICKER_LABELS } from '../lib/constants';
 
@@ -15,18 +16,13 @@ export default function MyTagPreview({ person, onPhotoClick }) {
         <Avatar person={person} size={74} border={3} ring={c.hue}
                 shadow="var(--shadow-raise)" tint={c.tint} deep={c.deep} />
       </div>
-      <div style={{ fontWeight: 700, fontSize: 9, letterSpacing: '.18em',
-                    textTransform: 'uppercase', color: 'var(--muted)', marginTop: 3 }}>
-        hello my name is
-      </div>
+      <Eyebrow style={{ fontSize: 9, letterSpacing: '.18em', marginTop: 3 }} />
       <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32,
                     letterSpacing: '-1px', lineHeight: 1, color: 'var(--text)', textAlign: 'center' }}>
         {person.name || ' '}
       </div>
       {person.pronouns && (
-        <div style={{ background: 'var(--surface)', border: `1.5px solid ${c.hue}`,
-                      borderRadius: 'var(--r-pill)', padding: '5px 13px', fontWeight: 800,
-                      fontSize: 12, color: c.deep }}>{person.pronouns}</div>
+        <Pill hue={c.hue} deep={c.deep} style={{ padding: '5px 13px', fontSize: 12 }}>{person.pronouns}</Pill>
       )}
       {person.tagline && (
         <div className="t-quote" style={{ fontSize: 15, lineHeight: 1.35, textAlign: 'center',
@@ -35,11 +31,10 @@ export default function MyTagPreview({ person, onPhotoClick }) {
       {person.stickers?.length > 0 && (
         <div style={{ display: 'flex', gap: 8, marginTop: 5, flexWrap: 'wrap', justifyContent: 'center' }}>
           {person.stickers.map((s, i) => (
-            <div key={i} style={{ background: 'var(--surface)', border: `1.5px solid ${c.hue}`,
-                  borderRadius: 'var(--r-pill)', padding: '5px 11px', fontWeight: 800, fontSize: 11,
-                  color: c.deep, display: 'flex', gap: 5, alignItems: 'center' }}>
+            <Pill key={i} hue={c.hue} deep={c.deep}
+                  style={{ padding: '5px 11px', fontSize: 11, display: 'flex', gap: 5, alignItems: 'center' }}>
               <span style={{ fontSize: 12 }}>{s}</span>{STICKER_LABELS[s] || ''}
-            </div>
+            </Pill>
           ))}
         </div>
       )}

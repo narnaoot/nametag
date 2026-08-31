@@ -184,6 +184,30 @@ body {
   color: #fff;
 }
 
+/* White surface card — hairline border + the standard 14px radius. Padding,
+   shadow and overflow are set per use. */
+.na-card {
+  background: var(--surface);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--r);
+}
+
+/* Secondary pill button on a surface (Refresh, the photo-pick buttons). Padding
+   is set per use since it varies slightly by context. */
+.na-pill-btn {
+  background: var(--surface);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--r-pill);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* Bare text button — no chrome. Weight / size / colour / padding are set per
+   use (some sit flush at padding:0, some keep the default). */
+.na-textbtn { background: none; border: none; cursor: pointer; }
+
 /* hidden scrollbars */
 .no-sb { scrollbar-width: none; }
 .no-sb::-webkit-scrollbar { display: none; }

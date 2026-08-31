@@ -165,9 +165,7 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
   }
 
   const refreshPill = (
-    <button onClick={refresh} disabled={loading} style={{ whiteSpace: 'nowrap', background: 'var(--surface)',
-          border: '1.5px solid var(--border)', borderRadius: 'var(--r-pill)', padding: '11px 15px',
-          fontWeight: 800, fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>
+    <button onClick={refresh} disabled={loading} className="na-pill-btn" style={{ whiteSpace: 'nowrap', padding: '11px 15px' }}>
       {loading ? 'Reading…' : 'Refresh'}
     </button>
   );
