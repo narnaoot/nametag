@@ -4,6 +4,7 @@
 // strip carries the person's own line and disappears entirely when they wrote
 // none.
 import { Avatar } from './Avatar';
+import { Eyebrow, Pill } from './TagBits';
 import { personTrio } from '../lib/colors';
 
 // Size the Caslon name to the card width and the name's length so it never
@@ -57,21 +58,16 @@ export function Tag({
         <Avatar person={person} size={faceSize} border={2.5}
                 ring={person?.you ? 'var(--brand)' : null}
                 tint={trio.tint} deep={trio.deep} />
-        <div style={{ fontWeight: 700, fontSize: 8, letterSpacing: '.17em',
-                      textTransform: 'uppercase', color: 'var(--muted)', marginTop: 2 }}>
-          hello my name is
-        </div>
+        <Eyebrow style={{ marginTop: 2 }} />
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: ns,
                       letterSpacing: '-.7px', color: 'var(--text)', lineHeight: 1,
                       textAlign: 'center', maxWidth: '100%', overflowWrap: 'anywhere' }}>
           {person?.name || ' '}
         </div>
         {person?.pronouns && (
-          <div style={{ background: 'var(--surface)', border: `1.5px solid ${trio.hue}`,
-                        borderRadius: 'var(--r-pill)', padding: '3px 10px', fontWeight: 800,
-                        fontSize: 11, color: trio.deep, lineHeight: 1 }}>
+          <Pill hue={trio.hue} deep={trio.deep} style={{ padding: '3px 10px', fontSize: 11, lineHeight: 1 }}>
             {person.pronouns}
-          </div>
+          </Pill>
         )}
       </div>
       {hasLine && (

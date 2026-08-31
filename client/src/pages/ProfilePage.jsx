@@ -23,8 +23,7 @@ const COLOR_NAMES = {
 // A tap-to-edit row: label + current value + →, expanding to an inline editor.
 function EditRow({ label, value, open, onToggle, children }) {
   return (
-    <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)',
-                  borderRadius: 'var(--r)', overflow: 'hidden' }}>
+    <div className="na-card" style={{ overflow: 'hidden' }}>
       <div onClick={onToggle} style={{ display: 'flex', alignItems: 'center', gap: 12,
             padding: '10px 16px', cursor: 'pointer' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -178,7 +177,7 @@ export default function ProfilePage({ onDone }) {
             My <em>tag</em>
           </div>
         </div>
-        <button onClick={onDone} style={{ background: 'none', border: 'none', cursor: 'pointer',
+        <button onClick={onDone} className="na-textbtn" style={{
               fontWeight: 800, fontSize: 13, color: 'var(--orchid-dk)',
               display: 'flex', alignItems: 'center', gap: 6 }}>
           {loading ? 'Saving…' : saved ? 'Saved ✓' : 'Done'}
@@ -247,12 +246,12 @@ export default function ProfilePage({ onDone }) {
       <div style={{ margin: '18px 22px 0', paddingTop: 18, borderTop: '1.5px solid var(--border)' }}>
         {!confirmDelete ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <button type="button" onClick={signOut} style={{ background: 'none', border: 'none',
-                  cursor: 'pointer', color: 'var(--text)', fontWeight: 800, fontSize: 13.5, padding: 0 }}>
+            <button type="button" onClick={signOut} className="na-textbtn" style={{
+                  color: 'var(--text)', fontWeight: 800, fontSize: 13.5, padding: 0 }}>
               Sign out
             </button>
-            <button type="button" onClick={() => setConfirmDelete(true)} style={{ background: 'none',
-                  border: 'none', cursor: 'pointer', color: 'var(--muted)', fontWeight: 700, fontSize: 13.5, padding: 0 }}>
+            <button type="button" onClick={() => setConfirmDelete(true)} className="na-textbtn" style={{
+                  color: 'var(--muted)', fontWeight: 700, fontSize: 13.5, padding: 0 }}>
               Delete account
             </button>
           </div>

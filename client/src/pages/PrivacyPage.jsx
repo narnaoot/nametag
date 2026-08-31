@@ -80,8 +80,7 @@ export default function PrivacyPage({ onChangeVisibility }) {
 
       <div style={{ padding: '12px 22px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {STATEMENTS.map((s, i) => (
-          <div key={i} style={{ background: 'var(--surface)', border: '1.5px solid var(--border)',
-                borderRadius: 'var(--r)', padding: '13px 15px' }}>
+          <div key={i} className="na-card" style={{ padding: '13px 15px' }}>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 16.5, color: 'var(--text)',
                   lineHeight: 1.3 }}>{s.claim}</div>
             <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, lineHeight: 1.5 }}>{s.detail}</div>
@@ -90,9 +89,8 @@ export default function PrivacyPage({ onChangeVisibility }) {
       </div>
 
       <div style={{ padding: '16px 22px 0' }}>
-        <div onClick={() => setShowPolicy(true)} className="nt-tappable" style={{ display: 'flex',
-              alignItems: 'center', gap: 12, background: 'var(--surface)',
-              border: '1.5px solid var(--border)', borderRadius: 'var(--r)', padding: '12px 15px' }}>
+        <div onClick={() => setShowPolicy(true)} className="nt-tappable na-card" style={{ display: 'flex',
+              alignItems: 'center', gap: 12, padding: '12px 15px' }}>
           <div style={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: 13, color: 'var(--text)' }}>
             Read the whole policy
           </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { login, register, forgotPassword, resetPassword, verifyEmail, resendVerification } from '../lib/api';
 import { useAuth } from '../auth/useAuth';
+import { Eyebrow, Pill } from '../components/TagBits';
 
 // Sign in — "Put a name to the room." Orchid takes the accent word and the
 // primary button, so the app's own colour is set before you have a tag.
@@ -22,12 +23,10 @@ function MiniTag({ w, rot, tint, hue, dk, top, left, right, bottom, name, pron, 
           <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
       )}
-      <div style={{ fontWeight: 700, fontSize: 8, letterSpacing: '.17em', textTransform: 'uppercase',
-            color: 'var(--muted)' }}>hello my name is</div>
+      <Eyebrow />
       <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: nameSize,
             letterSpacing: '-.7px', color: 'var(--text)', lineHeight: 1 }}>{name}</div>
-      <div style={{ background: 'var(--surface)', border: `1.5px solid ${hue}`, borderRadius: 'var(--r-pill)',
-            padding: '4px 11px', fontWeight: 800, fontSize: 11, color: dk }}>{pron}</div>
+      <Pill hue={hue} deep={dk} style={{ padding: '4px 11px', fontSize: 11 }}>{pron}</Pill>
     </div>
   );
 }
@@ -39,9 +38,9 @@ function PwField({ value, onChange, placeholder, minLength }) {
       <input className="na-field" style={{ paddingRight: 56 }} type={show ? 'text' : 'password'}
         value={value} placeholder={placeholder} required minLength={minLength}
         onChange={e => onChange(e.target.value)} />
-      <button type="button" onClick={() => setShow(s => !s)} tabIndex={-1} style={{ position: 'absolute',
-            right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none',
-            cursor: 'pointer', fontWeight: 800, fontSize: 12, color: 'var(--muted)', textTransform: 'uppercase',
+      <button type="button" onClick={() => setShow(s => !s)} tabIndex={-1} className="na-textbtn" style={{ position: 'absolute',
+            right: 14, top: '50%', transform: 'translateY(-50%)',
+            fontWeight: 800, fontSize: 12, color: 'var(--muted)', textTransform: 'uppercase',
             letterSpacing: '.08em' }}>{show ? 'Hide' : 'Show'}</button>
     </div>
   );
@@ -168,8 +167,7 @@ export default function AuthPage({ onRegistered }) {
                onChange={e => setEmail(e.target.value)} />
         {errLine}{okLine}
         {!success && <button className="na-btn" type="submit" disabled={loading}>{loading ? 'Sending…' : 'Send reset link'}</button>}
-        <button type="button" onClick={() => switchMode('login')} style={{ background: 'none', border: 'none',
-              cursor: 'pointer', color: 'var(--muted)', fontWeight: 700, fontSize: 13 }}>Back to sign in</button>
+        <button type="button" onClick={() => switchMode('login')} className="na-textbtn" style={{ color: 'var(--muted)', fontWeight: 700, fontSize: 13 }}>Back to sign in</button>
       </form>
     );
   } else if (mode === 'reset') {
@@ -194,8 +192,7 @@ export default function AuthPage({ onRegistered }) {
         <button className="na-btn" type="button" onClick={handleResend} disabled={loading}>
           {loading ? 'Sending…' : 'Resend email'}
         </button>
-        <button type="button" onClick={() => switchMode('login')} style={{ background: 'none', border: 'none',
-              cursor: 'pointer', color: 'var(--muted)', fontWeight: 700, fontSize: 13 }}>Back to sign in</button>
+        <button type="button" onClick={() => switchMode('login')} className="na-textbtn" style={{ color: 'var(--muted)', fontWeight: 700, fontSize: 13 }}>Back to sign in</button>
       </div>
     );
   } else if (mode === 'verifying') {
@@ -213,8 +210,7 @@ export default function AuthPage({ onRegistered }) {
           That verification link is invalid or has expired. Create your account again to get a fresh link.
         </div>
         <button className="na-btn" type="button" onClick={() => switchMode('register')}>Back to create account</button>
-        <button type="button" onClick={() => switchMode('login')} style={{ background: 'none', border: 'none',
-              cursor: 'pointer', color: 'var(--muted)', fontWeight: 700, fontSize: 13 }}>Sign in instead</button>
+        <button type="button" onClick={() => switchMode('login')} className="na-textbtn" style={{ color: 'var(--muted)', fontWeight: 700, fontSize: 13 }}>Sign in instead</button>
       </div>
     );
   } else {
@@ -239,8 +235,7 @@ export default function AuthPage({ onRegistered }) {
           {loading ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
         </button>
         {mode === 'login' && (
-          <button type="button" onClick={() => switchMode('forgot')} style={{ background: 'none', border: 'none',
-                cursor: 'pointer', color: 'var(--muted)', fontWeight: 700, fontSize: 13, marginTop: -2 }}>Forgot password?</button>
+          <button type="button" onClick={() => switchMode('forgot')} className="na-textbtn" style={{ color: 'var(--muted)', fontWeight: 700, fontSize: 13, marginTop: -2 }}>Forgot password?</button>
         )}
       </form>
     );
@@ -248,7 +243,7 @@ export default function AuthPage({ onRegistered }) {
 
   return (
     <div className="na-screen no-sb" style={{ minHeight: '100vh', padding: '52px 30px 40px' }}>
-      <button onClick={() => setView('landing')} style={{ background: 'none', border: 'none', cursor: 'pointer',
+      <button onClick={() => setView('landing')} className="na-textbtn" style={{
             color: 'var(--muted)', fontWeight: 800, fontSize: 14, padding: 0, marginBottom: 24 }}>← Back</button>
       <div className="t-display" style={{ fontSize: 34, letterSpacing: '-1px', marginBottom: 22 }}>
         {mode === 'register' ? <>Make your <em>tag</em></>
@@ -257,8 +252,7 @@ export default function AuthPage({ onRegistered }) {
               : mode === 'verify-failed' ? <>Link <em>expired</em></>
                 : <>Welcome <em>back</em></>}
       </div>
-      <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 'var(--r)',
-            boxShadow: 'var(--shadow-card)', padding: 22 }}>{form}</div>
+      <div className="na-card" style={{ boxShadow: 'var(--shadow-card)', padding: 22 }}>{form}</div>
     </div>
   );
 }

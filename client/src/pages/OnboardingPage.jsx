@@ -4,6 +4,7 @@ import { persistProfileLocally } from '../lib/profileStorage';
 import { preparePickedPhoto } from '../lib/imageCrop';
 import { normalizeProfileFields, toProfileFormData } from '../lib/profile';
 import { Avatar } from '../components/Avatar';
+import { Eyebrow } from '../components/TagBits';
 import VisibilityControl from '../components/VisibilityControl';
 import PartyCodeSheet from '../components/PartyCodeSheet';
 import StickerPicker from '../components/StickerPicker';
@@ -28,11 +29,11 @@ function Dashes({ step }) {
 function TopBar({ onBack, onSkip, canBack }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <button onClick={onBack} disabled={!canBack} style={{ background: 'none', border: 'none',
+      <button onClick={onBack} disabled={!canBack} className="na-textbtn" style={{
             cursor: canBack ? 'pointer' : 'default', fontSize: 20, color: 'var(--muted)',
             opacity: canBack ? 1 : 0.35, padding: 0 }}>←</button>
       <Dashes step={canBack ? 2 : 1} />
-      <button onClick={onSkip} style={{ background: 'none', border: 'none', cursor: 'pointer',
+      <button onClick={onSkip} className="na-textbtn" style={{
             fontWeight: 800, fontSize: 12, color: 'var(--muted)', padding: 0 }}>Skip</button>
     </div>
   );
@@ -119,8 +120,7 @@ export default function OnboardingPage({ onDone }) {
         <div style={{ marginTop: 26, background: trio.tint, border: '1.5px solid var(--border)',
               borderRadius: 'var(--r-tag)', boxShadow: 'var(--shadow-card)', transform: 'rotate(-1.4deg)',
               padding: '20px 18px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontWeight: 700, fontSize: 9, letterSpacing: '.17em', textTransform: 'uppercase',
-                color: 'var(--muted)' }}>hello my name is</div>
+          <Eyebrow style={{ fontSize: 9 }} />
           <div style={{ width: '100%', borderBottom: `1.5px solid ${trio.hue}`, paddingBottom: 6 }}>
             <input autoFocus value={name} maxLength={ONBOARDING_NAME_MAX}
               onChange={e => setName(e.target.value)} placeholder="Maya"
@@ -167,8 +167,7 @@ export default function OnboardingPage({ onDone }) {
         {/* one line */}
         <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 120 }}>
           <div className="t-label" style={{ fontSize: 10 }}>One line about right now</div>
-          <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)',
-                borderRadius: 'var(--r)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="na-card" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input value={tagline} maxLength={TAGLINE_MAX} onChange={e => setTagline(e.target.value)}
               placeholder="Here for the oat cortado"
               style={{ border: 'none', outline: 'none', background: 'none', fontFamily: 'var(--font-display)',
@@ -203,12 +202,8 @@ export default function OnboardingPage({ onDone }) {
                   ring={trio.hue} shadow="var(--shadow-raise)" tint={trio.tint} deep={trio.deep} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <button type="button" onClick={() => fileInputRef.current?.click()} style={{ background: 'var(--surface)',
-                border: '1.5px solid var(--border)', borderRadius: 'var(--r-pill)', padding: '10px 16px',
-                fontWeight: 800, fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>Take a photo</button>
-          <button type="button" onClick={() => fileInputRef.current?.click()} style={{ background: 'var(--surface)',
-                border: '1.5px solid var(--border)', borderRadius: 'var(--r-pill)', padding: '10px 16px',
-                fontWeight: 800, fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>Choose from library</button>
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="na-pill-btn" style={{ padding: '10px 16px' }}>Take a photo</button>
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="na-pill-btn" style={{ padding: '10px 16px' }}>Choose from library</button>
           <div style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.5 }}>A cropped circle, only ever this small.</div>
         </div>
       </div>
