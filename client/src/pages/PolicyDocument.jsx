@@ -57,7 +57,7 @@ export default function PolicyDocument({ onBack }) {
           <span style={{ fontSize: 16, fontWeight: 800 }}>←</span> Privacy
         </button>
         <div className="t-display" style={{ fontSize: 34, letterSpacing: '-1px', marginTop: 12, lineHeight: 1.1 }}>
-          Privacy <em>policy</em>
+          Privacy policy
         </div>
         <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>
           Last updated {effectiveDate}

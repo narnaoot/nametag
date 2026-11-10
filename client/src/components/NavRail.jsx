@@ -11,7 +11,7 @@ export default function NavRail({ tab, onTab, footer }) {
     <nav style={{ width: 250, flexShrink: 0, alignSelf: 'stretch', background: 'var(--surface)',
           borderRight: '1.5px solid var(--border)', padding: '30px 22px', display: 'flex',
           flexDirection: 'column', gap: 8, position: 'sticky', top: 0, height: '100vh' }}>
-      <div className="t-label" style={{ fontSize: 11, marginBottom: 16 }}>Nametag</div>
+      <div className="t-label" style={{ marginBottom: 16 }}>Nametag</div>
       {ITEMS.map(([id, label]) => {
         const on = tab === id;
         return (

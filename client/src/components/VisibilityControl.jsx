@@ -21,7 +21,7 @@ function palette(value) {
   }
   // nearby + party both live in the sage card
   return {
-    cardBg: 'var(--sage-lt)', cardBorder: 'var(--sage)',
+    cardBg: 'var(--sage-lt)', cardBorder: 'var(--sage-lt)',
     activeBg: 'var(--sage-dk)', lead: 'var(--sage-dk)',
     note: 'var(--muted)', labelColor: 'var(--muted)',
   };
@@ -63,7 +63,7 @@ export default function VisibilityControl({
     return (
       <div style={{ background: p.cardBg, border: `1.5px solid ${p.cardBorder}`,
             borderRadius: 'var(--r)', padding: 11, transition: 'background .2s ease, border-color .2s ease' }}>
-        {label && <div className="t-label" style={{ fontSize: 9.5, padding: '0 3px 8px', color: p.labelColor }}>{label}</div>}
+        {label && <div className="t-label" style={{ padding: '0 3px 8px', color: p.labelColor }}>{label}</div>}
         <div style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 12,
               padding: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
           {MODES.map(([mode, text]) => {
@@ -92,7 +92,7 @@ export default function VisibilityControl({
       transition: 'background .2s ease, border-color .2s ease',
     }}>
       {label && (
-        <div className="t-label" style={{ fontSize: 9.5, padding: '0 4px 8px', color: p.labelColor }}>
+        <div className="t-label" style={{ padding: '0 4px 8px', color: p.labelColor }}>
           {label}
         </div>
       )}

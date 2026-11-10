@@ -10,7 +10,7 @@ export function Avatar({
   border = 2.5,          // white surface ring width
   ring = null,           // coloured ring colour (CSS var/hex) or null
   ringWidth = 1.5,
-  shadow = '0 3px 16px rgba(0,0,0,.13)',
+  shadow = 'var(--shadow-card)',
   tint,                  // fallback tint (person's -lt) when there's no photo
   deep,                  // fallback initial colour (person's -dk)
 }) {
