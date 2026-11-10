@@ -6,7 +6,38 @@ Paste this into Claude Code at the start of a new session to get up to speed qui
 
 ---
 
-## 🧹 Latest: iOS-readiness cleanup — dedup + dead code (Aug 2026)
+## 🐞 Latest: hands-on bug sweep (Nov 2026)
+
+Ran the real stack locally (Postgres + API + production client build) with
+several simulated users in a browser. Fixed, with 11 new server tests (116 total):
+
+- **Invisible now sticks.** It used to be undone by a tab switch or reload, and
+  on a fresh load the UI could say "You're invisible" while location was still
+  being shared (stale `modeRef` race in `useNearbyPeople`). Going invisible now
+  records `always_visible = FALSE` on the server and on-device; while invisible
+  nothing is restored or auto-saved to the server (edits stay on the device).
+- **Party codes isolate both ways** (`IS NOT DISTINCT FROM`) — party members were
+  visible to everyone not in a party. Codes are normalised (letters + digits,
+  upper-case) on client and server, so hyphens/spaces/capitals really don't matter.
+- **My tag edits are flushed on Done / tab switch** (were dropped if you left
+  inside the 700 ms auto-save debounce); the wall waits for an in-flight save.
+- **On-device data is tied to an account** (`profile_owner`): a second account
+  on the same device no longer inherits the previous tag; delete-account clears it.
+- **No-tag state**: skipping onboarding showed a bogus "Turn on location"; the
+  wall now says "Make your tag first". Nameless rows are excluded from `/nearby`.
+- **Server hardening**: upload extension comes from an image-type allowlist (an
+  `.html`/`.svg` "photo" was served as a page from our origin); radius clamped
+  to 10–1000 m (was unbounded → could list every user); field lengths enforced;
+  coordinates validated; orphaned uploads deleted; never-located profiles age out.
+- Long names/lines wrap instead of overflowing the tag; clearer copy for a
+  reused verification link.
+
+**Found but left for a decision** (see `NABIL_TODOS.md`): pronoun "skip" still
+saves `they/them`; auth rate limit (50 / 15 min per IP) is easy to hit on shared
+venue Wi-Fi; "Remember the name" has no list to view and "Hide from me" has no
+undo; a password reset doesn't mark an unverified email as verified.
+
+## 🧹 Earlier: iOS-readiness cleanup — dedup + dead code (Aug 2026)
 
 Behaviour-preserving cleanup pass (105 server tests still green, client builds
 + lints clean):
@@ -152,7 +183,7 @@ Everything below is **done and on `main`** (105 server tests passing):
   - `useNearbyPeople`: re-uploads local photo when going visible or when server copy is missing
   - "Delete account" UI in ProfilePage with two-step confirmation
 - `@capacitor/filesystem` installed; `LOCAL_PHOTO_PATH` constant in `constants.js`
-- 105 server tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
+- 116 server tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
 
 ---
 

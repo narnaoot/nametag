@@ -207,10 +207,10 @@ export default function AuthPage({ onRegistered }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div className="t-h3">This link didn’t work</div>
         <div className="t-body" style={{ fontSize: 13.5, marginTop: -6 }}>
-          That verification link is invalid or has expired. Create your account again to get a fresh link.
+          That verification link has expired or was already used. If you’ve already confirmed your email, just sign in — otherwise create your account again to get a fresh link.
         </div>
-        <button className="na-btn" type="button" onClick={() => switchMode('register')}>Back to create account</button>
-        <button type="button" onClick={() => switchMode('login')} className="na-textbtn" style={{ color: 'var(--muted)', fontWeight: 700, fontSize: 13 }}>Sign in instead</button>
+        <button className="na-btn" type="button" onClick={() => switchMode('login')}>Sign in</button>
+        <button type="button" onClick={() => switchMode('register')} className="na-textbtn" style={{ color: 'var(--muted)', fontWeight: 700, fontSize: 13 }}>Create account again</button>
       </div>
     );
   } else {
@@ -249,7 +249,7 @@ export default function AuthPage({ onRegistered }) {
         {mode === 'register' ? <>Make your <em>tag</em></>
           : mode === 'check-email' ? <>Check your <em>inbox</em></>
             : mode === 'verifying' ? <>One <em>moment</em></>
-              : mode === 'verify-failed' ? <>Link <em>expired</em></>
+              : mode === 'verify-failed' ? <>Link <em>used up</em></>
                 : <>Welcome <em>back</em></>}
       </div>
       <div className="na-card" style={{ boxShadow: 'var(--shadow-card)', padding: 22 }}>{form}</div>

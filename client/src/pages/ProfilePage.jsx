@@ -3,7 +3,7 @@ import { getMyProfile, updateProfile, photoUrl, setVisibility } from '../lib/api
 import { useAuth } from '../auth/useAuth';
 import { loadLocalPhoto, persistProfileLocally, readLocalProfile } from '../lib/profileStorage';
 import { preparePickedPhoto } from '../lib/imageCrop';
-import { normalizeProfileFields, toProfileFormData, visibilityMode } from '../lib/profile';
+import { normalizeProfileFields, toProfileFormData, visibilityMode, trackProfileSave } from '../lib/profile';
 import MyTagPreview from '../components/MyTagPreview';
 import VisibilityControl from '../components/VisibilityControl';
 import PartyCodeSheet from '../components/PartyCodeSheet';
@@ -68,6 +68,9 @@ export default function ProfilePage({ onDone }) {
   const fileInputRef = useRef(null);
   const loadedRef = useRef(false);
   const autoSaveTimerRef = useRef(null);
+  const dirtyRef = useRef(false);        // an edit is waiting on the auto-save timer
+  const saveRef = useRef(null);          // the latest doSave, for the unmount flush
+  const hasServerRowRef = useRef(false); // a profile row exists on the server
 
   useEffect(() => {
     function applyProfile(src) {
@@ -90,7 +93,11 @@ export default function ProfilePage({ onDone }) {
       try {
         const profile = await getMyProfile();
         if (!profile) return;
+        hasServerRowRef.current = true;
         if (!p) applyProfile(profile);
+        // Visibility is the one thing the server is the authority on: it may
+        // have been changed on the wall or on another device.
+        else setAlwaysVisible(profile.always_visible !== false);
         if (profile.photo_path && !localPhoto) setPhotoPreview(photoUrl(profile.photo_path));
       } catch {
         if (!p) setError('Couldn’t load your tag. Pull to refresh.');
@@ -116,19 +123,22 @@ export default function ProfilePage({ onDone }) {
     if (next === 'party') { setShowParty(true); return; }
     if (next === 'invisible') {
       setAlwaysVisible(false);
-      setVisibility(false).catch(() => {});   // clear server photo + location now
+      // clear the server's copy (name, photo, location) now, and record the choice
+      trackProfileSave(setVisibility(false)).catch(() => {});
     } else {
       setAlwaysVisible(true);
       setPartyCode('');
     }
   }
 
+  // Returns true when the tag was saved (or there was nothing invalid to save).
   async function doSave({ silent = false } = {}) {
+    dirtyRef.current = false;
     const name = displayName.trim();
-    if (!name || !pronouns) { if (!silent) setError('Add your name and pronouns.'); return; }
-    if (name.length > NAME_MAX) { if (!silent) setError(`Name must be ${NAME_MAX} characters or fewer.`); return; }
-    if (pronouns.length > PRONOUNS_MAX) { if (!silent) setError(`Pronouns must be ${PRONOUNS_MAX} characters or fewer.`); return; }
-    if (tagline.trim().length > TAGLINE_MAX) { if (!silent) setError(`One line must be ${TAGLINE_MAX} characters or fewer.`); return; }
+    if (!name || !pronouns) { if (!silent) setError('Add your name and pronouns.'); return false; }
+    if (name.length > NAME_MAX) { if (!silent) setError(`Name must be ${NAME_MAX} characters or fewer.`); return false; }
+    if (pronouns.length > PRONOUNS_MAX) { if (!silent) setError(`Pronouns must be ${PRONOUNS_MAX} characters or fewer.`); return false; }
+    if (tagline.trim().length > TAGLINE_MAX) { if (!silent) setError(`One line must be ${TAGLINE_MAX} characters or fewer.`); return false; }
 
     setError(''); setLoading(true);
     const fields = normalizeProfileFields({
@@ -137,16 +147,41 @@ export default function ProfilePage({ onDone }) {
       stickers: selectedStickers, party_code: partyCode,
     });
     try {
-      await updateProfile(toProfileFormData(fields, photoFile));
-      await persistProfileLocally(fields);
+      await trackProfileSave((async () => {
+        if (alwaysVisible) {
+          await updateProfile(toProfileFormData(fields, photoFile));
+          hasServerRowRef.current = true;
+        } else if (!hasServerRowRef.current) {
+          // Invisible with no profile row yet: create it so the choice is
+          // recorded, then take the tag straight back off the server.
+          await updateProfile(toProfileFormData(fields));
+          hasServerRowRef.current = true;
+          await setVisibility(false);
+        }
+        // Otherwise invisible: edits stay on this device. Sending them would put
+        // the name and photo back on the server for someone who asked to be off it.
+        await persistProfileLocally(fields);
+      })());
       setSaved(true); setTimeout(() => setSaved(false), 2000);
-    } catch (err) { setError(err.message); }
+      return true;
+    } catch (err) { setError(err.message); return false; }
     finally { setLoading(false); }
   }
+  saveRef.current = doSave;
+
+  // Leaving the screen — Done, or a tab switch — must not drop an edit that's
+  // still waiting on the auto-save timer.
+  async function handleDone() {
+    clearTimeout(autoSaveTimerRef.current);
+    if (dirtyRef.current && !(await doSave())) return;   // stay to show what's wrong
+    onDone();
+  }
+  useEffect(() => () => { if (dirtyRef.current) saveRef.current({ silent: true }); }, []);
 
   useEffect(() => {
     if (!loadedRef.current) return;
     clearTimeout(autoSaveTimerRef.current);
+    dirtyRef.current = true;
     autoSaveTimerRef.current = setTimeout(() => doSave({ silent: true }), 700);
     return () => clearTimeout(autoSaveTimerRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -177,7 +212,7 @@ export default function ProfilePage({ onDone }) {
             My <em>tag</em>
           </div>
         </div>
-        <button onClick={onDone} className="na-textbtn" style={{
+        <button onClick={handleDone} className="na-textbtn" style={{
               fontWeight: 800, fontSize: 13, color: 'var(--orchid-dk)',
               display: 'flex', alignItems: 'center', gap: 6 }}>
           {loading ? 'Saving…' : saved ? 'Saved ✓' : 'Done'}
@@ -275,7 +310,7 @@ export default function ProfilePage({ onDone }) {
 
       {showParty && (
         <PartyCodeSheet initial={partyCode}
-          onJoin={(code) => { setShowParty(false); setPartyCode(code.toUpperCase()); setAlwaysVisible(true); }}
+          onJoin={(code) => { setShowParty(false); setPartyCode(code); setAlwaysVisible(true); }}
           onStayVisible={() => { setShowParty(false); setAlwaysVisible(true); setPartyCode(''); }}
           onClose={() => setShowParty(false)} />
       )}

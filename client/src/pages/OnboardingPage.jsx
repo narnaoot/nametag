@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { updateProfile } from '../lib/api';
+import { updateProfile, setVisibility } from '../lib/api';
 import { persistProfileLocally } from '../lib/profileStorage';
 import { preparePickedPhoto } from '../lib/imageCrop';
 import { normalizeProfileFields, toProfileFormData } from '../lib/profile';
@@ -89,6 +89,9 @@ export default function OnboardingPage({ onDone }) {
     try {
       await updateProfile(toProfileFormData(fields, photoFile));
       await persistProfileLocally(fields);
+      // Starting out invisible: the tag lives on this device only, so take the
+      // copy we just created back off the server.
+      if (!alwaysVisible) await setVisibility(false).catch(() => {});
       onDone();
     } catch (err) { setError(err.message || 'Something went wrong — try again.'); setSaving(false); }
   }
@@ -228,7 +231,7 @@ export default function OnboardingPage({ onDone }) {
 
       {showParty && (
         <PartyCodeSheet initial={partyCode}
-          onJoin={(code) => { setShowParty(false); setPartyCode(code.toUpperCase()); setVisMode('party'); }}
+          onJoin={(code) => { setShowParty(false); setPartyCode(code); setVisMode('party'); }}
           onStayVisible={() => { setShowParty(false); setVisMode('nearby'); setPartyCode(''); }}
           onClose={() => setShowParty(false)} />
       )}

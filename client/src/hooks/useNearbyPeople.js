@@ -4,8 +4,10 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import { getNearby, updateLocation, setVisibility, getMyProfile, updateProfile } from '../lib/api';
 import { LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY } from '../lib/constants';
-import { getHiddenIds } from '../lib/profileStorage';
-import { normalizeProfileFields, toProfileFormData, visibilityMode } from '../lib/profile';
+import { getHiddenIds, patchLocalProfile } from '../lib/profileStorage';
+import {
+  normalizeProfileFields, normalizePartyCode, toProfileFormData, visibilityMode, profileSaveSettled,
+} from '../lib/profile';
 
 // Derive the three-way visibility mode from a server profile row + live active
 // flag: invisible | nearby | party. A missing profile reads as 'nearby'.
@@ -23,8 +25,11 @@ function deriveMode(profile, active) {
 async function pushProfile(overrides = {}) {
   try {
     const { value } = await Preferences.get({ key: LOCAL_PROFILE_KEY });
-    if (!value) return false;
-    const merged = { ...JSON.parse(value), ...overrides };
+    // No on-device copy (a new device or browser): fall back to what the server
+    // still holds, so a visibility switch isn't silently dropped.
+    const base = value ? JSON.parse(value) : await getMyProfile();
+    if (!base) return false;
+    const merged = { ...base, ...overrides };
     if (!merged.display_name || !merged.pronouns) return false;
 
     const fields = normalizeProfileFields(merged);
@@ -55,30 +60,40 @@ export function useNearbyPeople() {
   const [loading, setLoading] = useState(true);
   const [isActive, setIsActive] = useState(false);
   const [mode, setMode] = useState('nearby');
+  const [profileChecked, setProfileChecked] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [hiddenIds, setHiddenIds] = useState([]);
-  const modeRef = useRef('nearby');
-  modeRef.current = mode;
+  const modeRef = useRef('nearby');   // kept in step with `mode` by applyMode
 
   const loadHidden = useCallback(async () => { setHiddenIds(await getHiddenIds()); }, []);
 
+  // Set the mode in state AND in the ref at once. Callers that go on to share
+  // location right after an await read the ref before React has re-rendered;
+  // a stale 'nearby' there would broadcast someone who chose to be invisible.
+  const applyMode = useCallback((next) => { modeRef.current = next; setMode(next); }, []);
+
   const loadMyProfile = useCallback(async () => {
     try {
+      await profileSaveSettled();   // don't read past an in-flight My-tag save
       const profile = await getMyProfile();
       setMyProfile(profile);
+      setProfileChecked(true);
       if (profile) {
         const active = profile.always_visible || profile.is_active;
         setIsActive(active);
-        setMode(deriveMode(profile, active));
-        // Restore fields the privacy cleanup may have cleared.
-        if (!profile.display_name || !profile.photo_path) {
+        const derived = deriveMode(profile, active);
+        applyMode(derived);
+        // Restore fields the privacy cleanup may have cleared — but never
+        // while invisible: that would put the name and photo back on the
+        // server for someone who asked to be off it.
+        if (derived !== 'invisible' && (!profile.display_name || !profile.photo_path)) {
           if (await pushProfile()) {
             const refreshed = await getMyProfile();
             if (refreshed) {
               setMyProfile(refreshed);
               const a2 = refreshed.always_visible || refreshed.is_active;
               setIsActive(a2);
-              setMode(deriveMode(refreshed, a2));
+              applyMode(deriveMode(refreshed, a2));
             }
           }
         }
@@ -86,7 +101,7 @@ export function useNearbyPeople() {
     } catch (err) {
       console.error('[useNearbyPeople] loadMyProfile:', err);
     }
-  }, []);
+  }, [applyMode]);
 
   const shareLocation = useCallback(async () => {
     try {
@@ -148,19 +163,20 @@ export function useNearbyPeople() {
 
   // Switch the central visibility state. partyCode required for 'party'.
   const setVisibilityMode = useCallback(async (next, { partyCode } = {}) => {
-    setMode(next);
+    applyMode(next);
     try {
       if (next === 'invisible') {
-        await setVisibility(false);   // clears server photo + location + is_active
+        // Clears the server copy (name, photo, location) and records the
+        // choice there; record it on-device too, so My tag and the next launch
+        // agree. You stay invisible until you choose otherwise. Don't
+        // re-upload the profile here: it would restore what we just deleted.
+        await setVisibility(false);
+        await patchLocalProfile({ always_visible: false });
         setIsActive(false);
         setNearby([]);
-        setMyProfile(prev => (prev ? { ...prev, is_active: false, photo_path: null } : prev));
-        // Don't re-upload the profile here: it would restore the photo we just
-        // deleted, and reloading would re-derive the mode from the unchanged
-        // always_visible flag. Invisibility is a session state — like the
-        // design's "switches itself off when you leave", it isn't persisted.
+        setMyProfile(prev => (prev ? { ...prev, is_active: false, always_visible: false, photo_path: null } : prev));
       } else {
-        const code = next === 'party' ? (partyCode || '').trim().toUpperCase() : '';
+        const code = next === 'party' ? normalizePartyCode(partyCode) : '';
         await pushProfile({ always_visible: true, party_code: code });
         await shareLocation();
         await loadNearby();
@@ -171,7 +187,7 @@ export function useNearbyPeople() {
     } catch (err) {
       setLocationError(err.message); setLocationErrorKind(err.kind || 'unavailable');
     }
-  }, [shareLocation, loadNearby, loadMyProfile]);
+  }, [applyMode, shareLocation, loadNearby, loadMyProfile]);
 
   useEffect(() => {
     async function init() {
@@ -203,7 +219,7 @@ export function useNearbyPeople() {
   }, [shareLocation, loadNearby]);
 
   return {
-    nearby, myProfile, locationError, locationErrorKind, loading, isActive, lastUpdated, mode,
+    nearby, myProfile, profileChecked, locationError, locationErrorKind, loading, isActive, lastUpdated, mode,
     hiddenIds, refresh, setVisibilityMode, reloadProfile: loadMyProfile, reloadHidden: loadHidden,
   };
 }

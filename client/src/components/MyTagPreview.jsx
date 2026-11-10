@@ -18,7 +18,8 @@ export default function MyTagPreview({ person, onPhotoClick }) {
       </div>
       <Eyebrow style={{ fontSize: 9, letterSpacing: '.18em', marginTop: 3 }} />
       <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 32,
-                    letterSpacing: '-1px', lineHeight: 1, color: 'var(--text)', textAlign: 'center' }}>
+                    letterSpacing: '-1px', lineHeight: 1, color: 'var(--text)', textAlign: 'center',
+                    maxWidth: '100%', overflowWrap: 'anywhere' }}>
         {person.name || ' '}
       </div>
       {person.pronouns && (
@@ -26,7 +27,7 @@ export default function MyTagPreview({ person, onPhotoClick }) {
       )}
       {person.tagline && (
         <div className="t-quote" style={{ fontSize: 15, lineHeight: 1.35, textAlign: 'center',
-              marginTop: 1 }}>{person.tagline}</div>
+              marginTop: 1, maxWidth: '100%', overflowWrap: 'anywhere' }}>{person.tagline}</div>
       )}
       {person.stickers?.length > 0 && (
         <div style={{ display: 'flex', gap: 8, marginTop: 5, flexWrap: 'wrap', justifyContent: 'center' }}>

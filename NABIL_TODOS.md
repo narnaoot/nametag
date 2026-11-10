@@ -7,6 +7,27 @@ Updated at the end of every session.
 
 ---
 
+## 🐞 Bug sweep (Nov 2026) — decisions needed from you
+
+A hands-on test pass fixed the clear-cut bugs (summary at the top of
+`RESTART_PROMPT.md`). These need your call before anything changes:
+
+1. **Pronouns "skip" saves `they/them`.** Onboarding offers "skip", but the
+   server requires pronouns, so skippers are labelled they/them. Allow a tag
+   with no pronouns, or remove the skip chip?
+2. **Sign-in rate limit vs. a room full of people.** `/api/auth/*` allows 50
+   requests per 15 min per IP. Everyone on one venue Wi-Fi shares an IP, and a
+   signup costs 2–4 requests — about 15 people signing up together get "Too
+   many attempts". Raise it, or limit per email instead of per IP?
+3. **"Remember the name" has nowhere to look.** Names are saved on the device
+   but no screen lists them. **"Hide from me" is permanent** — no un-hide.
+4. **Password reset on an unverified account** succeeds but sign-in still says
+   "verify your email". Treat a completed reset as verification?
+5. **Behaviour change to confirm:** Invisible is now persistent — you stay
+   hidden across reloads/sessions until you pick Nearby or Party code again.
+
+---
+
 ## 🎨 UI redesign — "nearby name tags" (Aug 2026, MERGED to `main` — PR #16)
 
 The whole client was rebuilt to the Claude Design canvas (design source

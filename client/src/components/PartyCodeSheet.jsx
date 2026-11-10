@@ -5,11 +5,13 @@
 // worded as the state you land in, because the sheet arrives mid-decision.
 import { useState } from 'react';
 import { PARTY_CODE_MIN, PARTY_CODE_MAX } from '../lib/constants';
+import { normalizePartyCode } from '../lib/profile';
 
 export default function PartyCodeSheet({ initial = '', onJoin, onStayVisible, onClose }) {
   const [code, setCode] = useState(initial.toUpperCase());
   const [focus, setFocus] = useState(false);
-  const clean = code.trim();
+  // Hyphens and spaces are fine to type but don't count: SUMMER-42 = SUMMER42.
+  const clean = normalizePartyCode(code);
   const ready = clean.length >= PARTY_CODE_MIN;
 
   return (

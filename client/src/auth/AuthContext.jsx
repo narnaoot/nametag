@@ -2,6 +2,16 @@ import { useState, useEffect } from 'react';
 import { Preferences } from '@capacitor/preferences';
 import { setToken as setApiToken, setUnauthorizedHandler, deleteAccount as deleteAccountApi } from '../lib/api';
 import { AuthContext } from './useAuth';
+import { claimLocalData, clearLocalData } from '../lib/profileStorage';
+
+// The account id inside a JWT (unverified read — only used to label which
+// account the on-device data belongs to).
+function userIdOf(token) {
+  try {
+    const part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(part)).userId ?? null;
+  } catch { return null; }
+}
 
 const TOKEN_KEY = 'nametag_token';
 
@@ -11,7 +21,8 @@ export function AuthProvider({ children }) {
 
   // Preferences is async, so load the token before rendering children
   useEffect(() => {
-    Preferences.get({ key: TOKEN_KEY }).then(({ value }) => {
+    Preferences.get({ key: TOKEN_KEY }).then(async ({ value }) => {
+      if (value) await claimLocalData(userIdOf(value));
       setToken(value);
       setApiToken(value);
       setReady(true);
@@ -30,6 +41,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function signIn(newToken) {
+    // A different account on this device must not inherit the last one's tag.
+    await claimLocalData(userIdOf(newToken), { fresh: true });
     await Preferences.set({ key: TOKEN_KEY, value: newToken });
     setToken(newToken);
     setApiToken(newToken);
@@ -43,6 +56,7 @@ export function AuthProvider({ children }) {
 
   async function deleteAccount() {
     await deleteAccountApi();
+    await clearLocalData();   // "everything is erased" includes this device
     await Preferences.remove({ key: TOKEN_KEY });
     setToken(null);
     setApiToken(null);

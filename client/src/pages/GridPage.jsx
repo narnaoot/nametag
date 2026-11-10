@@ -71,6 +71,26 @@ function LocationNeeded({ kind, onRetry }) {
   );
 }
 
+// Signed in but no tag yet (onboarding skipped, or the tag was cleared and
+// there's no copy on this device). Nothing can be shown or seen until one exists.
+function TagNeeded({ onEditTag }) {
+  return (
+    <CenteredState>
+      <div style={{ width: 132, border: '2px dashed color-mix(in srgb, var(--muted) 34%, transparent)',
+            borderRadius: 'var(--r-tag)', transform: 'rotate(-2deg)', padding: '22px 14px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 26 }}>🏷️</span>
+        <span className="t-quote" style={{ fontSize: 14, color: 'var(--muted)' }}>your tag goes here</span>
+      </div>
+      <div className="t-h2" style={{ fontSize: 26, marginTop: 26 }}>Make your tag first</div>
+      <div className="t-body" style={{ fontSize: 14, maxWidth: 268, marginTop: 8 }}>
+        Add a name so the room knows what to call you — then you’ll see who’s here.
+      </div>
+      <button className="na-btn" style={{ marginTop: 22, minWidth: 180 }} onClick={onEditTag}>Make my tag</button>
+    </CenteredState>
+  );
+}
+
 function WallSkeleton({ columns = 2 }) {
   const tags = Array.from({ length: columns === 2 ? 4 : columns * 2 });
   return (
@@ -94,7 +114,7 @@ function WallSkeleton({ columns = 2 }) {
 
 export default function GridPage({ onEditTag, layout = 'phone' }) {
   const {
-    nearby, myProfile, locationErrorKind, loading, lastUpdated, mode,
+    nearby, myProfile, profileChecked, locationErrorKind, loading, lastUpdated, mode,
     hiddenIds, refresh, setVisibilityMode, reloadHidden,
   } = useNearbyPeople();
   const [selfPhoto, setSelfPhoto] = useState(null);
@@ -118,6 +138,7 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
     [nearby, hiddenIds]
   );
   const visible = mode !== 'invisible';
+  const needsTag = profileChecked && !loading && !myProfile?.display_name;
   const all = useMemo(() => (visible && me ? [me, ...others] : others), [visible, me, others]);
 
   const count = others.length;
@@ -142,6 +163,8 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
         </div>
       </div>
     );
+  } else if (needsTag) {
+    wall = <TagNeeded onEditTag={onEditTag} />;
   } else if (locationErrorKind) {
     wall = <LocationNeeded kind={locationErrorKind} onRetry={refresh} />;
   } else if (loading && all.length === 0) {

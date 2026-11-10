@@ -20,7 +20,7 @@ export function normalizeProfileFields(src = {}) {
     always_visible: src.always_visible ?? true,
     tag_color: src.tag_color ?? '',
     stickers: typeof stickers === 'string' ? stickers : JSON.stringify(stickers ?? []),
-    party_code: (src.party_code ?? '').trim(),
+    party_code: normalizePartyCode(src.party_code),
   };
 }
 
@@ -32,6 +32,22 @@ export function toProfileFormData(fields, photoFile) {
   Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
   if (photoFile) fd.append('photo', photoFile);
   return fd;
+}
+
+// The My-tag editor saves in the background, and can still be mid-save when you
+// switch tabs. Screens that read the profile right after (the wall, Privacy)
+// wait for that save first, so they don't show the tag from before the edit.
+let pendingSave = Promise.resolve();
+export function trackProfileSave(promise) {
+  pendingSave = Promise.resolve(promise).catch(() => {});
+  return promise;
+}
+export function profileSaveSettled() { return pendingSave; }
+
+// Party codes are said out loud: capitals, hyphens and spaces don't matter, so
+// compare (and store) letters and digits only. Mirrors the server.
+export function normalizePartyCode(code) {
+  return String(code ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
 // The three-way visibility mode from a profile's flags: invisible | nearby |
