@@ -14,7 +14,7 @@ export default function PaintboxPicker({ value, onChange, justify = 'flex-start'
           <button key={key} type="button" onClick={() => onChange(key)} aria-label={key} style={{
             width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', padding: 0,
             background: trio.hue, border: '2px solid var(--surface)',
-            boxShadow: on ? `0 0 0 2px var(--bg), 0 0 0 4px ${trio.hue}` : '0 1px 3px rgba(0,0,0,.18)',
+            boxShadow: on ? `0 0 0 2px var(--bg), 0 0 0 4px ${trio.hue}` : '0 1px 3px rgba(61,43,31,.18)',
             transform: on ? 'scale(1.08)' : 'none', transition: 'transform .12s ease, box-shadow .12s ease',
           }} />
         );

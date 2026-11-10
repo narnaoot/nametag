@@ -20,16 +20,16 @@ export default function PartyCodeSheet({ initial = '', onJoin, onStayVisible, on
       <div className="nt-sheet" style={{
         position: 'absolute', left: 0, right: 0, bottom: 0, maxWidth: 430, margin: '0 auto',
         background: 'var(--bg)', borderTop: '1.5px solid var(--border)',
-        borderRadius: '28px 28px 0 0', boxShadow: '0 -12px 40px rgba(61,43,31,.25)',
+        borderRadius: 'var(--r) var(--r) 0 0', boxShadow: 'var(--shadow-sheet)',
         padding: '14px 24px calc(28px + env(safe-area-inset-bottom, 0px))',
         display: 'flex', flexDirection: 'column',
       }}>
         <div onClick={onClose} style={{ width: 44, height: 4, borderRadius: 99,
               background: 'var(--border)', margin: '0 auto 18px', cursor: 'pointer' }} />
 
-        <div className="t-label" style={{ fontSize: 10 }}>Visibility</div>
+        <div className="t-label">Visibility</div>
         <div className="t-display" style={{ fontSize: 34, letterSpacing: '-1px', lineHeight: 1.05,
-              marginTop: 12 }}>What’s the party <em>code</em>?</div>
+              marginTop: 12 }}>What’s the party code?</div>
         <div className="t-body" style={{ fontSize: 14.5, marginTop: 10 }}>
           Whoever is throwing the party picks one and tells the room. Type it exactly as they said it.
         </div>
@@ -54,8 +54,8 @@ export default function PartyCodeSheet({ initial = '', onJoin, onStayVisible, on
           Six to ten characters. Capitals and hyphens don’t matter.
         </div>
 
-        <div style={{ marginTop: 18, background: 'var(--sage-lt)', border: '1.5px solid var(--sage)',
-              borderRadius: 'var(--r)', padding: '13px 15px' }}>
+        <div style={{ marginTop: 18, background: 'var(--sage-lt)',
+              borderRadius: 'var(--r)', padding: '14.5px 16.5px' }}>
           <div style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--muted)' }}>
             <span style={{ fontWeight: 800, color: 'var(--sage-dk)' }}>Only people who type the same code will see your tag.</span>
             {' '}Everyone else nearby stops seeing you, and you stop seeing them.

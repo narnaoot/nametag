@@ -1,6 +1,6 @@
 // TabBar.jsx — three tabs: Nearby / My tag / Privacy. Privacy is a top-level
 // tab (not a settings row) so it can be read before anyone is asked to be
-// visible. Active tab: label in an orchid-lt pill above a 22×3 orchid underline.
+// visible. Active tab: label in an orchid-lt pill.
 const TABS = [
   ['grid', 'Nearby'],
   ['profile', 'My tag'],
@@ -28,8 +28,6 @@ export default function TabBar({ tab, onTab }) {
               background: on ? 'var(--orchid-lt)' : 'transparent',
               borderRadius: 'var(--r-pill)', padding: on ? '4px 13px' : '4px 0',
             }}>{label}</span>
-            <div style={{ width: 22, height: 3, borderRadius: 99,
-                          background: on ? 'var(--orchid)' : 'transparent' }} />
           </button>
         );
       })}

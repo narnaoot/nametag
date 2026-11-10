@@ -20,9 +20,9 @@ export default function StickerPicker({ value = [], onChange, max = MAX_STICKERS
             borderRadius: 'var(--r-sm)', padding: '8px 13px', cursor: 'pointer',
             fontFamily: 'var(--font-body)', fontWeight: 800, fontSize: 13,
             color: on ? 'var(--coral-dk)' : 'var(--text)',
-            display: 'flex', gap: 6, alignItems: 'center', transition: 'all .12s ease',
+            transition: 'all .12s ease',
           }}>
-            <span style={{ fontSize: 15 }}>{emoji}</span>{word}
+            {word}
           </button>
         );
       })}

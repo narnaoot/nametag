@@ -5,6 +5,7 @@ import {
 } from '../lib/profileStorage';
 import { toBadgePerson, personTrio } from '../lib/colors';
 import { Avatar } from '../components/Avatar';
+import { Eyebrow } from '../components/TagBits';
 import Wall from '../components/Wall';
 import VisibilityControl from '../components/VisibilityControl';
 import DetailSheet from '../components/DetailSheet';
@@ -36,7 +37,7 @@ function EmptyWall({ place, mode, partyCode }) {
       <div style={{ width: 132, border: '2px dashed color-mix(in srgb, var(--muted) 34%, transparent)',
             borderRadius: 'var(--r-tag)', transform: 'rotate(-2deg)', padding: '22px 14px',
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 26 }}>{party ? '🎉' : '👋'}</span>
+        <Eyebrow />
         <span className="t-quote" style={{ fontSize: 14, color: 'var(--muted)' }}>this spot’s free</span>
       </div>
       <div className="t-h2" style={{ fontSize: 26, marginTop: 26 }}>{party ? 'No one’s joined yet' : 'No tags yet'}</div>
@@ -55,10 +56,7 @@ function LocationNeeded({ kind, onRetry }) {
   const denied = kind === 'denied';
   return (
     <CenteredState>
-      <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'var(--sage-lt)',
-            border: '1.5px solid var(--sage)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 30 }}>📍</div>
-      <div className="t-h2" style={{ fontSize: 24, marginTop: 20 }}>
+      <div className="t-h2" style={{ fontSize: 24 }}>
         {denied ? 'Turn on location' : 'Couldn’t find you'}
       </div>
       <div className="t-body" style={{ fontSize: 14, maxWidth: 280, marginTop: 8 }}>
@@ -190,9 +188,9 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
         <div className="no-sb" style={{ flex: 1, minWidth: 0, padding: '30px 40px 60px' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16 }}>
             <div>
-              <div className="t-label" style={{ fontSize: 10 }}>{headLabel}</div>
+              <div className="t-label">{headLabel}</div>
               <div className="t-display" style={{ fontSize: b.title, letterSpacing: '-1.4px', marginTop: 6 }}>
-                Near<em>by</em>
+                Nearby
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>{refreshPill}{meAvatar}</div>
@@ -206,7 +204,7 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
         <aside style={{ width: 360, flexShrink: 0, alignSelf: 'stretch', background: 'var(--surface)',
               borderLeft: '1.5px solid var(--border)', padding: '30px 24px', position: 'sticky', top: 0,
               minHeight: '100vh' }}>
-          <div className="t-label" style={{ fontSize: 10, marginBottom: 16 }}>Selected</div>
+          <div className="t-label" style={{ marginBottom: 16 }}>Selected</div>
           {sel ? (
             <TagDetail person={sel} index={all.findIndex(p => p.id === sel.id)} remembered={isRemembered(sel)}
                        onRemember={handleRemember} onHide={handleHide}
@@ -228,9 +226,9 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
       <div className="no-sb" style={{ maxWidth: 820, margin: '0 auto', padding: '40px 44px 96px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16 }}>
           <div>
-            <div className="t-label" style={{ fontSize: 10 }}>{headLabel}</div>
+            <div className="t-label">{headLabel}</div>
             <div className="t-display" style={{ fontSize: b.title, letterSpacing: '-1.4px', marginTop: 6 }}>
-              Near<em>by</em>
+              Nearby
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>{refreshPill}{meAvatar}</div>
@@ -254,8 +252,8 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
     <div className="no-sb na-screen" style={{ padding: '0 0 96px' }}>
       <div style={{ padding: '34px 22px 0', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ minWidth: 0 }}>
-          <div className="t-label" style={{ fontSize: 10 }}>{headLabel}</div>
-          <div className="t-display" style={{ fontSize: b.title, letterSpacing: '-1.2px', marginTop: 6 }}>Near<em>by</em></div>
+          <div className="t-label">{headLabel}</div>
+          <div className="t-display" style={{ fontSize: b.title, letterSpacing: '-1.2px', marginTop: 6 }}>Nearby</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>{refreshPill}{meAvatar}</div>
       </div>
@@ -269,8 +267,7 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
                      onEditTag={() => { setSel(null); onEditTag && onEditTag(); }} onClose={() => setSel(null)} />
       )}
       {partySheet}
-      <div className="t-label" style={{ textAlign: 'center', fontSize: 9, marginTop: 28,
-            color: 'color-mix(in srgb, var(--muted) 60%, transparent)' }}>
+      <div className="t-label" style={{ textAlign: 'center', marginTop: 28 }}>
         {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
       </div>
     </div>

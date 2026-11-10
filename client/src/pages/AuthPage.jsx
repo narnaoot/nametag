@@ -128,7 +128,6 @@ export default function AuthPage({ onRegistered }) {
       <div className="na-screen no-sb" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column',
             justifyContent: 'space-between', padding: '64px 30px max(40px, env(safe-area-inset-bottom, 40px))' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <div className="t-label" style={{ fontSize: 10 }}>Nametag</div>
           <div className="t-display" style={{ fontSize: 46, letterSpacing: '-1.4px', lineHeight: 1.02 }}>
             Put a name to the <em>room</em>.
           </div>
@@ -246,11 +245,11 @@ export default function AuthPage({ onRegistered }) {
       <button onClick={() => setView('landing')} className="na-textbtn" style={{
             color: 'var(--muted)', fontWeight: 800, fontSize: 14, padding: 0, marginBottom: 24 }}>← Back</button>
       <div className="t-display" style={{ fontSize: 34, letterSpacing: '-1px', marginBottom: 22 }}>
-        {mode === 'register' ? <>Make your <em>tag</em></>
-          : mode === 'check-email' ? <>Check your <em>inbox</em></>
-            : mode === 'verifying' ? <>One <em>moment</em></>
-              : mode === 'verify-failed' ? <>Link <em>expired</em></>
-                : <>Welcome <em>back</em></>}
+        {mode === 'register' ? 'Make your tag'
+          : mode === 'check-email' ? 'Check your inbox'
+            : mode === 'verifying' ? 'One moment'
+              : mode === 'verify-failed' ? 'Link expired'
+                : 'Welcome back'}
       </div>
       <div className="na-card" style={{ boxShadow: 'var(--shadow-card)', padding: 22 }}>{form}</div>
     </div>

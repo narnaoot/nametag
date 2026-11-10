@@ -27,7 +27,7 @@ function EditRow({ label, value, open, onToggle, children }) {
       <div onClick={onToggle} style={{ display: 'flex', alignItems: 'center', gap: 12,
             padding: '10px 16px', cursor: 'pointer' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="t-label" style={{ fontSize: 9.5 }}>{label}</div>
+          <div className="t-label">{label}</div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: 'var(--text)',
                 marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {value}
@@ -170,11 +170,11 @@ export default function ProfilePage({ onDone }) {
       <div style={{ padding: '28px 22px 0', display: 'flex', alignItems: 'flex-end',
                     justifyContent: 'space-between' }}>
         <div>
-          <div className="t-label" style={{ fontSize: 10 }}>
+          <div className="t-label">
             {visMode === 'invisible' ? 'Hidden right now' : `Visible ${place && place !== 'nearby' ? `at ${place}` : 'nearby'}`}
           </div>
           <div className="t-display" style={{ fontSize: 40, letterSpacing: '-1.2px', marginTop: 6 }}>
-            My <em>tag</em>
+            My tag
           </div>
         </div>
         <button onClick={onDone} className="na-textbtn" style={{
@@ -208,7 +208,7 @@ export default function ProfilePage({ onDone }) {
           <input className="na-field" value={displayName} maxLength={NAME_MAX}
                  onChange={e => setDisplayName(e.target.value)} placeholder="What people call you"
                  style={{ marginTop: 12 }} />
-          <div className="t-label" style={{ fontSize: 9.5, margin: '14px 0 8px' }}>Pronouns</div>
+          <div className="t-label" style={{ margin: '14px 0 8px' }}>Pronouns</div>
           <PronounChips options={PRONOUN_OPTIONS} value={pronounSelect} onChange={setPronounSelect} />
           {pronounSelect === 'custom' && (
             <input className="na-field" style={{ marginTop: 10 }} value={customPronouns} maxLength={PRONOUNS_MAX}
