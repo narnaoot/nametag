@@ -29,14 +29,17 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
-  // If the server rejects our token (expired or revoked), clear it so the app
+  // Forget the token everywhere it's held: storage, React state, the API client.
+  async function signOut() {
+    await Preferences.remove({ key: TOKEN_KEY });
+    setToken(null);
+    setApiToken(null);
+  }
+
+  // If the server rejects our token (expired or revoked), drop it so the app
   // falls back to the sign-in screen instead of looping on a dead session.
   useEffect(() => {
-    setUnauthorizedHandler(() => {
-      Preferences.remove({ key: TOKEN_KEY });
-      setToken(null);
-      setApiToken(null);
-    });
+    setUnauthorizedHandler(signOut);
     return () => setUnauthorizedHandler(null);
   }, []);
 
@@ -48,18 +51,10 @@ export function AuthProvider({ children }) {
     setApiToken(newToken);
   }
 
-  async function signOut() {
-    await Preferences.remove({ key: TOKEN_KEY });
-    setToken(null);
-    setApiToken(null);
-  }
-
   async function deleteAccount() {
     await deleteAccountApi();
     await clearLocalData();   // "everything is erased" includes this device
-    await Preferences.remove({ key: TOKEN_KEY });
-    setToken(null);
-    setApiToken(null);
+    await signOut();
   }
 
   if (!ready) return null;

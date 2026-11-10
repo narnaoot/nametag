@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { getMyProfile, updateProfile, photoUrl, setVisibility } from '../lib/api';
+import { getMyProfile, photoUrl, setVisibility } from '../lib/api';
 import { useAuth } from '../auth/useAuth';
-import { loadLocalPhoto, persistProfileLocally, readLocalProfile } from '../lib/profileStorage';
+import { loadLocalPhoto, readLocalProfile } from '../lib/profileStorage';
 import { preparePickedPhoto } from '../lib/imageCrop';
-import { normalizeProfileFields, toProfileFormData, visibilityMode, trackProfileSave } from '../lib/profile';
+import { normalizeProfileFields, visibilityMode, trackProfileSave } from '../lib/profile';
+import { saveProfile } from '../lib/profileSync';
 import MyTagPreview from '../components/MyTagPreview';
 import VisibilityControl from '../components/VisibilityControl';
-import PartyCodeSheet from '../components/PartyCodeSheet';
 import StickerPicker from '../components/StickerPicker';
 import PronounChips from '../components/PronounChips';
 import PaintboxPicker from '../components/PaintboxPicker';
@@ -59,7 +59,6 @@ export default function ProfilePage({ onDone }) {
   const [photoFile, setPhotoFile] = useState(null);
   const [selectedStickers, setSelectedStickers] = useState([]);
   const [editing, setEditing] = useState(null);        // 'name' | 'line' | 'stickers'
-  const [showParty, setShowParty] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -119,15 +118,13 @@ export default function ProfilePage({ onDone }) {
     setPhotoFile(prepared);
   }
 
-  function handleVisibility(next) {
-    if (next === 'party') { setShowParty(true); return; }
+  function handleVisibility(next, { partyCode: code = '' }) {
+    setAlwaysVisible(next !== 'invisible');
     if (next === 'invisible') {
-      setAlwaysVisible(false);
       // clear the server's copy (name, photo, location) now, and record the choice
       trackProfileSave(setVisibility(false)).catch(() => {});
     } else {
-      setAlwaysVisible(true);
-      setPartyCode('');
+      setPartyCode(code);
     }
   }
 
@@ -147,21 +144,9 @@ export default function ProfilePage({ onDone }) {
       stickers: selectedStickers, party_code: partyCode,
     });
     try {
-      await trackProfileSave((async () => {
-        if (alwaysVisible) {
-          await updateProfile(toProfileFormData(fields, photoFile));
-          hasServerRowRef.current = true;
-        } else if (!hasServerRowRef.current) {
-          // Invisible with no profile row yet: create it so the choice is
-          // recorded, then take the tag straight back off the server.
-          await updateProfile(toProfileFormData(fields));
-          hasServerRowRef.current = true;
-          await setVisibility(false);
-        }
-        // Otherwise invisible: edits stay on this device. Sending them would put
-        // the name and photo back on the server for someone who asked to be off it.
-        await persistProfileLocally(fields);
-      })());
+      // While invisible this keeps the edit on the device only (see saveProfile).
+      await trackProfileSave(saveProfile(fields, photoFile, { serverHasRow: hasServerRowRef.current }));
+      hasServerRowRef.current = true;
       setSaved(true); setTimeout(() => setSaved(false), 2000);
       return true;
     } catch (err) { setError(err.message); return false; }
@@ -307,13 +292,6 @@ export default function ProfilePage({ onDone }) {
           </div>
         )}
       </div>
-
-      {showParty && (
-        <PartyCodeSheet initial={partyCode}
-          onJoin={(code) => { setShowParty(false); setPartyCode(code); setAlwaysVisible(true); }}
-          onStayVisible={() => { setShowParty(false); setAlwaysVisible(true); setPartyCode(''); }}
-          onClose={() => setShowParty(false)} />
-      )}
     </div>
   );
 }

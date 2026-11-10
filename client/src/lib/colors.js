@@ -1,8 +1,8 @@
 // Colour + accent helpers for the redesign.
 //
-// Two rules: your own tag is always CORAL; everyone else takes a stable
-// identity colour from PERSON_ACCENTS. Orchid (the app) and teal (clashes with
-// the sage visibility card) are remapped out via ACCENT_REMAP.
+// A tag wears the colour its owner picked. With no pick, your own tag is coral
+// and everyone else takes a stable identity colour from PERSON_ACCENTS. Orchid
+// belongs to the app, so a stored orchid is remapped via ACCENT_REMAP.
 import {
   ACCENT_VARS, ACCENT_REMAP, PERSON_ACCENTS,
 } from './constants';

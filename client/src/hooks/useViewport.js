@@ -11,7 +11,5 @@ export function useViewport() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
   const kind = width >= 1180 ? 'desktop' : width >= 768 ? 'tablet' : 'phone';
-  return { width, kind, isPhone: kind === 'phone', isTablet: kind === 'tablet', isDesktop: kind === 'desktop' };
+  return { width, kind };
 }
-
-export default useViewport;

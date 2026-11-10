@@ -1,17 +1,11 @@
 // Design tokens — keep in sync with the :root block in index.css.
-// The redesign has two colour rules: ORCHID is the app (chrome), CORAL is you
-// (your own tag, always). Other people take an identity colour from the
-// paintbox — see PERSON_ACCENTS and ACCENT_REMAP below.
+// ORCHID is the app (chrome). Tags take a paintbox colour: the one the person
+// picked, else coral for you and a stable identity colour for everyone else —
+// see TAG_COLORS, PERSON_ACCENTS and ACCENT_REMAP below.
 
-// Every paintbox key. Each resolves to a CSS-var trio (--key / --key-lt /
-// --key-dk) declared in index.css. Bright hue = lines/rings, -lt = tint fill,
-// -dk = readable text.
-export const PAINTBOX_KEYS = [
-  'coral', 'lavender', 'mustard', 'sage', 'denim', 'blush', 'citron', 'orchid', 'teal',
-];
-
-// The -lt / -dk suffixes are irregular for a few keys, so map each paintbox key
-// to its actual CSS-var trio.
+// Each paintbox key resolves to a CSS-var trio declared in index.css: bright
+// hue = lines/rings, -lt = tint fill, -dk = readable text. The -lt / -dk
+// suffixes are irregular for a few keys, so map each key to its actual vars.
 export const ACCENT_VARS = {
   coral:    { hue: '--coral',    lt: '--coral-lt',  dk: '--coral-dk' },
   lavender: { hue: '--lavender', lt: '--lav-lt',    dk: '--lav-dk' },

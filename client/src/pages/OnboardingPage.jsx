@@ -1,12 +1,10 @@
 import { useState, useRef } from 'react';
-import { updateProfile, setVisibility } from '../lib/api';
-import { persistProfileLocally } from '../lib/profileStorage';
 import { preparePickedPhoto } from '../lib/imageCrop';
-import { normalizeProfileFields, toProfileFormData } from '../lib/profile';
+import { normalizeProfileFields } from '../lib/profile';
+import { saveProfile } from '../lib/profileSync';
 import { Avatar } from '../components/Avatar';
 import { Eyebrow } from '../components/TagBits';
 import VisibilityControl from '../components/VisibilityControl';
-import PartyCodeSheet from '../components/PartyCodeSheet';
 import StickerPicker from '../components/StickerPicker';
 import PaintboxPicker from '../components/PaintboxPicker';
 import { accentTrio } from '../lib/colors';
@@ -51,7 +49,6 @@ export default function OnboardingPage({ onDone }) {
   const [photoFile, setPhotoFile] = useState(null);
   const [visMode, setVisMode] = useState('nearby');
   const [partyCode, setPartyCode] = useState('');
-  const [showParty, setShowParty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
@@ -71,27 +68,23 @@ export default function OnboardingPage({ onDone }) {
     setPhotoPreview(dataUrl);
     setPhotoFile(prepared);
   }
-  function handleVisibility(next) {
-    if (next === 'party') { setShowParty(true); return; }
+  function handleVisibility(next, { partyCode: code = '' }) {
     setVisMode(next);
-    if (next === 'nearby') setPartyCode('');
+    if (next !== 'invisible') setPartyCode(code);
   }
 
   async function finish() {
     setSaving(true); setError('');
-    const alwaysVisible = visMode !== 'invisible';
     const fields = normalizeProfileFields({
       display_name: name.trim() || 'Someone', pronouns: pronouns || 'they/them',
       tagline, radius_meters: DEFAULT_RADIUS,
-      always_visible: alwaysVisible, tag_color: accentKey,
+      always_visible: visMode !== 'invisible', tag_color: accentKey,
       stickers, party_code: visMode === 'party' ? partyCode : '',
     });
     try {
-      await updateProfile(toProfileFormData(fields, photoFile));
-      await persistProfileLocally(fields);
-      // Starting out invisible: the tag lives on this device only, so take the
-      // copy we just created back off the server.
-      if (!alwaysVisible) await setVisibility(false).catch(() => {});
+      // A brand-new account has no profile row yet. Starting out invisible, the
+      // tag stays on this device (saveProfile only records the choice).
+      await saveProfile(fields, photoFile, { serverHasRow: false });
       onDone();
     } catch (err) { setError(err.message || 'Something went wrong — try again.'); setSaving(false); }
   }
@@ -228,13 +221,6 @@ export default function OnboardingPage({ onDone }) {
       <button className="na-btn" style={primaryBtn} disabled={saving} onClick={finish}>
         {saving ? 'Sticking it up…' : 'Look around me'}
       </button>
-
-      {showParty && (
-        <PartyCodeSheet initial={partyCode}
-          onJoin={(code) => { setShowParty(false); setPartyCode(code); setVisMode('party'); }}
-          onStayVisible={() => { setShowParty(false); setVisMode('nearby'); setPartyCode(''); }}
-          onClose={() => setShowParty(false)} />
-      )}
     </div>
   );
 }

@@ -22,6 +22,7 @@ const DEFAULT_RADIUS = 100;
 // unbounded, one request could list every active user on the planet.
 const MIN_RADIUS = 10;
 const MAX_RADIUS = 1000;
+const clampRadius = (r) => Math.min(MAX_RADIUS, Math.max(MIN_RADIUS, parseInt(r) || DEFAULT_RADIUS));
 
 // Party codes are said out loud, so "capitals and hyphens don't matter":
 // compare on letters and digits only.
@@ -88,7 +89,7 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
     return res.status(400).json({ error: 'Name and pronouns required' });
   }
 
-  const radius = Math.min(MAX_RADIUS, Math.max(MIN_RADIUS, parseInt(radius_meters) || DEFAULT_RADIUS));
+  const radius = clampRadius(radius_meters);
   const alwaysVisible = always_visible !== 'false' && always_visible !== false;
   const tagColor = str(tag_color).slice(0, TAG_COLOR_MAX) || null;
   const stickersVal = str(stickers).slice(0, STICKERS_MAX) || null;
@@ -213,7 +214,7 @@ router.get('/nearby', auth, async (req, res) => {
   }
 
   const { lat, lng, party_code } = me;
-  const radius_meters = Math.min(MAX_RADIUS, Math.max(MIN_RADIUS, me.radius_meters || DEFAULT_RADIUS));
+  const radius_meters = clampRadius(me.radius_meters);
 
   // Bounding box in degrees (rough pre-filter, fast index scan)
   const latDelta = radius_meters / 111320.0;

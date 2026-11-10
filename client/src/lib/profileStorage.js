@@ -32,6 +32,16 @@ export async function loadLocalPhoto() {
   }
 }
 
+// The on-device photo as an uploadable File, or undefined when there isn't one.
+export async function loadLocalPhotoFile() {
+  const dataUrl = await loadLocalPhoto();
+  if (!dataUrl) return undefined;
+  try {
+    const blob = await fetch(dataUrl).then(r => r.blob());
+    return new File([blob], 'photo.jpg', { type: blob.type });
+  } catch { return undefined; }
+}
+
 // Persists the profile fields (NOT the photo binary) to Preferences so the
 // hook can re-upload them if the server copy is cleaned up.
 export async function persistProfileLocally(fields) {
