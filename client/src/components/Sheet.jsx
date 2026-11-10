@@ -10,7 +10,7 @@ export default function Sheet({ onClose, maxWidth = 430, scroll = false, childre
       <div className={scroll ? 'nt-sheet no-sb' : 'nt-sheet'} style={{
         position: 'absolute', left: 0, right: 0, bottom: 0, maxWidth, margin: '0 auto',
         background: 'var(--bg)', borderTop: '1.5px solid var(--border)',
-        borderRadius: '28px 28px 0 0', boxShadow: '0 -12px 40px rgba(61,43,31,.25)',
+        borderRadius: 'var(--r) var(--r) 0 0', boxShadow: 'var(--shadow-sheet)',
         padding: '14px 24px calc(28px + env(safe-area-inset-bottom, 0px))',
         display: 'flex', flexDirection: 'column',
         ...(scroll ? { maxHeight: '92vh', overflowY: 'auto' } : null),

@@ -6,7 +6,30 @@ Paste this into Claude Code at the start of a new session to get up to speed qui
 
 ---
 
-## 🐞 Latest: hands-on bug sweep (Nov 2026)
+## 🧽 Latest: client simplification (Nov 2026)
+
+Behaviour-preserving refactor, checked against before/after screenshots of every
+screen at phone / tablet / desktop sizes plus the two-user browser scenarios:
+
+- **`lib/profileSync.js`** — `saveProfile` (My tag, onboarding) and `pushProfile`
+  (restore / visibility switch) are the only code that sends a tag to the
+  server, so "the server holds it only while you're visible" lives in one place.
+- **`useNearbyPeople`** — one `readRoom()` (share location → load nearby →
+  error state) replaces three copies; unused state removed.
+- **`GridPage`** — one render driven by the `BOARD` table instead of three
+  near-identical phone / tablet / desktop blocks.
+- **`VisibilityControl`** owns the party-code sheet (pages just get
+  `onChange(mode, { partyCode })`); **`Sheet.jsx`** is the shared bottom sheet
+  (`DetailSheet.jsx` is gone).
+- Dead props/exports and stale comments removed.
+
+**Not done, worth considering:** `PUT /profiles/me` could be a single upsert
+(the tests are coupled to its three-query sequence); the two visibility flags
+(`always_visible`, `is_active`) could become one `visibility` column; and
+"visible N min" on an opened tag never shows because `/nearby` doesn't return
+`location_updated_at`.
+
+## 🐞 Earlier: hands-on bug sweep (Nov 2026)
 
 Ran the real stack locally (Postgres + API + production client build) with
 several simulated users in a browser. Fixed, with 11 new server tests (116 total):
@@ -232,8 +255,9 @@ client/src/
     api.js                — fetch wrapper + photoUrl() helper
     constants.js          — shared field limits, colors, options
     colors.js             — accent/paintbox resolution + toBadgePerson()
-    profile.js            — profile field contract (normalize + FormData) + visibilityMode()
-    profileStorage.js     — on-device profile/photo persistence + remembered/hidden lists
+    profile.js            — profile field contract (normalize + FormData), visibilityMode(), party-code normalisation
+    profileSync.js        — saveProfile() / pushProfile(): the only code that sends a tag to the server
+    profileStorage.js     — on-device profile/photo persistence, which account owns it, remembered/hidden lists
     imageCrop.js          — on-device crop/downscale + preparePickedPhoto()
   pages/
     AuthPage.jsx          — landing / login / register / verify / forgot / reset
@@ -243,7 +267,7 @@ client/src/
     PrivacyPage.jsx       — Privacy tab (state + four statements + policy link)
     PolicyDocument.jsx    — the full in-app privacy policy screen
   hooks/
-    useNearbyPeople.js    — location, nearby fetch, 60s auto-refresh, visibility
+    useNearbyPeople.js    — readRoom() (location + nearby), 60s auto-refresh, visibility mode
     useViewport.js        — phone / tablet / desktop breakpoint
 
 server/

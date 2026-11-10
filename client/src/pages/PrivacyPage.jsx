@@ -56,18 +56,17 @@ export default function PrivacyPage({ onChangeVisibility }) {
   return (
     <div className="no-sb na-screen" style={{ padding: '0 0 96px' }}>
       <div style={{ padding: '30px 22px 0' }}>
-        <div className="t-label" style={{ fontSize: 10 }}>Nametag</div>
-        <div className="t-display" style={{ fontSize: 40, letterSpacing: '-1.2px', marginTop: 6 }}>
-          Priv<em>acy</em>
+        <div className="t-display" style={{ fontSize: 40, letterSpacing: '-1.2px' }}>
+          Privacy
         </div>
       </div>
 
       {/* right now — sage, with the way to change it in the same card */}
       <div onClick={onChangeVisibility} className="nt-tappable" style={{ margin: '16px 22px 0',
-            background: 'var(--sage-lt)', border: '1.5px solid var(--sage)', borderRadius: 'var(--r)',
-            padding: '13px 15px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            background: 'var(--sage-lt)', borderRadius: 'var(--r)',
+            padding: '14.5px 16.5px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="t-label" style={{ fontSize: 9.5 }}>Right now</div>
+          <div className="t-label">Right now</div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 17, color: 'var(--text)',
                 marginTop: 4, lineHeight: 1.3 }}>{now.title}</div>
           <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 3 }}>{now.line}</div>
@@ -76,7 +75,7 @@ export default function PrivacyPage({ onChangeVisibility }) {
       </div>
 
       <div style={{ padding: '22px 22px 0' }}>
-        <div className="t-label" style={{ fontSize: 10 }}>What is true always</div>
+        <div className="t-label">What is true always</div>
       </div>
 
       <div style={{ padding: '12px 22px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>

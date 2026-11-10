@@ -56,23 +56,19 @@ Open http://localhost:5173
 
 ```
 nametag/
-├── client/          # React + Vite frontend
+├── client/               # React + Vite frontend
 │   └── src/
-│       ├── pages/
-│       │   ├── AuthPage.jsx    # Login / register
-│       │   ├── ProfilePage.jsx # Edit your profile
-│       │   └── GridPage.jsx    # Nearby people grid
-│       ├── AuthContext.jsx     # Auth state
-│       ├── api.js              # API calls
-│       └── App.jsx             # App shell + nav
-└── server/          # Node.js + Express backend
-    ├── routes/
-    │   ├── auth.js     # POST /api/auth/register, /login
-    │   └── profile.js  # GET/PUT /api/profiles/me, /nearby
-    ├── middleware/
-    │   └── auth.js     # JWT verification
-    ├── db/
-    │   ├── index.js    # Postgres pool
-    │   └── schema.sql  # Table definitions
-    └── uploads/        # Uploaded photos (gitignored)
+│       ├── App.jsx       # App shell + tab navigation
+│       ├── pages/        # Auth, Onboarding, Grid (the wall), Profile (My tag), Privacy, Policy
+│       ├── components/   # Tag, Wall, VisibilityControl, Sheet, pickers…
+│       ├── hooks/        # useNearbyPeople, useViewport
+│       ├── auth/         # AuthContext + useAuth
+│       └── lib/          # api, profile, profileSync, profileStorage, colors, constants, imageCrop
+└── server/               # Node.js + Express backend
+    ├── app.js            # Express app (security headers, CORS, rate limit, routes)
+    ├── routes/           # auth.js (/api/auth/*), profile.js (/api/profiles/*)
+    ├── middleware/       # JWT verification + revocation
+    ├── db/               # Postgres pool, schema.sql, startup migrations
+    ├── cleanup.js        # hourly stale-data cleanup
+    └── uploads/          # Uploaded photos (gitignored)
 ```

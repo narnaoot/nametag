@@ -34,7 +34,7 @@ export default function MyTagPreview({ person, onPhotoClick }) {
           {person.stickers.map((s, i) => (
             <Pill key={i} hue={c.hue} deep={c.deep}
                   style={{ padding: '5px 11px', fontSize: 11, display: 'flex', gap: 5, alignItems: 'center' }}>
-              <span style={{ fontSize: 12 }}>{s}</span>{STICKER_LABELS[s] || ''}
+              {STICKER_LABELS[s] || s}
             </Pill>
           ))}
         </div>

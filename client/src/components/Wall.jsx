@@ -1,15 +1,10 @@
 // Wall.jsx — the hand-laid tag wall. The mock hand-places a fixed six; live data
-// has any number, so we lay N staggered columns whose tilts, shadows, widths and
+// has any number, so we lay N staggered columns whose tilts, widths and
 // photo sizes never line up — the irregularity the design asks for, made robust.
 // "You" (coral) leads. Column count grows with the viewport.
 import Tag from './Tag';
 
 const TILTS = [0, 3.4, -3, 0.8, -2, 3.2, -1.6, 2.4, -2.8, 1.6];
-const SHADOWS = [
-  '0 10px 28px rgba(0,0,0,.18)', '0 2px 10px rgba(0,0,0,.10)',
-  '0 6px 20px rgba(0,0,0,.14)', '0 2px 11px rgba(0,0,0,.11)',
-  '0 12px 30px rgba(0,0,0,.19)', '0 4px 14px rgba(0,0,0,.12)',
-];
 const ALIGN = ['flex-start', 'flex-end', 'center'];
 const COL_OFFSET = [0, 24, 12, 30, 6, 18];
 
@@ -28,7 +23,7 @@ export default function Wall({
           {arr.map(({ person, i }) => (
             <div key={person.id ?? i} style={{ width: `${100 - (i % 3) * 5}%`, alignSelf: ALIGN[i % ALIGN.length] }}>
               <Tag person={person} index={i} width="100%" sizingWidth={sizingWidth}
-                   tilt={TILTS[i % TILTS.length]} shadow={SHADOWS[i % SHADOWS.length]}
+                   tilt={TILTS[i % TILTS.length]}
                    faceSize={faceBase - (i % 3) * 2} footFontSize={footFontSize}
                    onClick={() => onOpen(person)} />
             </div>

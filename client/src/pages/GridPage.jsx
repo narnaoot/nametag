@@ -5,6 +5,7 @@ import {
 } from '../lib/profileStorage';
 import { toBadgePerson, personTrio } from '../lib/colors';
 import { Avatar } from '../components/Avatar';
+import { Eyebrow } from '../components/TagBits';
 import Wall from '../components/Wall';
 import VisibilityControl from '../components/VisibilityControl';
 import Sheet from '../components/Sheet';
@@ -47,12 +48,12 @@ function CenteredState({ children }) {
 }
 
 // The dashed outline of a tag that isn't there yet.
-function EmptySlot({ emoji, children }) {
+function EmptySlot({ children }) {
   return (
     <div style={{ width: 132, border: '2px dashed color-mix(in srgb, var(--muted) 34%, transparent)',
           borderRadius: 'var(--r-tag)', transform: 'rotate(-2deg)', padding: '22px 14px',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-      <span style={{ fontSize: 26 }}>{emoji}</span>
+      <Eyebrow />
       <span className="t-quote" style={{ fontSize: 14, color: 'var(--muted)' }}>{children}</span>
     </div>
   );
@@ -62,7 +63,7 @@ function EmptyWall({ place, mode, partyCode }) {
   const party = mode === 'party';
   return (
     <CenteredState>
-      <EmptySlot emoji={party ? '🎉' : '👋'}>this spot’s free</EmptySlot>
+      <EmptySlot>this spot’s free</EmptySlot>
       <div className="t-h2" style={{ fontSize: 26, marginTop: 26 }}>{party ? 'No one’s joined yet' : 'No tags yet'}</div>
       <div className="t-body" style={{ fontSize: 14, maxWidth: 268, marginTop: 8 }}>
         {party ? (
@@ -79,10 +80,7 @@ function LocationNeeded({ kind, onRetry }) {
   const denied = kind === 'denied';
   return (
     <CenteredState>
-      <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'var(--sage-lt)',
-            border: '1.5px solid var(--sage)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 30 }}>📍</div>
-      <div className="t-h2" style={{ fontSize: 24, marginTop: 20 }}>
+      <div className="t-h2" style={{ fontSize: 24 }}>
         {denied ? 'Turn on location' : 'Couldn’t find you'}
       </div>
       <div className="t-body" style={{ fontSize: 14, maxWidth: 280, marginTop: 8 }}>
@@ -100,7 +98,7 @@ function LocationNeeded({ kind, onRetry }) {
 function TagNeeded({ onEditTag }) {
   return (
     <CenteredState>
-      <EmptySlot emoji="🏷️">your tag goes here</EmptySlot>
+      <EmptySlot>your tag goes here</EmptySlot>
       <div className="t-h2" style={{ fontSize: 26, marginTop: 26 }}>Make your tag first</div>
       <div className="t-body" style={{ fontSize: 14, maxWidth: 268, marginTop: 8 }}>
         Add a name so the room knows what to call you — then you’ll see who’s here.
@@ -214,9 +212,9 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
     <div className={b.frameClass} style={b.frame}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', ...b.header }}>
         <div style={{ minWidth: 0 }}>
-          <div className="t-label" style={{ fontSize: 10 }}>{headLabel}</div>
+          <div className="t-label">{headLabel}</div>
           <div className="t-display" style={{ fontSize: b.title, letterSpacing: b.tracking, marginTop: 6 }}>
-            Near<em>by</em>
+            Nearby
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: b.actionsGap, flexShrink: 0 }}>
@@ -237,8 +235,7 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
       <div style={b.wall}>{wall}</div>
       {!isDesktop && detail && <Sheet onClose={() => setSel(null)} maxWidth={520} scroll>{detail}</Sheet>}
       {layout === 'phone' && (
-        <div className="t-label" style={{ textAlign: 'center', fontSize: 9, marginTop: 28,
-              color: 'color-mix(in srgb, var(--muted) 60%, transparent)' }}>
+        <div className="t-label" style={{ textAlign: 'center', marginTop: 28 }}>
           {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
         </div>
       )}
@@ -254,7 +251,7 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
       <aside style={{ width: 360, flexShrink: 0, alignSelf: 'stretch', background: 'var(--surface)',
             borderLeft: '1.5px solid var(--border)', padding: '30px 24px', position: 'sticky', top: 0,
             minHeight: '100vh' }}>
-        <div className="t-label" style={{ fontSize: 10, marginBottom: 16 }}>Selected</div>
+        <div className="t-label" style={{ marginBottom: 16 }}>Selected</div>
         {detail || (
           <div className="t-body" style={{ fontSize: 13.5, lineHeight: 1.7 }}>
             Tap a tag to see who it is. {CLOSING_NOTE}

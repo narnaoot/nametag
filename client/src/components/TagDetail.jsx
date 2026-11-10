@@ -46,15 +46,15 @@ export default function TagDetail({
           <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
             {person.stickers.map((s, i) => (
               <Pill key={i} hue={trio.hue} deep={trio.deep}
-                    style={{ padding: '7px 13px', fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
-                <span style={{ fontSize: 14 }}>{s}</span>{STICKER_LABELS[s] || ''}
+                    style={{ padding: '7px 13px', fontSize: 12 }}>
+                {STICKER_LABELS[s] || s}
               </Pill>
             ))}
           </div>
         )}
         {vis && (
-          <div style={{ marginTop: 10, paddingTop: 14, borderTop: `1.5px solid ${trio.hue}`, width: '100%', textAlign: 'center' }}>
-            <span style={{ fontWeight: 800, fontSize: 10, letterSpacing: '.13em', textTransform: 'uppercase',
+          <div style={{ marginTop: 10, paddingTop: 14, borderTop: '1.5px solid var(--border)', width: '100%', textAlign: 'center' }}>
+            <span style={{ fontWeight: 800, fontSize: 11, letterSpacing: '.13em', textTransform: 'uppercase',
                   color: 'var(--muted)' }}>{vis}</span>
           </div>
         )}
@@ -66,7 +66,7 @@ export default function TagDetail({
         ) : remembered ? (
           <>
             <div style={{ minHeight: 56, borderRadius: 'var(--r-pill)', background: 'var(--sage-lt)',
-                  border: '1.5px solid var(--sage)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontWeight: 800, fontSize: 15, color: 'var(--sage-dk)' }}>Name saved to your phone</div>
             <button className="na-btn na-btn--ghost" onClick={() => onHide(person)}>Hide from me</button>
           </>

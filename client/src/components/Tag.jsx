@@ -23,7 +23,7 @@ export function Tag({
   width = 168,
   sizingWidth,          // numeric width used only for name sizing when width is a CSS string
   tilt = 0,
-  shadow = '0 3px 16px rgba(0,0,0,.13)',
+  shadow = 'var(--shadow-card)',
   faceSize = 52,
   nameFontSize,
   footFontSize = 12,
@@ -73,7 +73,7 @@ export function Tag({
       {hasLine && (
         <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center',
                       justifyContent: 'flex-start', padding: '8px 12px 9px',
-                      background: 'var(--surface)', borderTop: `1.5px solid ${trio.hue}`,
+                      background: 'var(--surface)', borderTop: '1.5px solid var(--border)',
                       color: trio.deep }}>
           <span style={{ fontFamily: 'var(--font-display)', fontSize: footFontSize,
                          lineHeight: 1.35, minWidth: 0, overflowWrap: 'anywhere' }}>{person.tagline}</span>

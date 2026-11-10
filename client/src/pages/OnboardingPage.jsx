@@ -106,7 +106,7 @@ export default function OnboardingPage({ onDone }) {
         <TopBar canBack={false} onBack={() => {}} onSkip={onDone} />
 
         <div style={{ marginTop: 26, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div className="t-label" style={{ fontSize: 10 }}>Step 1 of 2</div>
+          <div className="t-label">Step 1 of 2</div>
           <div className="t-display" style={{ fontSize: 34, letterSpacing: '-1px', lineHeight: 1.05 }}>
             What should people <em>call you</em>?
           </div>
@@ -131,13 +131,13 @@ export default function OnboardingPage({ onDone }) {
 
         {/* colour */}
         <div style={{ marginTop: 22, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div className="t-label" style={{ fontSize: 10 }}>Your tag colour</div>
+          <div className="t-label">Your tag colour</div>
           <PaintboxPicker value={accentKey} onChange={setAccentKey} />
         </div>
 
         {/* pronouns */}
         <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div className="t-label" style={{ fontSize: 10 }}>Pronouns</div>
+          <div className="t-label">Pronouns</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {chips.map(opt => {
               const isCustom = opt === 'write my own';
@@ -162,7 +162,7 @@ export default function OnboardingPage({ onDone }) {
 
         {/* one line */}
         <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 120 }}>
-          <div className="t-label" style={{ fontSize: 10 }}>One line about right now</div>
+          <div className="t-label">One line about right now</div>
           <div className="na-card" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input value={tagline} maxLength={TAGLINE_MAX} onChange={e => setTagline(e.target.value)}
               placeholder="Here for the oat cortado"
@@ -186,7 +186,7 @@ export default function OnboardingPage({ onDone }) {
       <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
 
       <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div className="t-label" style={{ fontSize: 10 }}>Step 2 of 2</div>
+        <div className="t-label">Step 2 of 2</div>
         <div className="t-display" style={{ fontSize: 34, letterSpacing: '-1px', lineHeight: 1.05 }}>
           Give them a <em>face</em> to find.
         </div>
@@ -205,7 +205,7 @@ export default function OnboardingPage({ onDone }) {
       </div>
 
       <div style={{ marginTop: 26, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div className="t-label" style={{ fontSize: 10 }}>Pick up to three stickers</div>
+        <div className="t-label">Pick up to three stickers</div>
         <StickerPicker value={stickers} onChange={setStickers} />
       </div>
 
