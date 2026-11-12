@@ -75,13 +75,14 @@ belongs to the app).
 | `pages/OnboardingPage.jsx` | 12b, 12c | Two steps with a two-dash indicator. Step 1: type onto the coral tag + pronouns + one line. Step 2: photo + stickers + who-can-see-you. |
 | `pages/GridPage.jsx` | 12d, 12g, 12h | The wall — responsive by viewport (see below). Header ("N tags nearby/here", Nearby, Refresh, your orchid-ringed avatar), the visibility control, and the tilted tag wall. Opening a tag → DetailSheet (phone/tablet) or the right rail (desktop); choosing Party code → PartyCodeSheet. |
 | `pages/ProfilePage.jsx` | 12f | My tag — coral preview, the visibility control above three tap-to-edit rows (Name+pronouns / One line / Stickers), auto-save, on-device photo, sign out + delete. |
-| `pages/PrivacyPage.jsx` | 14a | Privacy tab — sage "Right now" card + four statement cards (rewritten to match the actual server behaviour) + "Read the whole policy" → opens `PolicyDocument.jsx`. |
+| `pages/PrivacyPage.jsx` | 14a | Privacy tab — sage "Right now" card + plain statement cards (kept in step with the actual server behaviour — see `../PRIVACY_REVIEW.md`) + "Read the whole policy" → opens `PolicyDocument.jsx`. |
 | `pages/PolicyDocument.jsx` | — | The full privacy policy rendered in-app (mirrors `../PRIVACY_POLICY.md`); the four fillable values live in one `POLICY_META` block. |
 
 ## Central state — visibility
 
-`invisible | nearby | party` is the app's one three-way control, shown in four
-places (onboarding step 2, the wall, My tag, Privacy) as the same sage card. It's
+`invisible | nearby | party` is the app's one three-way control, shown in three
+places (onboarding step 2, the wall, My tag) as the same sage card; the Privacy
+tab shows the current state and links to the wall. It's
 mapped onto the existing backend fields without a schema change:
 
 - **nearby** → `always_visible = true`, `party_code = ''`, location shared.

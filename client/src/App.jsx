@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider } from './auth/AuthContext';
 import { useAuth } from './auth/useAuth';
 import { useViewport } from './hooks/useViewport';
+import { leaveRoom } from './lib/api';
 import AuthPage from './pages/AuthPage';
 import OnboardingPage from './pages/OnboardingPage';
 import ProfilePage from './pages/ProfilePage';
@@ -15,6 +16,15 @@ function AppShell() {
   const { kind } = useViewport();
   const [tab, setTab] = useState('grid');   // 'grid' | 'profile' | 'privacy'
   const [onboarding, setOnboarding] = useState(false);
+
+  // Closing the app takes your tag off the server straight away. (If it's only
+  // in the background, the server drops it after 30 minutes without a refresh.)
+  // Your device keeps the tag and puts it back when you return.
+  useEffect(() => {
+    if (!isLoggedIn) return undefined;
+    window.addEventListener('pagehide', leaveRoom);
+    return () => window.removeEventListener('pagehide', leaveRoom);
+  }, [isLoggedIn]);
 
   if (!isLoggedIn) return <div className="na-app"><AuthPage onRegistered={() => setOnboarding(true)} /></div>;
   if (onboarding) {

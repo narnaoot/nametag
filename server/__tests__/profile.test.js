@@ -391,7 +391,7 @@ describe('POST /api/profiles/me/location', () => {
       .send({ latitude: 37.7749, longitude: -122.4194 });
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true });
+    expect(res.body).toMatchObject({ ok: true });
   });
 
   it('passes latitude as 2nd param and longitude as 3rd param to the query', async () => {
@@ -890,5 +890,166 @@ describe('profile hardening', () => {
 
     expect(res.status).toBe(400);
     expect(fs.promises.unlink).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Privacy: the server keeps as little as possible, for as short as possible
+// ---------------------------------------------------------------------------
+describe('data minimisation', () => {
+  const hoursAgo = (h) => new Date(Date.now() - h * 60 * 60 * 1000).toISOString();
+
+  it('stores location rounded to 4 decimal places, not the exact GPS fix', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ has_tag: true }] });
+
+    const res = await request(app)
+      .post('/api/profiles/me/location')
+      .set('Authorization', authHeader())
+      .send({ latitude: 37.774929512, longitude: -122.419415534 });
+
+    const args = db.query.mock.calls[0][1];
+    expect(args[1]).toBe(37.7749);
+    expect(args[2]).toBe(-122.4194);
+    expect(res.body).toEqual({ ok: true, has_tag: true });
+  });
+
+  it('tells the app when the server no longer holds its tag', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ has_tag: false }] });
+
+    const res = await request(app)
+      .post('/api/profiles/me/location')
+      .set('Authorization', authHeader())
+      .send({ latitude: 1, longitude: 1 });
+
+    expect(res.body.has_tag).toBe(false);
+  });
+
+  it('never returns distances from /nearby', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ lat: 0, lng: 0, radius_meters: 100, party_code: null }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app).get('/api/profiles/nearby').set('Authorization', authHeader());
+
+    const sql = db.query.mock.calls[1][0];
+    const returned = sql.slice(0, sql.indexOf('FROM ('));
+    expect(returned).not.toMatch(/distance|lat|lng|\*/);
+  });
+
+  it('hides people whose party code has run out', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ lat: 0, lng: 0, radius_meters: 100, party_code: null }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app).get('/api/profiles/nearby').set('Authorization', authHeader());
+
+    const [sql, args] = db.query.mock.calls[1];
+    expect(sql).toMatch(/party_code_set_at > NOW\(\) - \$11::interval/);
+    expect(args[9]).toBe('30 minutes');
+    expect(args[10]).toBe('4 hours');
+  });
+
+  it('moves you to invisible when your own party code has run out', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{ lat: 0, lng: 0, radius_meters: 100, party_code: 'SUMMER42', party_code_set_at: hoursAgo(5) }],
+    });
+    db.query.mockResolvedValueOnce({ rows: [{ user_id: 'u', photo_path: '/uploads/p.jpg' }] }); // wipe: SELECT
+    db.query.mockResolvedValueOnce({ rows: [] });                                              // wipe: UPDATE
+
+    const res = await request(app).get('/api/profiles/nearby').set('Authorization', authHeader());
+
+    expect(res.status).toBe(409);
+    expect(res.body.partyExpired).toBe(true);
+    expect(fs.promises.unlink).toHaveBeenCalledWith(expect.stringContaining('p.jpg'));
+    const wipeSql = db.query.mock.calls[2][0];
+    expect(wipeSql).toMatch(/party_code = NULL/);
+    expect(wipeSql).toMatch(/always_visible = FALSE/);
+  });
+
+  it('keeps a party code that is still fresh', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{ lat: 0, lng: 0, radius_meters: 100, party_code: 'SUMMER42', party_code_set_at: hoursAgo(1) }],
+    });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app).get('/api/profiles/nearby').set('Authorization', authHeader());
+
+    expect(res.status).toBe(200);
+  });
+
+  it('refuses to restore a tag into a party that has already run out', async () => {
+    const res = await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', 'Bob')
+      .field('pronouns', 'he/him')
+      .field('party_code', 'SUMMER42')
+      .field('party_code_set_at', hoursAgo(5));
+
+    expect(res.status).toBe(409);
+    expect(res.body.partyExpired).toBe(true);
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  it('keeps the original party start time when a tag is restored', async () => {
+    const started = hoursAgo(2);
+    db.query.mockResolvedValueOnce({ rows: [] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+    db.query.mockResolvedValueOnce({ rows: [{}] });
+
+    await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', 'Bob')
+      .field('pronouns', 'he/him')
+      .field('party_code', 'SUMMER42')
+      .field('party_code_set_at', started);
+
+    expect(db.query.mock.calls[1][1][10].toISOString()).toBe(started);
+  });
+
+  it('does not let a client claim a party started in the future', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+    db.query.mockResolvedValueOnce({ rows: [{}] });
+
+    await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', 'Bob')
+      .field('pronouns', 'he/him')
+      .field('party_code', 'SUMMER42')
+      .field('party_code_set_at', new Date(Date.now() + 86400000).toISOString());
+
+    expect(db.query.mock.calls[1][1][10].getTime()).toBeLessThanOrEqual(Date.now());
+  });
+
+  it('wipes the party code along with the rest of the tag when going invisible', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ user_id: 'u', photo_path: null }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app)
+      .post('/api/profiles/me/visibility')
+      .set('Authorization', authHeader())
+      .send({ is_active: false });
+
+    expect(db.query.mock.calls[1][0]).toMatch(/party_code = NULL, party_code_set_at = NULL/);
+  });
+
+  it('takes the tag off the server on leave, but keeps the visibility choice', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ user_id: 'u', photo_path: '/uploads/me.jpg' }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app).post('/api/profiles/me/leave').set('Authorization', authHeader());
+
+    expect(res.status).toBe(200);
+    expect(fs.promises.unlink).toHaveBeenCalledWith(expect.stringContaining('me.jpg'));
+    const sql = db.query.mock.calls[1][0];
+    expect(sql).toMatch(/display_name = NULL/);
+    expect(sql).toMatch(/lat = NULL/);
+    expect(sql).not.toMatch(/always_visible/);
+  });
+
+  it('requires sign-in to leave', async () => {
+    const res = await request(app).post('/api/profiles/me/leave');
+    expect(res.status).toBe(401);
   });
 });

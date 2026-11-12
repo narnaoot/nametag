@@ -9,6 +9,14 @@ async function migrate() {
       ADD COLUMN IF NOT EXISTS party_code VARCHAR(20)
   `);
 
+  // Party codes expire a few hours after they're entered. Codes that predate
+  // the timestamp start their clock now.
+  await db.query(`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS party_code_set_at TIMESTAMPTZ`);
+  await db.query(`
+    UPDATE profiles SET party_code_set_at = NOW()
+     WHERE party_code IS NOT NULL AND party_code_set_at IS NULL
+  `);
+
   // Allow sensitive profile fields to be NULLed when a user goes invisible,
   // so no identifying data sits on the server while they're not active.
   await db.query(`

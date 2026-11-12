@@ -7,6 +7,41 @@ Updated at the end of every session.
 
 ---
 
+## 🔒 Privacy pass (Nov 2026) — things only you can do
+
+Your goal is "nothing saved in the cloud". The code now holds a tag on the
+server only while you're on the wall (details: `PRIVACY_REVIEW.md`). What's left
+is outside the code:
+
+1. **Turn down retention at each provider.** "Deleted" only means deleted from
+   the live database and disk. Set each of these to the shortest option offered:
+   - **Neon** — history / point-in-time-restore window.
+   - **Resend** — how long sent-email logs are kept (they hold the recipient
+     address and the link).
+   - **Render** and **Vercel** — request-log retention (they hold IP addresses).
+2. **Decide whether to keep the server awake.** The "deleted after 30 minutes"
+   sweep runs inside the API. Render's free plan puts it to sleep after ~15 quiet
+   minutes, and the sweep then finishes on the next wake-up. Nobody can see the
+   tag meanwhile, but it's still stored. To make 30 minutes a hard promise: a paid
+   always-on instance, or a scheduled ping every ~10 minutes. The policy states
+   the caveat until you choose. Tell Claude which you want.
+3. **Check whether Render really has a photo disk.** `server/render.yaml` asks
+   for one on the free plan, which Render may not grant. Look for a Disk on the
+   service's page. Either answer is fine for privacy; it's about knowing.
+4. **Confirm the numbers** — 30 minutes (left the room), 4 hours (party code),
+   2 days (sign-up never confirmed). They're three constants at the top of
+   `server/cleanup.js`; if you change one, the policy text changes with it.
+5. **Read the new privacy wording** — the Privacy tab and "Read the whole
+   policy" in the app (same text as `PRIVACY_POLICY.md`). It's a public promise.
+6. Still open from before: **`privacy@n4bil.com` forwarding** and a **legal read**.
+
+**What happens when this deploys:** every tag that hasn't checked in for 30
+minutes is wiped from the server on the first sweep (people's devices put theirs
+back when they next open the app); sign-ups older than 2 days that never
+confirmed their email are deleted; existing party codes start their 4-hour clock.
+
+---
+
 ## 🐞 Bug sweep (Nov 2026) — decisions needed from you
 
 A hands-on test pass fixed the clear-cut bugs (summary at the top of
@@ -42,13 +77,9 @@ Details in `client/REDESIGN.md`.
 
 **Follow-up pass done** (Aug 2026) — your three calls are handled:
 
-- **Privacy copy rewritten to match what the code actually does.** Your
-  "on-device only" goal is **not** the current reality (and can't fully be — a
-  "who's near me" app needs a server to know locations). The honest split, plus
-  two things to harden (photos aren't cropped client-side; photo files sit at
-  public `/uploads/...` URLs), is written up in
-  [`REDESIGN_QUESTIONS.md`](REDESIGN_QUESTIONS.md) → "Actual privacy practices".
-  Give the new copy a read to confirm you're happy committing to it publicly.
+- **Privacy copy rewritten to match what the code actually does.** (Rewritten
+  again in Nov 2026 — see the privacy section at the top of this file and
+  [`PRIVACY_REVIEW.md`](PRIVACY_REVIEW.md).)
 - **Sign in with Apple: dropped** for the web prototype (needs a paid Apple
   Developer account + domain/secret setup). Sign-in is now a single "Continue
   with email". Add Apple back when you go native.
@@ -59,46 +90,25 @@ Still open (best-guess shipped, see the questions file): venue/place name,
 mutual-context row, party hosting, and radius UI. (The "Read the whole policy"
 link is now wired to a full in-app policy screen — done.)
 
-### Privacy — status (updated Aug 2026)
+### Privacy — status
 
-**Review fixes shipped so far** (see [`PRIVACY_REVIEW.md`](PRIVACY_REVIEW.md)):
-- **H1** ✅ unguessable photo filenames · **H2** ✅ reset links no longer logged
-  **and email now sends via Resend** (verified end-to-end) · **M1** ✅ auth
-  rate-limited · **M2** ✅ register no longer enumerates (email-verification
-  signup flow) · **M4** ✅ fonts self-hosted · **L1** ✅ reset + verification
-  tokens hashed at rest · **L2** ✅ CORS allowlist · **L4** ✅ helmet headers.
+Superseded by the **Privacy pass (Nov 2026)** section at the top of this file.
+The earlier review fixes (unguessable photo URLs, email via Resend, auth rate
+limiting, non-enumerating sign-up, revocable sessions, self-hosted fonts) are all
+shipped; `PRIVACY_REVIEW.md` §6 lists them. The policy's owner, contact address,
+minimum age and date are set in `POLICY_META` at the top of
+`client/src/pages/PolicyDocument.jsx`.
 
-**The privacy policy is now in the app.** "Read the whole policy" on the Privacy
-tab opens a full, styled policy screen (`client/src/pages/PolicyDocument.jsx`).
-
-👉 **What still needs YOU:**
-1. **Confirm 4 values in the policy.** They're in one `POLICY_META` block at the
-   top of `PolicyDocument.jsx` (and mirrored in `PRIVACY_POLICY.md`):
-   - **owner / legal name** — currently "Nabil" (put your real name or entity)
-   - **contact email** — currently your account email (`nnabil@gmail.com`)
-   - **minimum age** — currently 13
-   - **effective date** — currently Aug 23, 2026
-   Then get a **legal read** before real users. Just tell Claude the values.
-2. **New: signup now requires email verification.** Creating an account sends a
-   verification link; you're signed in only after clicking it. Worth a quick
-   end-to-end test on the live app: register → receive the email → click →
-   onboarding. (Existing accounts were grandfathered as verified, so no one is
-   locked out.)
-3. **(Optional) A public policy URL** for App Store submission / external
-   sharing — the in-app screen covers the app itself, but the store listing needs
-   a public web URL. Easy to add a static page later.
+Still optional: a **public policy URL** for an App Store listing (the in-app
+screen covers the app itself).
 
 **Deploy note (CORS):** the API now allowlists origins. Defaults cover
 `nametag.n4bil.com`, `n4bil.com`, `www.n4bil.com`, `*.vercel.app` previews, and
 native/localhost. If the live app ever can't reach the API after a deploy, set
 `CORS_ORIGINS` (comma-separated) on Render to your exact frontend origin.
 
-**Remaining lower-priority items:** L3 (truncate stored coordinate precision) and
-a data-export endpoint. Everything H1–M4 plus L1/L2/L4 is done — including M3
-(token revocation: a password reset now invalidates all existing sessions, and
-the app auto-signs-out on a rejected token). The only future auth refinement is
-refresh-token rotation to shorten the 30-day access token; not a blocker. See the
-review for details.
+**Remaining lower-priority items:** a data-export endpoint, and refresh-token
+rotation to shorten the 30-day sign-in token. Neither is a blocker.
 
 ---
 
@@ -119,14 +129,18 @@ If anything looks broken, tell Claude what you see.
 
 ---
 
-## 🔒 Privacy decisions (decide before launch)
+## 🔒 Privacy decisions — settled
 
-The app is being built on a **server-as-relay** principle: user data lives on the server only as long as strictly needed, then gets deleted. Claude knows about this — it's in RESTART_PROMPT. But you need to decide a few specifics:
+- **How long is "stale"?** 30 minutes without the app checking in (was 24 hours).
+- **Going invisible** deletes your tag, photo, location and party code from the
+  server at once, and you stay invisible until you choose otherwise. Your device
+  keeps the tag and re-uploads it when you go visible.
+- **Closing the app** deletes the server's copy straight away on the web.
+- **Party codes** last 4 hours.
+- **Privacy policy** — written, shown in the app, mirrored in `PRIVACY_POLICY.md`.
+- **Right to erasure** — My tag → Delete account.
 
-- **How long is "stale"?** The current plan is 24h without a location refresh → server deletes the photo and NULLs the location. Does that feel right, or should it be shorter (e.g. 4h, 8h)?
-- **What happens when you go invisible?** The plan: server deletes your photo file immediately and NULLs your location. You re-upload on next "go visible." You okay with that UX?
-- **Privacy policy** — before any real users, you'll need a simple privacy policy page explaining what's collected, how long it's kept, and how to delete an account. This can be a single static page. Just tell Claude when you're ready.
-- **GDPR / right to erasure** — the account-deletion feature (coming soon in code) will cover this, but worth knowing it's on the roadmap.
+What still needs you is at the top of this file.
 
 ---
 
@@ -219,7 +233,7 @@ build the reset link).
 
 ## 📸 Photo storage
 
-Photos currently live on Render's disk (`/uploads`). The privacy principle says server-side photos are temporary — deleted when you go invisible or go stale. So a fancy CDN/S3 setup is less critical than it first appeared, since files shouldn't accumulate.
+Photos currently live on Render's disk (`/uploads`). The privacy principle says server-side photos are temporary — deleted when you go invisible, close the app, or haven't checked in for 30 minutes. So a fancy CDN/S3 setup is less critical than it first appeared, since files shouldn't accumulate.
 
 The main risk right now: free Render instances can lose disk contents on redeploy. This is acceptable during development. Once real users are involved, revisit — but the solution may simply be "upload fresh each time you go visible" rather than persistent cloud storage.
 

@@ -10,7 +10,7 @@ import Wall from '../components/Wall';
 import VisibilityControl from '../components/VisibilityControl';
 import Sheet from '../components/Sheet';
 import TagDetail from '../components/TagDetail';
-import { PLACE_FALLBACK } from '../lib/constants';
+import { PLACE_FALLBACK, PARTY_CODE_HOURS } from '../lib/constants';
 
 // One board, three sizes — "the same board, more room". Everything that differs
 // between phone, tablet and desktop is in this table: the wall's tuning and the
@@ -131,7 +131,7 @@ function WallSkeleton({ columns = 2 }) {
 
 export default function GridPage({ onEditTag, layout = 'phone' }) {
   const {
-    nearby, myProfile, profileChecked, locationErrorKind, loading, lastUpdated, mode,
+    nearby, myProfile, profileChecked, locationErrorKind, loading, lastUpdated, mode, endedParty,
     hiddenIds, refresh, setVisibilityMode, reloadHidden,
   } = useNearbyPeople();
   const [selfPhoto, setSelfPhoto] = useState(null);
@@ -147,11 +147,9 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
   const partyCode = myProfile?.party_code;
 
   const me = myProfile?.display_name ? toBadgePerson(myProfile, { selfPhoto, you: true }) : null;
+  // The server sends people nearest-first, without saying how far away they are.
   const others = useMemo(
-    () => [...nearby]
-      .filter(p => !hiddenIds.includes(p.id))
-      .sort((a, b2) => (a.distance_meters ?? 1e9) - (b2.distance_meters ?? 1e9))
-      .map(p => toBadgePerson(p)),
+    () => nearby.filter(p => !hiddenIds.includes(p.id)).map(p => toBadgePerson(p)),
     [nearby, hiddenIds]
   );
   const visible = mode !== 'invisible';
@@ -170,9 +168,11 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
   if (!visible) {
     wall = (
       <div style={{ textAlign: 'center', paddingTop: 46 }}>
-        <div className="t-h2" style={{ fontSize: 24 }}>You’re invisible</div>
-        <div className="t-body" style={{ fontSize: 14, maxWidth: 260, margin: '8px auto 0' }}>
-          Your tag has left the wall. Switch to Nearby to see who’s here and be seen.
+        <div className="t-h2" style={{ fontSize: 24 }}>{endedParty ? 'The party’s over' : 'You’re invisible'}</div>
+        <div className="t-body" style={{ fontSize: 14, maxWidth: 270, margin: '8px auto 0' }}>
+          {endedParty
+            ? <>Party codes last {PARTY_CODE_HOURS} hours, and <strong>{endedParty}</strong> has run out. Your tag has left the wall and been deleted from our server. Switch to Nearby, or enter a new code, to be seen again.</>
+            : <>Your tag has left the wall. Switch to Nearby to see who’s here and be seen.</>}
         </div>
       </div>
     );

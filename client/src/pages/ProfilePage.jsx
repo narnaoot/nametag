@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { getMyProfile, photoUrl, setVisibility } from '../lib/api';
 import { useAuth } from '../auth/useAuth';
-import { loadLocalPhoto, readLocalProfile } from '../lib/profileStorage';
+import { loadLocalPhoto, readLocalProfile, persistProfileLocally } from '../lib/profileStorage';
 import { preparePickedPhoto } from '../lib/imageCrop';
-import { normalizeProfileFields, visibilityMode, trackProfileSave } from '../lib/profile';
+import { normalizeProfileFields, visibilityMode, trackProfileSave, isPartyExpired } from '../lib/profile';
 import { saveProfile } from '../lib/profileSync';
 import MyTagPreview from '../components/MyTagPreview';
 import VisibilityControl from '../components/VisibilityControl';
@@ -87,7 +87,14 @@ export default function ProfilePage({ onDone }) {
     async function load() {
       const localPhoto = await loadLocalPhoto();
       if (localPhoto) setPhotoPreview(localPhoto);
-      const p = await readLocalProfile();
+      let p = await readLocalProfile();
+      if (isPartyExpired(p)) {
+        // The party code ran out while the app was away: the party is over, so
+        // come off the wall (the same thing the wall and the server do).
+        p = { ...p, always_visible: false, party_code: '', party_code_set_at: '' };
+        await persistProfileLocally(p);
+        trackProfileSave(setVisibility(false)).catch(() => {});
+      }
       if (p) applyProfile(p);
       try {
         const profile = await getMyProfile();
@@ -113,15 +120,22 @@ export default function ProfilePage({ onDone }) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    const { dataUrl, file: prepared } = await preparePickedPhoto(file);
-    setPhotoPreview(dataUrl);
-    setPhotoFile(prepared);
+    try {
+      const { dataUrl, file: prepared } = await preparePickedPhoto(file);
+      setPhotoPreview(dataUrl);
+      setPhotoFile(prepared);
+      setError('');
+    } catch {
+      setError('We couldn’t read that photo — try a different one.');
+    }
   }
 
   function handleVisibility(next, { partyCode: code = '' }) {
     setAlwaysVisible(next !== 'invisible');
     if (next === 'invisible') {
-      // clear the server's copy (name, photo, location) now, and record the choice
+      // delete the server's copy (name, photo, location, party code) now, and
+      // record the choice
+      setPartyCode('');
       trackProfileSave(setVisibility(false)).catch(() => {});
     } else {
       setPartyCode(code);
@@ -218,7 +232,7 @@ export default function ProfilePage({ onDone }) {
       <div style={{ padding: '14px 22px 0' }}>
         <VisibilityControl value={visMode} onChange={handleVisibility} place={place}
           partyCode={partyCode} note={visMode === 'nearby'
-            ? { lead: 'Visible to people nearby.', rest: ' Turns itself off when you leave.' } : undefined} />
+            ? { lead: 'Visible to people nearby.', rest: ' Close the app and your tag is deleted from our server within half an hour.' } : undefined} />
       </div>
 
       {/* edit rows */}

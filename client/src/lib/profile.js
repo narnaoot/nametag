@@ -3,15 +3,17 @@
 // The editor (ProfilePage), onboarding (OnboardingPage), and the visibility
 // re-upload (useNearbyPeople) all build their request from here, so the client
 // contract can't drift between the three call sites.
-import { DEFAULT_RADIUS } from './constants';
+import { DEFAULT_RADIUS, PARTY_CODE_HOURS } from './constants';
 
 // Canonical profile fields. Normalises types and applies defaults so every
 // caller sends — and persists on-device — the same shape:
 //   - tagline / party_code are trimmed
 //   - stickers is always a JSON string (accepts an array or an existing string)
 //   - radius_meters / always_visible / tag_color fall back to sane defaults
+//   - party_code_set_at (when the code was entered) only exists with a code
 export function normalizeProfileFields(src = {}) {
   const { stickers } = src;
+  const partyCode = normalizePartyCode(src.party_code);
   return {
     display_name: src.display_name ?? '',
     pronouns: src.pronouns ?? '',
@@ -20,7 +22,8 @@ export function normalizeProfileFields(src = {}) {
     always_visible: src.always_visible ?? true,
     tag_color: src.tag_color ?? '',
     stickers: typeof stickers === 'string' ? stickers : JSON.stringify(stickers ?? []),
-    party_code: normalizePartyCode(src.party_code),
+    party_code: partyCode,
+    party_code_set_at: partyCode ? (src.party_code_set_at ?? '') : '',
   };
 }
 
@@ -48,6 +51,22 @@ export function profileSaveSettled() { return pendingSave; }
 // compare (and store) letters and digits only. Mirrors the server.
 export function normalizePartyCode(code) {
   return String(code ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+// Record when a party code was entered. Joining (a new or changed code) starts
+// the clock; saving or restoring a tag that's already in that party keeps the
+// original time, so the code still runs out when it should.
+export function stampPartyCode(fields, previous) {
+  if (!fields.party_code) return { ...fields, party_code_set_at: '' };
+  const same = previous && normalizePartyCode(previous.party_code) === fields.party_code;
+  const startedAt = (same && previous.party_code_set_at) || fields.party_code_set_at;
+  return { ...fields, party_code_set_at: startedAt || new Date().toISOString() };
+}
+
+// Has this profile's party code run out? (False with no code or no start time.)
+export function isPartyExpired(profile) {
+  if (!profile?.party_code || !profile.party_code_set_at) return false;
+  return Date.now() - Date.parse(profile.party_code_set_at) > PARTY_CODE_HOURS * 60 * 60 * 1000;
 }
 
 // The three-way visibility mode from a profile's flags: invisible | nearby |
