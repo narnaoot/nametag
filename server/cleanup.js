@@ -31,7 +31,10 @@ async function runCleanup() {
   try {
     const stale = await db.query(
       `SELECT user_id, photo_path FROM profiles
-       WHERE location_updated_at < NOW() - $1::interval
+       WHERE (location_updated_at < NOW() - $1::interval
+              -- never shared a location (e.g. set up while invisible): age out
+              -- on the last profile write instead, so a photo can't sit forever
+              OR (location_updated_at IS NULL AND updated_at < NOW() - $1::interval))
          AND (lat IS NOT NULL OR photo_path IS NOT NULL)`,
       [`${STALE_HOURS} hours`]
     );

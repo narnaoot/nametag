@@ -4,9 +4,9 @@
 import { accentTrio } from '../lib/colors';
 import { TAG_COLORS } from '../lib/constants';
 
-export default function PaintboxPicker({ value, onChange, justify = 'flex-start' }) {
+export default function PaintboxPicker({ value, onChange }) {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: justify }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
       {TAG_COLORS.map(key => {
         const trio = accentTrio(key);
         const on = value === key;

@@ -747,3 +747,148 @@ describe('GET /api/profiles/nearby', () => {
     expect(nearbyQueryArgs[2]).toBe('specific-user-id');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Regression tests for bugs found in hands-on testing
+// ---------------------------------------------------------------------------
+describe('profile hardening', () => {
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    'base64'
+  );
+  const putArgs = () => db.query.mock.calls[1][1]; // the INSERT's parameters
+
+  function mockInsert() {
+    db.query.mockResolvedValueOnce({ rows: [] }); // SELECT existing
+    db.query.mockResolvedValueOnce({ rows: [] }); // INSERT
+    db.query.mockResolvedValueOnce({ rows: [{}] }); // SELECT result
+  }
+
+  it('stores an uploaded photo under an image extension, never the client filename', async () => {
+    mockInsert();
+    await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', 'Mallory')
+      .field('pronouns', 'they/them')
+      .attach('photo', Buffer.from('<script>alert(1)</script>'), { filename: 'evil.html', contentType: 'image/png' });
+
+    expect(putArgs()[3]).toMatch(/^\/uploads\/[0-9a-f]{32}\.png$/);
+  });
+
+  it('rejects scriptable image types such as SVG', async () => {
+    const res = await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', 'Mallory')
+      .field('pronouns', 'they/them')
+      .attach('photo', Buffer.from('<svg onload="alert(1)"/>'), { filename: 'x.svg', contentType: 'image/svg+xml' });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('error', 'Only image files are allowed');
+  });
+
+  it('deletes the uploaded file when the profile fields are rejected', async () => {
+    const res = await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', '')
+      .field('pronouns', '')
+      .attach('photo', png, { filename: 'a.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(400);
+    expect(fs.promises.unlink).toHaveBeenCalledTimes(1);
+  });
+
+  it('clamps the radius so one request cannot list the whole world', async () => {
+    mockInsert();
+    await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', 'Cara')
+      .field('pronouns', 'they/them')
+      .field('radius_meters', '30000000');
+
+    expect(putArgs()[4]).toBe(1000);
+  });
+
+  it('clamps an oversized stored radius in the nearby search too', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ lat: 0, lng: 0, radius_meters: 30000000, party_code: null }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app).get('/api/profiles/nearby').set('Authorization', authHeader());
+
+    expect(db.query.mock.calls[1][1][7]).toBe(1000);
+  });
+
+  it('truncates over-long names and pronouns', async () => {
+    mockInsert();
+    await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', 'x'.repeat(500))
+      .field('pronouns', 'y'.repeat(500));
+
+    expect(putArgs()[1]).toHaveLength(40);
+    expect(putArgs()[2]).toHaveLength(30);
+  });
+
+  it('normalises party codes — capitals and hyphens do not matter', async () => {
+    mockInsert();
+    await request(app)
+      .put('/api/profiles/me')
+      .set('Authorization', authHeader())
+      .field('display_name', 'Bob')
+      .field('pronouns', 'he/him')
+      .field('party_code', 'summer-42');
+
+    expect(putArgs()[9]).toBe('SUMMER42');
+  });
+
+  it('keeps party members and everyone else apart, and hides nameless tags', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ lat: 0, lng: 0, radius_meters: 100, party_code: null }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app).get('/api/profiles/nearby').set('Authorization', authHeader());
+
+    const [sql, args] = db.query.mock.calls[1];
+    expect(sql).toMatch(/party_code IS NOT DISTINCT FROM \$9/);
+    expect(sql).toMatch(/display_name IS NOT NULL/);
+    expect(args[8]).toBeNull();
+  });
+
+  it('records the choice when going invisible so it survives a reload', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ photo_path: null }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app)
+      .post('/api/profiles/me/visibility')
+      .set('Authorization', authHeader())
+      .send({ is_active: false });
+
+    expect(db.query.mock.calls[1][0]).toMatch(/always_visible = FALSE/);
+  });
+
+  it('rejects coordinates that are not real numbers in range', async () => {
+    for (const body of [{ latitude: 'abc', longitude: 'x' }, { latitude: 999, longitude: 999 }]) {
+      const res = await request(app)
+        .post('/api/profiles/me/location')
+        .set('Authorization', authHeader())
+        .send(body);
+      expect(res.status).toBe(400);
+    }
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  it('refuses a photo-only upload when there is no profile to attach it to', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] }); // no profile row
+
+    const res = await request(app)
+      .post('/api/profiles/me/photo')
+      .set('Authorization', authHeader())
+      .attach('photo', png, { filename: 'a.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(400);
+    expect(fs.promises.unlink).toHaveBeenCalledTimes(1);
+  });
+});

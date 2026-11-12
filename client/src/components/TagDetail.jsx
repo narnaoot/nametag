@@ -1,6 +1,6 @@
-// TagDetail.jsx — the opened tag grown large, plus mutual context and the
-// Remember / Hide actions. Shared by DetailSheet (a bottom sheet on phone and
-// tablet) and the desktop right rail, where selecting a tag never covers the
+// TagDetail.jsx — the opened tag grown large, plus the Remember / Hide
+// actions. Shown in a bottom Sheet on phone and tablet and in the desktop right
+// rail, where selecting a tag never covers the
 // room. The tag keeps its own tint and hue so it reads as picking a sticker off
 // the wall.
 import { Avatar } from './Avatar';
@@ -16,7 +16,7 @@ function nameSize(name, base) {
 }
 
 export default function TagDetail({
-  person, index = 0, remembered, context, onRemember, onHide, onEditTag,
+  person, index = 0, remembered, onRemember, onHide, onEditTag,
   photoSize = 106, nameBase = 42, closingNote,
 }) {
   if (!person) return null;
@@ -33,13 +33,14 @@ export default function TagDetail({
                 shadow="var(--shadow-raise)" tint={trio.tint} deep={trio.deep} />
         <Eyebrow style={{ fontSize: 9.5, letterSpacing: '.18em', marginTop: 4 }} />
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: nameSize(person.name, nameBase),
-              letterSpacing: '-1.4px', lineHeight: 1, color: 'var(--text)', textAlign: 'center' }}>{person.name}</div>
+              letterSpacing: '-1.4px', lineHeight: 1, color: 'var(--text)', textAlign: 'center',
+              maxWidth: '100%', overflowWrap: 'anywhere' }}>{person.name}</div>
         {person.pronouns && (
           <Pill hue={trio.hue} deep={trio.deep} style={{ padding: '6px 14px', fontSize: 12.5 }}>{person.pronouns}</Pill>
         )}
         {person.tagline && (
           <div className="t-quote" style={{ fontSize: 20, lineHeight: 1.45, textAlign: 'center',
-                maxWidth: 260, marginTop: 4 }}>{person.tagline}</div>
+                maxWidth: 'min(260px, 100%)', overflowWrap: 'anywhere', marginTop: 4 }}>{person.tagline}</div>
         )}
         {person.stickers?.length > 0 && (
           <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -58,16 +59,6 @@ export default function TagDetail({
           </div>
         )}
       </div>
-
-      {context && (
-        <div className="na-card" style={{ marginTop: 18, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          {context.photo != null && (
-            <Avatar person={{ photo: context.photo, name: context.name }} size={40} border={2}
-                    ring="var(--lavender)" shadow="none" />
-          )}
-          <div className="t-body" style={{ fontSize: 13, lineHeight: 1.5 }}>{context.text}</div>
-        </div>
-      )}
 
       <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {you ? (

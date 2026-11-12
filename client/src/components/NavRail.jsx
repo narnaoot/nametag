@@ -6,7 +6,7 @@ const ITEMS = [
   ['privacy', 'Privacy'],
 ];
 
-export default function NavRail({ tab, onTab, footer }) {
+export default function NavRail({ tab, onTab }) {
   return (
     <nav style={{ width: 250, flexShrink: 0, alignSelf: 'stretch', background: 'var(--surface)',
           borderRight: '1.5px solid var(--border)', padding: '30px 22px', display: 'flex',
@@ -23,7 +23,6 @@ export default function NavRail({ tab, onTab, footer }) {
           </button>
         );
       })}
-      {footer && <div style={{ marginTop: 'auto' }}>{footer}</div>}
     </nav>
   );
 }

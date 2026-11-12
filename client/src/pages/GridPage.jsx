@@ -8,16 +8,33 @@ import { Avatar } from '../components/Avatar';
 import { Eyebrow } from '../components/TagBits';
 import Wall from '../components/Wall';
 import VisibilityControl from '../components/VisibilityControl';
-import DetailSheet from '../components/DetailSheet';
+import Sheet from '../components/Sheet';
 import TagDetail from '../components/TagDetail';
-import PartyCodeSheet from '../components/PartyCodeSheet';
 import { PLACE_FALLBACK } from '../lib/constants';
 
-// Board tuning per viewport — "the same board, more room".
+// One board, three sizes — "the same board, more room". Everything that differs
+// between phone, tablet and desktop is in this table: the wall's tuning and the
+// spacing of the page around it. Desktop also swaps the detail sheet for a
+// right-hand rail (see the render below).
 const BOARD = {
-  phone:   { columns: 2, faceBase: 52, sizingWidth: 158, foot: 12,   gap: 12, title: 40 },
-  tablet:  { columns: 3, faceBase: 78, sizingWidth: 200, foot: 15,   gap: 20, title: 56 },
-  desktop: { columns: 4, faceBase: 72, sizingWidth: 195, foot: 13.5, gap: 18, title: 48 },
+  phone: {
+    columns: 2, faceBase: 52, sizingWidth: 158, foot: 12, gap: 12, title: 40, tracking: '-1.2px',
+    frameClass: 'no-sb na-screen', frame: { padding: '0 0 96px' },
+    header: { padding: '34px 22px 0', gap: 12 }, actionsGap: 10,
+    control: { margin: '14px 20px 0' }, wall: { padding: '18px 20px 0' },
+  },
+  tablet: {
+    columns: 3, faceBase: 78, sizingWidth: 200, foot: 15, gap: 20, title: 56, tracking: '-1.4px',
+    frameClass: 'no-sb', frame: { maxWidth: 820, margin: '0 auto', padding: '40px 44px 96px' },
+    header: { gap: 16 }, actionsGap: 12,
+    control: { maxWidth: 460, marginTop: 16 }, wall: { marginTop: 24 },
+  },
+  desktop: {
+    columns: 4, faceBase: 72, sizingWidth: 195, foot: 13.5, gap: 18, title: 48, tracking: '-1.4px',
+    frameClass: 'no-sb', frame: { flex: 1, minWidth: 0, padding: '30px 40px 60px' },
+    header: { gap: 16 }, actionsGap: 12,
+    control: { maxWidth: 420, marginTop: 16 }, wall: { marginTop: 24 },
+  },
 };
 
 const CLOSING_NOTE = 'Nothing is kept once you leave — no messages, no history. Names you remember stay on your phone.';
@@ -30,16 +47,23 @@ function CenteredState({ children }) {
   );
 }
 
+// The dashed outline of a tag that isn't there yet.
+function EmptySlot({ children }) {
+  return (
+    <div style={{ width: 132, border: '2px dashed color-mix(in srgb, var(--muted) 34%, transparent)',
+          borderRadius: 'var(--r-tag)', transform: 'rotate(-2deg)', padding: '22px 14px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+      <Eyebrow />
+      <span className="t-quote" style={{ fontSize: 14, color: 'var(--muted)' }}>{children}</span>
+    </div>
+  );
+}
+
 function EmptyWall({ place, mode, partyCode }) {
   const party = mode === 'party';
   return (
     <CenteredState>
-      <div style={{ width: 132, border: '2px dashed color-mix(in srgb, var(--muted) 34%, transparent)',
-            borderRadius: 'var(--r-tag)', transform: 'rotate(-2deg)', padding: '22px 14px',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-        <Eyebrow />
-        <span className="t-quote" style={{ fontSize: 14, color: 'var(--muted)' }}>this spot’s free</span>
-      </div>
+      <EmptySlot>this spot’s free</EmptySlot>
       <div className="t-h2" style={{ fontSize: 26, marginTop: 26 }}>{party ? 'No one’s joined yet' : 'No tags yet'}</div>
       <div className="t-body" style={{ fontSize: 14, maxWidth: 268, marginTop: 8 }}>
         {party ? (
@@ -69,6 +93,21 @@ function LocationNeeded({ kind, onRetry }) {
   );
 }
 
+// Signed in but no tag yet (onboarding skipped, or the tag was cleared and
+// there's no copy on this device). Nothing can be shown or seen until one exists.
+function TagNeeded({ onEditTag }) {
+  return (
+    <CenteredState>
+      <EmptySlot>your tag goes here</EmptySlot>
+      <div className="t-h2" style={{ fontSize: 26, marginTop: 26 }}>Make your tag first</div>
+      <div className="t-body" style={{ fontSize: 14, maxWidth: 268, marginTop: 8 }}>
+        Add a name so the room knows what to call you — then you’ll see who’s here.
+      </div>
+      <button className="na-btn" style={{ marginTop: 22, minWidth: 180 }} onClick={onEditTag}>Make my tag</button>
+    </CenteredState>
+  );
+}
+
 function WallSkeleton({ columns = 2 }) {
   const tags = Array.from({ length: columns === 2 ? 4 : columns * 2 });
   return (
@@ -92,13 +131,12 @@ function WallSkeleton({ columns = 2 }) {
 
 export default function GridPage({ onEditTag, layout = 'phone' }) {
   const {
-    nearby, myProfile, locationErrorKind, loading, lastUpdated, mode,
+    nearby, myProfile, profileChecked, locationErrorKind, loading, lastUpdated, mode,
     hiddenIds, refresh, setVisibilityMode, reloadHidden,
   } = useNearbyPeople();
   const [selfPhoto, setSelfPhoto] = useState(null);
   const [remembered, setRemembered] = useState([]);
   const [sel, setSel] = useState(null);
-  const [showParty, setShowParty] = useState(false);
 
   useEffect(() => { loadLocalPhoto().then(setSelfPhoto); }, []);
   useEffect(() => { getRememberedNames().then(setRemembered); }, []);
@@ -106,6 +144,7 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
   const place = PLACE_FALLBACK;
   const b = BOARD[layout] || BOARD.phone;
   const isDesktop = layout === 'desktop';
+  const partyCode = myProfile?.party_code;
 
   const me = myProfile?.display_name ? toBadgePerson(myProfile, { selfPhoto, you: true }) : null;
   const others = useMemo(
@@ -116,16 +155,13 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
     [nearby, hiddenIds]
   );
   const visible = mode !== 'invisible';
+  const needsTag = profileChecked && !loading && !myProfile?.display_name;
   const all = useMemo(() => (visible && me ? [me, ...others] : others), [visible, me, others]);
 
   const count = others.length;
   const headLabel = loading ? 'Reading the room…'
     : `${count === 0 ? 'No' : count} ${count === 1 ? 'tag' : 'tags'}${place && place !== 'nearby' ? ` at ${place}` : isDesktop ? ' here' : ' nearby'}`;
 
-  function handleMode(next) {
-    if (next === 'party') { setShowParty(true); return; }
-    setVisibilityMode(next);
-  }
   async function handleRemember(person) { await rememberName(person); setRemembered(await getRememberedNames()); }
   async function handleHide(person) { await hidePerson(person.id); await reloadHidden(); setSel(null); }
   const isRemembered = (p) => remembered.some(r => String(r.id ?? r.name) === String(p?.id ?? p?.name));
@@ -140,12 +176,14 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
         </div>
       </div>
     );
+  } else if (needsTag) {
+    wall = <TagNeeded onEditTag={onEditTag} />;
   } else if (locationErrorKind) {
     wall = <LocationNeeded kind={locationErrorKind} onRetry={refresh} />;
   } else if (loading && all.length === 0) {
     wall = <WallSkeleton columns={b.columns} />;
   } else if (all.length === 0) {
-    wall = <EmptyWall place={place} mode={mode} partyCode={myProfile?.party_code} />;
+    wall = <EmptyWall place={place} mode={mode} partyCode={partyCode} />;
   } else {
     wall = (
       <>
@@ -154,7 +192,7 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
         {others.length === 0 && !loading && (
           <div className="t-body" style={{ textAlign: 'center', fontSize: 13.5, maxWidth: 300, margin: '26px auto 0' }}>
             {mode === 'party'
-              ? <>No one else has entered the code{myProfile?.party_code ? <> <strong>{myProfile.party_code}</strong></> : ''} yet — share it to fill the wall.</>
+              ? <>No one else has entered the code{partyCode ? <> <strong>{partyCode}</strong></> : ''} yet — share it to fill the wall.</>
               : <>You’re the first one here. When someone else arrives, their tag appears beside yours.</>}
           </div>
         )}
@@ -162,114 +200,64 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
     );
   }
 
-  const refreshPill = (
-    <button onClick={refresh} disabled={loading} className="na-pill-btn" style={{ whiteSpace: 'nowrap', padding: '11px 15px' }}>
-      {loading ? 'Reading…' : 'Refresh'}
-    </button>
+  // The opened tag: a bottom sheet on phone and tablet, the right rail on desktop.
+  const detail = sel && (
+    <TagDetail person={sel} index={all.findIndex(p => p.id === sel.id)} remembered={isRemembered(sel)}
+               onRemember={handleRemember} onHide={handleHide}
+               onEditTag={() => { setSel(null); onEditTag?.(); }}
+               closingNote={isDesktop ? CLOSING_NOTE : undefined} />
   );
-  const meAvatar = me && (
-    <div onClick={onEditTag} style={{ cursor: 'pointer' }}>
-      <Avatar person={me} size={42} border={2} ring="var(--brand)" shadow="none"
-              tint={personTrio(me).tint} deep={personTrio(me).deep} />
+
+  const board = (
+    <div className={b.frameClass} style={b.frame}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', ...b.header }}>
+        <div style={{ minWidth: 0 }}>
+          <div className="t-label">{headLabel}</div>
+          <div className="t-display" style={{ fontSize: b.title, letterSpacing: b.tracking, marginTop: 6 }}>
+            Nearby
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: b.actionsGap, flexShrink: 0 }}>
+          <button onClick={refresh} disabled={loading} className="na-pill-btn" style={{ whiteSpace: 'nowrap', padding: '11px 15px' }}>
+            {loading ? 'Reading…' : 'Refresh'}
+          </button>
+          {me && (
+            <div onClick={onEditTag} style={{ cursor: 'pointer' }}>
+              <Avatar person={me} size={42} border={2} ring="var(--brand)" shadow="none"
+                      tint={personTrio(me).tint} deep={personTrio(me).deep} />
+            </div>
+          )}
+        </div>
+      </div>
+      <div style={b.control}>
+        <VisibilityControl value={mode} onChange={setVisibilityMode} place={place} partyCode={partyCode} />
+      </div>
+      <div style={b.wall}>{wall}</div>
+      {!isDesktop && detail && <Sheet onClose={() => setSel(null)} maxWidth={520} scroll>{detail}</Sheet>}
+      {layout === 'phone' && (
+        <div className="t-label" style={{ textAlign: 'center', marginTop: 28 }}>
+          {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
+        </div>
+      )}
     </div>
   );
 
-  const partySheet = showParty && (
-    <PartyCodeSheet initial={myProfile?.party_code || ''}
-      onJoin={(code) => { setShowParty(false); setVisibilityMode('party', { partyCode: code }); }}
-      onStayVisible={() => { setShowParty(false); setVisibilityMode('nearby'); }}
-      onClose={() => setShowParty(false)} />
-  );
+  if (!isDesktop) return board;
 
-  // ── Desktop: center board + right "Selected" rail (never covers the room) ──
-  if (isDesktop) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'flex-start', minHeight: '100vh' }}>
-        <div className="no-sb" style={{ flex: 1, minWidth: 0, padding: '30px 40px 60px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16 }}>
-            <div>
-              <div className="t-label">{headLabel}</div>
-              <div className="t-display" style={{ fontSize: b.title, letterSpacing: '-1.4px', marginTop: 6 }}>
-                Nearby
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>{refreshPill}{meAvatar}</div>
-          </div>
-          <div style={{ maxWidth: 420, marginTop: 16 }}>
-            <VisibilityControl value={mode} onChange={handleMode} place={place} partyCode={myProfile?.party_code} />
-          </div>
-          <div style={{ marginTop: 24 }}>{wall}</div>
-        </div>
-
-        <aside style={{ width: 360, flexShrink: 0, alignSelf: 'stretch', background: 'var(--surface)',
-              borderLeft: '1.5px solid var(--border)', padding: '30px 24px', position: 'sticky', top: 0,
-              minHeight: '100vh' }}>
-          <div className="t-label" style={{ marginBottom: 16 }}>Selected</div>
-          {sel ? (
-            <TagDetail person={sel} index={all.findIndex(p => p.id === sel.id)} remembered={isRemembered(sel)}
-                       onRemember={handleRemember} onHide={handleHide}
-                       onEditTag={() => { setSel(null); onEditTag && onEditTag(); }} closingNote={CLOSING_NOTE} />
-          ) : (
-            <div className="t-body" style={{ fontSize: 13.5, lineHeight: 1.7 }}>
-              Tap a tag to see who it is. {CLOSING_NOTE}
-            </div>
-          )}
-        </aside>
-        {partySheet}
-      </div>
-    );
-  }
-
-  // ── Tablet: one wide board, visibility in the header, bottom tab bar ──
-  if (layout === 'tablet') {
-    return (
-      <div className="no-sb" style={{ maxWidth: 820, margin: '0 auto', padding: '40px 44px 96px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16 }}>
-          <div>
-            <div className="t-label">{headLabel}</div>
-            <div className="t-display" style={{ fontSize: b.title, letterSpacing: '-1.4px', marginTop: 6 }}>
-              Nearby
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>{refreshPill}{meAvatar}</div>
-        </div>
-        <div style={{ maxWidth: 460, marginTop: 16 }}>
-          <VisibilityControl value={mode} onChange={handleMode} place={place} partyCode={myProfile?.party_code} />
-        </div>
-        <div style={{ marginTop: 24 }}>{wall}</div>
-        {sel && (
-          <DetailSheet person={sel} index={all.findIndex(p => p.id === sel.id)} remembered={isRemembered(sel)}
-                       onRemember={handleRemember} onHide={handleHide}
-                       onEditTag={() => { setSel(null); onEditTag && onEditTag(); }} onClose={() => setSel(null)} />
-        )}
-        {partySheet}
-      </div>
-    );
-  }
-
-  // ── Phone ──
+  // Desktop: the board plus a "Selected" rail, so opening a tag never covers the room.
   return (
-    <div className="no-sb na-screen" style={{ padding: '0 0 96px' }}>
-      <div style={{ padding: '34px 22px 0', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ minWidth: 0 }}>
-          <div className="t-label">{headLabel}</div>
-          <div className="t-display" style={{ fontSize: b.title, letterSpacing: '-1.2px', marginTop: 6 }}>Nearby</div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>{refreshPill}{meAvatar}</div>
-      </div>
-      <div style={{ margin: '14px 20px 0' }}>
-        <VisibilityControl value={mode} onChange={handleMode} place={place} partyCode={myProfile?.party_code} />
-      </div>
-      <div style={{ padding: '18px 20px 0' }}>{wall}</div>
-      {sel && (
-        <DetailSheet person={sel} index={all.findIndex(p => p.id === sel.id)} remembered={isRemembered(sel)}
-                     onRemember={handleRemember} onHide={handleHide}
-                     onEditTag={() => { setSel(null); onEditTag && onEditTag(); }} onClose={() => setSel(null)} />
-      )}
-      {partySheet}
-      <div className="t-label" style={{ textAlign: 'center', marginTop: 28 }}>
-        {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
-      </div>
+    <div style={{ display: 'flex', alignItems: 'flex-start', minHeight: '100vh' }}>
+      {board}
+      <aside style={{ width: 360, flexShrink: 0, alignSelf: 'stretch', background: 'var(--surface)',
+            borderLeft: '1.5px solid var(--border)', padding: '30px 24px', position: 'sticky', top: 0,
+            minHeight: '100vh' }}>
+        <div className="t-label" style={{ marginBottom: 16 }}>Selected</div>
+        {detail || (
+          <div className="t-body" style={{ fontSize: 13.5, lineHeight: 1.7 }}>
+            Tap a tag to see who it is. {CLOSING_NOTE}
+          </div>
+        )}
+      </aside>
     </div>
   );
 }

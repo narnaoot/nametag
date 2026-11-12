@@ -76,7 +76,7 @@ export function Tag({
                       background: 'var(--surface)', borderTop: '1.5px solid var(--border)',
                       color: trio.deep }}>
           <span style={{ fontFamily: 'var(--font-display)', fontSize: footFontSize,
-                         lineHeight: 1.35 }}>{person.tagline}</span>
+                         lineHeight: 1.35, minWidth: 0, overflowWrap: 'anywhere' }}>{person.tagline}</span>
         </div>
       )}
     </div>

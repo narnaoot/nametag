@@ -6,7 +6,61 @@ Paste this into Claude Code at the start of a new session to get up to speed qui
 
 ---
 
-## 🧹 Latest: iOS-readiness cleanup — dedup + dead code (Aug 2026)
+## 🧽 Latest: client simplification (Nov 2026)
+
+Behaviour-preserving refactor, checked against before/after screenshots of every
+screen at phone / tablet / desktop sizes plus the two-user browser scenarios:
+
+- **`lib/profileSync.js`** — `saveProfile` (My tag, onboarding) and `pushProfile`
+  (restore / visibility switch) are the only code that sends a tag to the
+  server, so "the server holds it only while you're visible" lives in one place.
+- **`useNearbyPeople`** — one `readRoom()` (share location → load nearby →
+  error state) replaces three copies; unused state removed.
+- **`GridPage`** — one render driven by the `BOARD` table instead of three
+  near-identical phone / tablet / desktop blocks.
+- **`VisibilityControl`** owns the party-code sheet (pages just get
+  `onChange(mode, { partyCode })`); **`Sheet.jsx`** is the shared bottom sheet
+  (`DetailSheet.jsx` is gone).
+- Dead props/exports and stale comments removed.
+
+**Not done, worth considering:** `PUT /profiles/me` could be a single upsert
+(the tests are coupled to its three-query sequence); the two visibility flags
+(`always_visible`, `is_active`) could become one `visibility` column; and
+"visible N min" on an opened tag never shows because `/nearby` doesn't return
+`location_updated_at`.
+
+## 🐞 Earlier: hands-on bug sweep (Nov 2026)
+
+Ran the real stack locally (Postgres + API + production client build) with
+several simulated users in a browser. Fixed, with 11 new server tests (116 total):
+
+- **Invisible now sticks.** It used to be undone by a tab switch or reload, and
+  on a fresh load the UI could say "You're invisible" while location was still
+  being shared (stale `modeRef` race in `useNearbyPeople`). Going invisible now
+  records `always_visible = FALSE` on the server and on-device; while invisible
+  nothing is restored or auto-saved to the server (edits stay on the device).
+- **Party codes isolate both ways** (`IS NOT DISTINCT FROM`) — party members were
+  visible to everyone not in a party. Codes are normalised (letters + digits,
+  upper-case) on client and server, so hyphens/spaces/capitals really don't matter.
+- **My tag edits are flushed on Done / tab switch** (were dropped if you left
+  inside the 700 ms auto-save debounce); the wall waits for an in-flight save.
+- **On-device data is tied to an account** (`profile_owner`): a second account
+  on the same device no longer inherits the previous tag; delete-account clears it.
+- **No-tag state**: skipping onboarding showed a bogus "Turn on location"; the
+  wall now says "Make your tag first". Nameless rows are excluded from `/nearby`.
+- **Server hardening**: upload extension comes from an image-type allowlist (an
+  `.html`/`.svg` "photo" was served as a page from our origin); radius clamped
+  to 10–1000 m (was unbounded → could list every user); field lengths enforced;
+  coordinates validated; orphaned uploads deleted; never-located profiles age out.
+- Long names/lines wrap instead of overflowing the tag; clearer copy for a
+  reused verification link.
+
+**Found but left for a decision** (see `NABIL_TODOS.md`): pronoun "skip" still
+saves `they/them`; auth rate limit (50 / 15 min per IP) is easy to hit on shared
+venue Wi-Fi; "Remember the name" has no list to view and "Hide from me" has no
+undo; a password reset doesn't mark an unverified email as verified.
+
+## 🧹 Earlier: iOS-readiness cleanup — dedup + dead code (Aug 2026)
 
 Behaviour-preserving cleanup pass (105 server tests still green, client builds
 + lints clean):
@@ -152,7 +206,7 @@ Everything below is **done and on `main`** (105 server tests passing):
   - `useNearbyPeople`: re-uploads local photo when going visible or when server copy is missing
   - "Delete account" UI in ProfilePage with two-step confirmation
 - `@capacitor/filesystem` installed; `LOCAL_PHOTO_PATH` constant in `constants.js`
-- 105 server tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
+- 116 server tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
 
 ---
 
@@ -201,8 +255,9 @@ client/src/
     api.js                — fetch wrapper + photoUrl() helper
     constants.js          — shared field limits, colors, options
     colors.js             — accent/paintbox resolution + toBadgePerson()
-    profile.js            — profile field contract (normalize + FormData) + visibilityMode()
-    profileStorage.js     — on-device profile/photo persistence + remembered/hidden lists
+    profile.js            — profile field contract (normalize + FormData), visibilityMode(), party-code normalisation
+    profileSync.js        — saveProfile() / pushProfile(): the only code that sends a tag to the server
+    profileStorage.js     — on-device profile/photo persistence, which account owns it, remembered/hidden lists
     imageCrop.js          — on-device crop/downscale + preparePickedPhoto()
   pages/
     AuthPage.jsx          — landing / login / register / verify / forgot / reset
@@ -212,7 +267,7 @@ client/src/
     PrivacyPage.jsx       — Privacy tab (state + four statements + policy link)
     PolicyDocument.jsx    — the full in-app privacy policy screen
   hooks/
-    useNearbyPeople.js    — location, nearby fetch, 60s auto-refresh, visibility
+    useNearbyPeople.js    — readRoom() (location + nearby), 60s auto-refresh, visibility mode
     useViewport.js        — phone / tablet / desktop breakpoint
 
 server/

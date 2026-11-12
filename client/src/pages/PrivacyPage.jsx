@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getMyProfile } from '../lib/api';
 import { PLACE_FALLBACK } from '../lib/constants';
+import { profileSaveSettled } from '../lib/profile';
 import PolicyDocument from './PolicyDocument';
 
 // Privacy is a top-level tab, not a settings row, so it can be read before
@@ -46,7 +47,7 @@ function stateCopy(profile, place) {
 export default function PrivacyPage({ onChangeVisibility }) {
   const [profile, setProfile] = useState(null);
   const [showPolicy, setShowPolicy] = useState(false);
-  useEffect(() => { getMyProfile().then(setProfile).catch(() => {}); }, []);
+  useEffect(() => { profileSaveSettled().then(getMyProfile).then(setProfile).catch(() => {}); }, []);
   const place = PLACE_FALLBACK;
   const now = stateCopy(profile, place);
 

@@ -11,9 +11,38 @@ const { deletePhotoFile, CLEAR_PROFILE_SET } = require('../cleanup');
 
 // Field limits (kept in step with client/src/lib/constants.js) and the radius
 // default, named here rather than scattered as magic numbers below.
+const NAME_MAX = 40;
+const PRONOUNS_MAX = 30;
 const TAGLINE_MAX = 60;
 const PARTY_CODE_MAX = 20;
+const STICKERS_MAX = 200;   // a JSON array of up to three emoji
+const TAG_COLOR_MAX = 20;
 const DEFAULT_RADIUS = 100;
+// "Nearby" means the same room. The radius is client-supplied, so bound it —
+// unbounded, one request could list every active user on the planet.
+const MIN_RADIUS = 10;
+const MAX_RADIUS = 1000;
+const clampRadius = (r) => Math.min(MAX_RADIUS, Math.max(MIN_RADIUS, parseInt(r) || DEFAULT_RADIUS));
+
+// Party codes are said out loud, so "capitals and hyphens don't matter":
+// compare on letters and digits only.
+function normalizePartyCode(code) {
+  if (typeof code !== 'string') return null;
+  return code.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, PARTY_CODE_MAX) || null;
+}
+
+// Uploaded photos are served back as static files, so the stored extension
+// decides the Content-Type a browser sees. Derive it from an allowlist of image
+// types — never from the client's filename — so nothing scriptable (.html,
+// .svg) can be stored and then served from our origin.
+const PHOTO_EXTENSIONS = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+  'image/heic': '.heic',
+  'image/heif': '.heif',
+};
 
 // Fetch just a user's stored photo path — the row before deleting or replacing
 // the file, or undefined when the profile doesn't exist yet. Shared by the four
@@ -29,15 +58,14 @@ const storage = multer.diskStorage({
   // Photos are served as static files, so a sequential name like
   // user_<id>_<ts> could be enumerated by anyone; a 128-bit random token can't.
   filename: (req, file, cb) => {
-    const ext = (path.extname(file.originalname) || '.jpg').toLowerCase().replace(/[^.a-z0-9]/g, '');
-    cb(null, `${crypto.randomBytes(16).toString('hex')}${ext || '.jpg'}`);
+    cb(null, `${crypto.randomBytes(16).toString('hex')}${PHOTO_EXTENSIONS[file.mimetype]}`);
   },
 });
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) cb(null, true);
+    if (PHOTO_EXTENSIONS[file.mimetype]) cb(null, true);
     else cb(new Error('Only images allowed'));
   },
 });
@@ -51,19 +79,22 @@ router.get('/me', auth, async (req, res) => {
 // CREATE or UPDATE profile
 router.put('/me', auth, upload.single('photo'), async (req, res) => {
   const { display_name, pronouns, radius_meters, always_visible, tag_color, stickers, tagline, party_code } = req.body;
-  const cleanName = display_name?.trim();
-  const cleanPronouns = pronouns?.trim();
+  const photo_path = req.file ? `/uploads/${req.file.filename}` : undefined;
+  const str = (v) => (typeof v === 'string' ? v : '');
+  const cleanName = str(display_name).trim().slice(0, NAME_MAX);
+  const cleanPronouns = str(pronouns).trim().slice(0, PRONOUNS_MAX);
   if (!cleanName || !cleanPronouns) {
+    // multer has already written the upload; don't leave it orphaned on disk.
+    await deletePhotoFile(photo_path);
     return res.status(400).json({ error: 'Name and pronouns required' });
   }
 
-  const photo_path = req.file ? `/uploads/${req.file.filename}` : undefined;
-  const radius = parseInt(radius_meters) || DEFAULT_RADIUS;
+  const radius = clampRadius(radius_meters);
   const alwaysVisible = always_visible !== 'false' && always_visible !== false;
-  const tagColor = tag_color || null;
-  const stickersVal = stickers || null;
-  const taglineVal = tagline ? tagline.slice(0, TAGLINE_MAX) : null;
-  const partyCodeVal = party_code ? party_code.slice(0, PARTY_CODE_MAX).trim() || null : null;
+  const tagColor = str(tag_color).slice(0, TAG_COLOR_MAX) || null;
+  const stickersVal = str(stickers).slice(0, STICKERS_MAX) || null;
+  const taglineVal = str(tagline).slice(0, TAGLINE_MAX) || null;
+  const partyCodeVal = normalizePartyCode(party_code);
 
   const existing = await fetchProfilePhoto(req.user.userId);
 
@@ -104,7 +135,12 @@ router.post('/me/photo', auth, upload.single('photo'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No photo provided' });
   const photo_path = `/uploads/${req.file.filename}`;
   const existing = await fetchProfilePhoto(req.user.userId);
-  await deletePhotoFile(existing?.photo_path);
+  if (!existing) {
+    // No profile row to attach it to — don't keep an orphaned file.
+    await deletePhotoFile(photo_path);
+    return res.status(400).json({ error: 'Create your tag first' });
+  }
+  await deletePhotoFile(existing.photo_path);
   await db.query(
     'UPDATE profiles SET photo_path = $2, updated_at = NOW() WHERE user_id = $1',
     [req.user.userId, photo_path]
@@ -118,6 +154,10 @@ router.post('/me/location', auth, async (req, res) => {
   if (latitude == null || longitude == null) {
     return res.status(400).json({ error: 'latitude and longitude required' });
   }
+  if (typeof latitude !== 'number' || typeof longitude !== 'number'
+      || !(Math.abs(latitude) <= 90) || !(Math.abs(longitude) <= 180)) {
+    return res.status(400).json({ error: 'latitude and longitude must be valid coordinates' });
+  }
 
   await db.query(
     `UPDATE profiles
@@ -130,7 +170,9 @@ router.post('/me/location', auth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// Set visibility — going invisible deletes photo and clears location
+// Set visibility — going invisible deletes photo and clears location. It also
+// records the choice (always_visible = FALSE) so invisibility survives a reload
+// or a new session: you stay hidden until you choose to be seen again.
 router.post('/me/visibility', auth, async (req, res) => {
   const { is_active } = req.body;
   const newActive = !!is_active;
@@ -139,7 +181,7 @@ router.post('/me/visibility', auth, async (req, res) => {
     const profile = await fetchProfilePhoto(req.user.userId);
     await deletePhotoFile(profile?.photo_path);
     await db.query(
-      `UPDATE profiles SET ${CLEAR_PROFILE_SET} WHERE user_id = $1`,
+      `UPDATE profiles SET ${CLEAR_PROFILE_SET}, always_visible = FALSE WHERE user_id = $1`,
       [req.user.userId]
     );
   } else {
@@ -171,7 +213,8 @@ router.get('/nearby', auth, async (req, res) => {
     return res.status(400).json({ error: 'Share your location first' });
   }
 
-  const { lat, lng, radius_meters, party_code } = me;
+  const { lat, lng, party_code } = me;
+  const radius_meters = clampRadius(me.radius_meters);
 
   // Bounding box in degrees (rough pre-filter, fast index scan)
   const latDelta = radius_meters / 111320.0;
@@ -201,7 +244,8 @@ router.get('/nearby', auth, async (req, res) => {
          AND p.location_updated_at > NOW() - INTERVAL '30 minutes'
          AND p.lat BETWEEN $4 AND $5
          AND p.lng BETWEEN $6 AND $7
-         AND ($9::text IS NULL OR p.party_code = $9)
+         AND p.display_name IS NOT NULL
+         AND p.party_code IS NOT DISTINCT FROM $9::text
      ) sub
      WHERE distance_meters <= $8
      ORDER BY distance_meters ASC`,
