@@ -125,10 +125,9 @@ advertising.
   until you delete your account, sign in as someone else on that device, or clear
   the app's storage.
 
-Two honest caveats. The automatic clean-up runs every few minutes while our
-server is awake; if nobody at all has used Nametag for a while the server sleeps,
-and the clean-up finishes as soon as it next wakes — nobody can see your tag in
-the meantime. And once we delete something, traces may remain for a limited time
+Two honest caveats. The automatic clean-up runs every few minutes; if our server
+is ever restarting or briefly unavailable, it finishes as soon as the server is
+back — nobody can see your tag in the meantime. And once we delete something, traces may remain for a limited time
 in our providers' routine backups and logs, which we don't control directly.
 
 ## Deleting your data
@@ -210,6 +209,5 @@ Questions or requests: **privacy@n4bil.com**.
   retention (Neon), email log retention (Resend), request-log retention (Render,
   Vercel). The policy only promises "a limited time"; shorter is better. See
   `PRIVACY_REVIEW.md` §5.
-- **Decide whether to keep the server awake** so the 30-minute clean-up is a hard
-  guarantee rather than "as soon as the server next wakes". See
-  `PRIVACY_REVIEW.md` → R1.
+- **Check the keep-awake ping is running** (GitHub → Actions → "Keep API
+  awake"). The 30-minute clean-up depends on it. See `PRIVACY_REVIEW.md` → R1.

@@ -112,14 +112,18 @@ person makes it again.
 Ranked by how much they undercut the goal.
 
 **R1 — The 30-minute delete depends on the server being awake.** The sweep is a
-timer inside the API process. Render's free plan stops the process after ~15
-minutes with no traffic, and the sweep then runs when the next request wakes it.
-In a quiet period a closed-in-the-background tag can therefore sit in the
-database longer than 30 minutes (nobody can *see* it — `/nearby` filters on the
-same 30 minutes — but it is stored).
-→ *Fix:* keep the process awake (a paid Render instance, or a scheduled ping
-every ~10 minutes), or move the sweep to a database-side scheduled job. The
-policy states this caveat honestly in the meantime.
+timer inside the API process, and Render's free plan stops the process after ~15
+minutes with no traffic. **Mitigated:** a scheduled GitHub Action
+(`.github/workflows/keep-awake.yml`) requests `/api/health` every 5 minutes,
+which keeps the process running; if it has slept anyway, that request wakes it
+and the sweep runs on startup. What's left:
+- The ping is outside the app. GitHub can run it late, and switches scheduled
+  workflows off after 60 days with no commits (it emails first). If it stops, the
+  delete goes back to "when the server next wakes". Nobody can *see* a stale tag
+  either way — `/nearby` filters on the same 30 minutes — but it would be stored.
+- It could not be tested from the development environment (no route to the live
+  server); confirm a green run in the Actions tab after merging.
+→ *Stronger fix:* an always-on Render instance, or a database-side scheduled job.
 
 **R2 — Provider backups and logs.** "Deleted" means deleted from the live
 database and disk. Neon keeps point-in-time history, Resend keeps a log of sent

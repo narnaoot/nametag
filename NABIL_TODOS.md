@@ -19,12 +19,14 @@ is outside the code:
    - **Resend** — how long sent-email logs are kept (they hold the recipient
      address and the link).
    - **Render** and **Vercel** — request-log retention (they hold IP addresses).
-2. **Decide whether to keep the server awake.** The "deleted after 30 minutes"
-   sweep runs inside the API. Render's free plan puts it to sleep after ~15 quiet
-   minutes, and the sweep then finishes on the next wake-up. Nobody can see the
-   tag meanwhile, but it's still stored. To make 30 minutes a hard promise: a paid
-   always-on instance, or a scheduled ping every ~10 minutes. The policy states
-   the caveat until you choose. Tell Claude which you want.
+2. **Check the keep-awake ping is running.** The "deleted after 30 minutes"
+   sweep runs inside the API, and Render's free plan puts it to sleep after ~15
+   quiet minutes. A GitHub Action now pings the server every 5 minutes to keep it
+   awake. After merging, open **GitHub → Actions → "Keep API awake"** and confirm
+   the runs are green. Two things to know: GitHub turns scheduled jobs off after
+   60 days with no commits (it emails you; one click re-enables it), and a failed
+   ping emails you too — a string of them means Render is down. If you ever move
+   to a paid always-on instance, delete `.github/workflows/keep-awake.yml`.
 3. **Check whether Render really has a photo disk.** `server/render.yaml` asks
    for one on the free plan, which Render may not grant. Look for a Disk on the
    service's page. Either answer is fine for privacy; it's about knowing.

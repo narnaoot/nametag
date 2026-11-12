@@ -23,6 +23,8 @@ Postgres (the DB was inspected after each step); 132 server tests.
   with the tag. The device remembers the start time so restoring doesn't reset it.
 - **Records purged** — spent/expired email links, never-verified sign-ups.
 - **Photos** — an uncroppable photo is rejected rather than uploaded in full.
+- **Keep-awake ping** — `.github/workflows/keep-awake.yml` hits `/api/health`
+  every 5 minutes so the sweep runs on time on Render's free plan.
 - **Privacy tab, in-app policy, `PRIVACY_POLICY.md`, `PRIVACY_REVIEW.md`**
   rewritten to match; `PRIVACY_REVIEW.md` §4 lists what is still imperfect.
 
@@ -249,7 +251,7 @@ Everything below is **done and on `main`** (105 server tests passing):
 ## What still needs doing
 
 **Privacy — remaining (all optional / lower priority):**
-1. **Keep the server awake (R1)** — the 30-minute wipe only runs while the API process is awake; on Render's free plan it finishes on the next wake-up. See `PRIVACY_REVIEW.md` §4 for the full list of residual risks.
+1. **Residual privacy risks** — listed in `PRIVACY_REVIEW.md` §4. The 30-minute wipe only runs while the API process is awake; `.github/workflows/keep-awake.yml` pings it every 5 minutes to keep Render's free plan from sleeping.
 2. **Data-export endpoint** — a formal GDPR/CCPA "access" request path (deletion already exists via `DELETE /me`).
 3. **Harden photo serving (H1 residual, optional)** — photo files are unguessable random URLs now, but still public bearer capabilities; auth-gated or signed URLs are optional further hardening.
 
