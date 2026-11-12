@@ -45,7 +45,7 @@ belongs to the app).
   `PERSON_ACCENTS` (the colours other people can take), `ACCENT_REMAP`,
   the sticker vocabulary (`STICKER_OPTIONS` emoji + word,
   `STICKER_LABELS`), pronoun options, length limits, and the on-device storage
-  keys (photo, profile, remembered names, hidden people). (The brightened
+  keys (photo, profile). (The brightened
   orchid accent lives only as the `--brand` CSS var in `index.css`.)
 - **`src/lib/colors.js`** — pure helpers: `resolveAccentKey` (you → coral; others →
   stored `tag_color` remapped, else a stable hash of their id),
@@ -60,7 +60,7 @@ belongs to the app).
 | `components/Avatar.jsx` | circular photo (or Caslon-initial fallback); white ring always, optional coloured ring reserved for you / an opened tag |
 | `components/Tag.jsx` | a name tag on the wall — tint fill, hello-my-name-is, Caslon name, pronoun pill in the person's hue, footer strip that vanishes when they wrote no line |
 | `components/VisibilityControl.jsx` | the one central three-way control (invisible \| nearby \| party) in the sage card; card turns to ink when invisible |
-| `components/DetailSheet.jsx` | a tag opened into a bottom sheet — grows keeping its tint/ring; "visible N min", optional mutual-context row, Remember / Hide |
+| `components/Sheet.jsx` + `TagDetail.jsx` | a tag opened into a bottom sheet (right rail on desktop) — grows keeping its tint/ring; no actions except "Edit my tag" on your own |
 | `components/PartyCodeSheet.jsx` | the wide-tracked Caslon code entry |
 | `components/MyTagPreview.jsx` | your own tag, always coral (My tag) |
 | `components/StickerPicker.jsx` | square (radius 3px) emoji+word sticker chips, coral when picked |
@@ -95,12 +95,12 @@ mapped onto the existing backend fields without a schema change:
 `src/hooks/useNearbyPeople.js` owns the mode, derives it from the profile on
 load, and exposes `setVisibilityMode(next, { partyCode })`.
 
-## Remembered names & hidden people (replacing waves)
+## Opening a tag
 
-The old "wave" feature is gone. The detail sheet now offers **Remember the name**
-(copied to the device — `profileStorage.rememberName`, a Privacy promise) and
-**Hide from me** (`profileStorage.hidePerson`, filtered client-side). Both persist
-via `@capacitor/preferences` (localStorage on web). No backend endpoint.
+The old "wave" feature is gone, and so are its replacements ("Remember the name"
+and "Hide from me", removed Nov 2026 as a privacy decision). Opening someone's
+tag shows it larger — photo, name, pronouns, line, stickers — and offers no
+actions. Nothing about other people is stored, on the server or the device.
 
 ## Data mapping
 

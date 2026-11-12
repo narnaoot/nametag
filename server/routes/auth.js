@@ -314,9 +314,12 @@ router.post('/reset-password', async (req, res) => {
 
   const hash = await bcrypt.hash(password, 10);
   // Bump token_version so any existing sessions (e.g. an attacker's) are revoked
-  // the moment the password is reset.
+  // the moment the password is reset. Completing a reset also proves the email
+  // address is theirs (the link was sent there), so it counts as verifying it —
+  // otherwise someone who resets before clicking the verification link is still
+  // told to verify.
   await db.query(
-    'UPDATE users SET password_hash = $1, token_version = token_version + 1 WHERE id = $2',
+    'UPDATE users SET password_hash = $1, token_version = token_version + 1, email_verified = TRUE WHERE id = $2',
     [hash, row.user_id]
   );
   await db.query('UPDATE password_reset_tokens SET used = TRUE WHERE id = $1', [row.id]);

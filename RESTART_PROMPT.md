@@ -6,7 +6,23 @@ Paste this into Claude Code at the start of a new session to get up to speed qui
 
 ---
 
-## 🔒 Latest: privacy pass — minimal cloud (Nov 2026)
+## ✂️ Latest: decisions applied (Nov 2026)
+
+Nabil's calls on the open questions from the bug sweep:
+
+- **"Remember the name" and "Hide from me" are removed.** The device stores
+  nothing about other people; an opened tag has no actions (only "Edit my tag" on
+  your own). `purgeRetiredData()` in `profileStorage.js` deletes the old
+  `remembered_names` / `hidden_people` lists on every launch. **Don't re-add
+  either feature** — it was a deliberate privacy decision.
+- **Sign-in limits reworked for shared Wi-Fi** (`server/app.js`): per-IP is a
+  loose backstop (600 / 15 min); login is limited per IP + email (10 failed
+  tries); verification/reset emails per address (5).
+- **A completed password reset verifies the email.**
+- **Pronoun "skip" still saves `they/them`** — left as is on purpose.
+- **Invisible is persistent** — confirmed.
+
+## 🔒 Earlier: privacy pass — minimal cloud (Nov 2026)
 
 Goal from Nabil: nothing saved in the cloud, everything on the device. A server
 is unavoidable for matching, so this pass makes it hold a tag only while its
@@ -77,10 +93,8 @@ several simulated users in a browser. Fixed, with 11 new server tests (116 total
 - Long names/lines wrap instead of overflowing the tag; clearer copy for a
   reused verification link.
 
-**Found but left for a decision** (see `NABIL_TODOS.md`): pronoun "skip" still
-saves `they/them`; auth rate limit (50 / 15 min per IP) is easy to hit on shared
-venue Wi-Fi; "Remember the name" has no list to view and "Hide from me" has no
-undo; a password reset doesn't mark an unverified email as verified.
+**The open decisions from this sweep were all settled later** — see "Latest:
+decisions applied" at the top of this file.
 
 ## 🧹 Earlier: iOS-readiness cleanup — dedup + dead code (Aug 2026)
 
@@ -244,7 +258,7 @@ Everything below is **done and on `main`** (105 server tests passing):
   - `useNearbyPeople`: re-uploads local photo when going visible or when server copy is missing
   - "Delete account" UI in ProfilePage with two-step confirmation
 - `@capacitor/filesystem` installed; `LOCAL_PHOTO_PATH` constant in `constants.js`
-- 132 server tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
+- 136 server tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
 
 ---
 
@@ -295,7 +309,7 @@ client/src/
     colors.js             — accent/paintbox resolution + toBadgePerson()
     profile.js            — profile field contract (normalize + FormData), visibilityMode(), party-code normalisation
     profileSync.js        — saveProfile() / pushProfile(): the only code that sends a tag to the server
-    profileStorage.js     — on-device profile/photo persistence, which account owns it, remembered/hidden lists
+    profileStorage.js     — on-device profile/photo persistence and which account owns it (nothing about other people)
     imageCrop.js          — on-device crop/downscale + preparePickedPhoto()
   pages/
     AuthPage.jsx          — landing / login / register / verify / forgot / reset

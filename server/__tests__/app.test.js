@@ -53,3 +53,53 @@ describe('security middleware', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Auth throttling. The limiters are switched off under NODE_ENV=test, so these
+// tests turn them on for their own requests.
+// ---------------------------------------------------------------------------
+describe('auth rate limiting', () => {
+  const db = require('../db');
+  const post = (path, body) => request(app).post(path).send(body);
+  let savedEnv;
+
+  beforeEach(() => {
+    savedEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'rate-limit-test';
+    db.query.mockReset();
+    db.query.mockResolvedValue({ rows: [] });   // no such user
+  });
+  afterEach(() => { process.env.NODE_ENV = savedEnv; });
+
+  it('stops password guessing against one account, without blocking anyone else', async () => {
+    for (let i = 0; i < 10; i++) {
+      const res = await post('/api/auth/login', { email: 'victim@example.com', password: `guess-${i}` });
+      expect(res.status).toBe(401);
+    }
+    const blocked = await post('/api/auth/login', { email: 'Victim@Example.com ', password: 'one more' });
+    expect(blocked.status).toBe(429);
+
+    // someone else on the same network (same IP) is unaffected
+    const other = await post('/api/auth/login', { email: 'neighbour@example.com', password: 'whatever1' });
+    expect(other.status).toBe(401);
+  });
+
+  it('lets a whole room sign in from one IP', async () => {
+    for (let i = 0; i < 60; i++) {
+      const res = await post('/api/auth/login', { email: `guest${i}@example.com`, password: 'password1' });
+      expect(res.status).toBe(401);   // wrong password, but never 429
+    }
+  });
+
+  it('stops one address being flooded with emails', async () => {
+    for (let i = 0; i < 5; i++) {
+      const res = await post('/api/auth/forgot-password', { email: 'inbox@example.com' });
+      expect(res.status).toBe(200);
+    }
+    const blocked = await post('/api/auth/forgot-password', { email: 'inbox@example.com' });
+    expect(blocked.status).toBe(429);
+    // …and the limit is shared across the endpoints that send email
+    const resend = await post('/api/auth/resend-verification', { email: 'inbox@example.com' });
+    expect(resend.status).toBe(429);
+  });
+});

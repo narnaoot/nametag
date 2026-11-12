@@ -1,11 +1,12 @@
 // profileStorage.js — on-device persistence helpers for the user's own
-// profile, shared by Onboarding and My Tag. The local copy lets the app
+// profile, shared by Onboarding and My Tag. Your own tag is the only thing the
+// app keeps on the device (besides the sign-in token) — nothing about other people. The local copy lets the app
 // restore the full profile after server-side privacy cleanup (see
 // useNearbyPeople.pushProfile).
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import {
-  LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY, LOCAL_REMEMBERED_KEY, LOCAL_HIDDEN_KEY,
+  LOCAL_PHOTO_PATH, LOCAL_PROFILE_KEY, RETIRED_LOCAL_KEYS,
 } from './constants';
 
 export async function savePhotoLocally(dataUrl) {
@@ -66,14 +67,22 @@ export async function patchLocalProfile(patch) {
 }
 
 // ── Whose data is on this device ───────────────────────────────────────────
-// The on-device tag, photo, remembered names and hidden list belong to one
-// account. Record which, so signing in as someone else on the same device
+// The on-device tag and photo belong to one account. Record which, so signing in as someone else on the same device
 // starts clean instead of inheriting the previous person's tag.
 const LOCAL_OWNER_KEY = 'profile_owner';
 
 export async function clearLocalData() {
   try { await Filesystem.deleteFile({ path: LOCAL_PHOTO_PATH, directory: Directory.Data }); } catch { /* none */ }
-  for (const key of [LOCAL_PROFILE_KEY, LOCAL_REMEMBERED_KEY, LOCAL_HIDDEN_KEY, LOCAL_OWNER_KEY]) {
+  for (const key of [LOCAL_PROFILE_KEY, LOCAL_OWNER_KEY]) {
+    try { await Preferences.remove({ key }); } catch { /* best-effort */ }
+  }
+  await purgeRetiredData();
+}
+
+// Delete what removed features left behind (saved names, hidden people). Run on
+// every launch, so those lists disappear from devices that still hold them.
+export async function purgeRetiredData() {
+  for (const key of RETIRED_LOCAL_KEYS) {
     try { await Preferences.remove({ key }); } catch { /* best-effort */ }
   }
 }
@@ -89,39 +98,4 @@ export async function claimLocalData(userId, { fresh = false } = {}) {
     if (owner ? owner !== id : fresh) await clearLocalData();
     await Preferences.set({ key: LOCAL_OWNER_KEY, value: id });
   } catch { /* best-effort */ }
-}
-
-// ── Remembered names — kept on the device only (a Privacy promise). ────────
-async function readList(key) {
-  try {
-    const { value } = await Preferences.get({ key });
-    const arr = value ? JSON.parse(value) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch { return []; }
-}
-async function writeList(key, arr) {
-  try { await Preferences.set({ key, value: JSON.stringify(arr) }); } catch { /* best-effort */ }
-}
-
-export function getRememberedNames() { return readList(LOCAL_REMEMBERED_KEY); }
-
-export async function rememberName(person) {
-  if (!person?.name) return;
-  const list = await readList(LOCAL_REMEMBERED_KEY);
-  const key = String(person.id ?? person.name);
-  if (list.some(p => String(p.id ?? p.name) === key)) return;
-  list.unshift({
-    id: person.id ?? null, name: person.name, pronouns: person.pronouns || '',
-    tagline: person.tagline || '', at: Date.now(),
-  });
-  await writeList(LOCAL_REMEMBERED_KEY, list);
-}
-
-// ── Hidden people — filtered client-side, remembered on the device. ────────
-export function getHiddenIds() { return readList(LOCAL_HIDDEN_KEY); }
-
-export async function hidePerson(id) {
-  if (id == null) return;
-  const list = await readList(LOCAL_HIDDEN_KEY);
-  if (!list.includes(id)) { list.push(id); await writeList(LOCAL_HIDDEN_KEY, list); }
 }

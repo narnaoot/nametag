@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
 const app = express();
 
@@ -52,20 +52,44 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Throttle auth to slow password brute-force and email-enumeration probing.
-// NOTE: we deliberately do NOT IP-rate-limit the room APIs (/api/profiles/*):
-// Nametag clusters many co-present users behind a single venue Wi-Fi/NAT, so a
-// per-IP limit there would throttle legitimate users who share one public IP.
+// Throttling for /api/auth. Nametag is used by a whole room at once, and a room
+// on one venue Wi-Fi shares a single public IP — so a tight per-IP limit locks
+// out real people (it did: ~15 sign-ups together hit it). The per-IP limit is
+// therefore only a generous backstop, and the protection that matters is keyed
+// on the account being targeted:
+//   - authLimiter   per IP            — backstop against a flood from one address
+//   - loginLimiter  per IP + email    — password guessing against one account
+//                                       (failed attempts only); other people on
+//                                       the same Wi-Fi are unaffected
+//   - emailLimiter  per email address — stops one inbox being bombed with
+//                                       verification / reset emails
+// The room APIs (/api/profiles/*) are deliberately not IP-limited at all.
 // Disabled under tests so the suite isn't tripped by the shared test IP.
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,   // 15 minutes
-  limit: 50,                  // per IP per window (generous enough for an event)
+const WINDOW_MS = 15 * 60 * 1000;
+const limiter = (options) => rateLimit({
+  windowMs: WINDOW_MS,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === 'test',
   message: { error: 'Too many attempts. Please wait a few minutes and try again.' },
+  ...options,
+});
+const emailOf = (req) => String(req.body?.email ?? '').toLowerCase().trim();
+
+const authLimiter = limiter({ limit: 600 });
+const loginLimiter = limiter({
+  limit: 10,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => `${ipKeyGenerator(req.ip)}|${emailOf(req)}`,
+});
+const emailLimiter = limiter({
+  limit: 5,
+  keyGenerator: (req) => emailOf(req) || ipKeyGenerator(req.ip),
+  message: { error: 'We’ve sent a few emails to that address already. Please wait a few minutes and try again.' },
 });
 
+app.use('/api/auth/login', loginLimiter);
+app.use(['/api/auth/register', '/api/auth/resend-verification', '/api/auth/forgot-password'], emailLimiter);
 app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/profiles', require('./routes/profile'));
 

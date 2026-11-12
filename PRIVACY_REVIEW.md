@@ -56,10 +56,12 @@ question to revisit when the iPhone app is built.
 |---|---|
 | Your own tag (all fields, visibility, party code + start time) | Capacitor Preferences `profile_data` |
 | Your own photo (cropped 320 px JPEG) | Capacitor Filesystem `profile_photo` |
-| Remembered names | Preferences `remembered_names` — never sent |
-| Hidden people | Preferences `hidden_people` — never sent |
 | Sign-in token (JWT, 30 days, revocable) | Preferences `nametag_token` |
 | Which account the above belongs to | Preferences `profile_owner` |
+
+**Nothing about other people is kept on the device.** The "remember the name"
+and "hide from me" features were removed in Nov 2026; the app deletes the lists
+they left behind (`remembered_names`, `hidden_people`) on its next launch.
 
 On the web, "the device" is the browser's own storage (localStorage /
 IndexedDB), unencrypted. It is cleared on account deletion and when a different
@@ -152,8 +154,7 @@ anyone handed the URL can open it until the file is deleted. The policy says so.
 → *Fix:* an authenticated photo route or short-lived signed URLs.
 
 **R6 — The device copy is plain browser storage on the web.** Anyone with access
-to the unlocked browser profile can read the tag, the remembered names and the
-sign-in token. Expected for a web app; the native build should use the
+to the unlocked browser profile can read the tag and the sign-in token. Expected for a web app; the native build should use the
 platform's protected storage for the token.
 
 **R7 — Photo storage on Render is unconfirmed.** `server/render.yaml` asks for a
@@ -164,9 +165,11 @@ re-uploads them) — worth confirming which is true.
 **R8 — No data-export path.** Deletion exists; a formal "send me my data"
 request is handled by hand. Small, since the server holds so little.
 
-**R9 — Shared-IP sign-in limit.** `/api/auth` allows 50 requests per 15 minutes
-per IP. Not a privacy leak, but it interacts with events on one Wi-Fi network.
-See `NABIL_TODOS.md`.
+**R9 — Sign-in throttling is per account, not per network.** A whole room shares
+one Wi-Fi IP, so the per-IP limit is only a loose backstop (600 requests per 15
+minutes). Password guessing is limited per IP + email (10 failed tries per 15
+minutes) and emails per address (5 per 15 minutes). Someone spreading guesses
+across many networks is slowed only by the password hashing.
 
 ---
 
@@ -203,6 +206,10 @@ See `NABIL_TODOS.md`.
   - Spent/expired link records and never-verified sign-ups are deleted.
   - A photo that can't be cropped on the device is rejected instead of being
     uploaded at full size with its metadata.
+  - "Remember the name" and "Hide from me" removed: the device now stores
+    nothing about other people, and old lists are deleted on launch.
+  - A completed password reset counts as verifying the email; sign-in limits
+    reworked for shared networks (R9).
 
 ---
 

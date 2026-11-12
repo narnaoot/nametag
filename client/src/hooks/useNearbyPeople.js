@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Geolocation } from '@capacitor/geolocation';
 import { getNearby, updateLocation, setVisibility, getMyProfile } from '../lib/api';
-import { getHiddenIds, patchLocalProfile, readLocalProfile } from '../lib/profileStorage';
+import { patchLocalProfile, readLocalProfile } from '../lib/profileStorage';
 import { normalizePartyCode, visibilityMode, profileSaveSettled, isPartyExpired } from '../lib/profile';
 import { pushProfile } from '../lib/profileSync';
 
@@ -56,11 +56,8 @@ export function useNearbyPeople() {
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState('nearby');
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [hiddenIds, setHiddenIds] = useState([]);
   const [endedParty, setEndedParty] = useState(null);   // the code that just ran out, if one did
   const modeRef = useRef('nearby');   // kept in step with `mode` by applyMode
-
-  const loadHidden = useCallback(async () => { setHiddenIds(await getHiddenIds()); }, []);
 
   // Set the mode in state AND in the ref at once. readRoom() runs right after
   // an await, before React has re-rendered; a stale 'nearby' there would
@@ -168,12 +165,11 @@ export function useNearbyPeople() {
 
   useEffect(() => {
     (async () => {
-      await loadHidden();
       await loadMyProfile();
       await readRoom();
       setLoading(false);
     })();
-  }, [loadHidden, loadMyProfile, readRoom]);
+  }, [loadMyProfile, readRoom]);
 
   // Re-read the room every 60s while visible, and as soon as the app comes
   // back to the foreground (timers don't run reliably in the background).
@@ -186,6 +182,6 @@ export function useNearbyPeople() {
 
   return {
     nearby, myProfile, profileChecked, locationErrorKind, loading, lastUpdated, mode, endedParty,
-    hiddenIds, refresh, setVisibilityMode, reloadHidden: loadHidden,
+    refresh, setVisibilityMode,
   };
 }

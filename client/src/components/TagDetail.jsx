@@ -1,5 +1,6 @@
-// TagDetail.jsx — the opened tag grown large, plus the Remember / Hide
-// actions. Shown in a bottom Sheet on phone and tablet and in the desktop right
+// TagDetail.jsx — the opened tag grown large. Looking is all you can do with
+// someone else's tag: nothing about other people is saved, so there are no
+// actions here except "Edit my tag" on your own. Shown in a bottom Sheet on phone and tablet and in the desktop right
 // rail, where selecting a tag never covers the
 // room. The tag keeps its own tint and hue so it reads as picking a sticker off
 // the wall.
@@ -16,7 +17,7 @@ function nameSize(name, base) {
 }
 
 export default function TagDetail({
-  person, index = 0, remembered, onRemember, onHide, onEditTag,
+  person, index = 0, onEditTag,
   photoSize = 106, nameBase = 42, closingNote,
 }) {
   if (!person) return null;
@@ -60,23 +61,9 @@ export default function TagDetail({
         )}
       </div>
 
-      <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {you ? (
-          <button className="na-btn" onClick={onEditTag}>Edit my tag</button>
-        ) : remembered ? (
-          <>
-            <div style={{ minHeight: 56, borderRadius: 'var(--r-pill)', background: 'var(--sage-lt)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 800, fontSize: 15, color: 'var(--sage-dk)' }}>Name saved to your phone</div>
-            <button className="na-btn na-btn--ghost" onClick={() => onHide(person)}>Hide from me</button>
-          </>
-        ) : (
-          <>
-            <button className="na-btn" onClick={() => onRemember(person)}>Remember the name</button>
-            <button className="na-btn na-btn--ghost" onClick={() => onHide(person)}>Hide from me</button>
-          </>
-        )}
-      </div>
+      {you && (
+        <button className="na-btn" style={{ marginTop: 18 }} onClick={onEditTag}>Edit my tag</button>
+      )}
 
       {closingNote && (
         <div style={{ marginTop: 16, fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.6 }}>{closingNote}</div>

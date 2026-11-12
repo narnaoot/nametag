@@ -34,8 +34,9 @@ same place to introduce them. The split today (Nov 2026):
   and any party code. Deleted the instant you go invisible, when you close the
   app, after 30 minutes without the app checking in, or when a party code turns
   4 hours old. Account deletion hard-wipes everything.
-- **On your device only (never sent to us):** your sign-in token, the lasting
-  copy of your tag and photo, **remembered names**, and **hidden people**.
+- **On your device:** your sign-in token and the lasting copy of your own tag and
+  photo. Nothing about other people — "remember the name" and "hide from me"
+  were removed.
 
 Other people are shown your tag — never your location or your distance.
 
