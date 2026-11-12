@@ -4,7 +4,7 @@
 // Caslon so it reads as something said out loud, not a password. Backing out is
 // worded as the state you land in, because the sheet arrives mid-decision.
 import { useState } from 'react';
-import { PARTY_CODE_MIN, PARTY_CODE_MAX } from '../lib/constants';
+import { PARTY_CODE_MIN, PARTY_CODE_MAX, PARTY_CODE_HOURS } from '../lib/constants';
 import { normalizePartyCode } from '../lib/profile';
 import Sheet from './Sheet';
 
@@ -48,7 +48,8 @@ export default function PartyCodeSheet({ initial = '', onJoin, onStayVisible, on
             borderRadius: 'var(--r)', padding: '14.5px 16.5px' }}>
         <div style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--muted)' }}>
           <span style={{ fontWeight: 800, color: 'var(--sage-dk)' }}>Only people who type the same code will see your tag.</span>
-          {' '}Everyone else nearby stops seeing you, and you stop seeing them.
+          {' '}Everyone else nearby stops seeing you, and you stop seeing them. The code lasts {PARTY_CODE_HOURS} hours;
+          after that you go invisible and your tag is deleted from our server.
         </div>
       </div>
 

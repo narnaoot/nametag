@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   stickers TEXT,
   tagline TEXT,
   party_code VARCHAR(20),
+  party_code_set_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 

@@ -69,6 +69,6 @@ nametag/
     ├── routes/           # auth.js (/api/auth/*), profile.js (/api/profiles/*)
     ├── middleware/       # JWT verification + revocation
     ├── db/               # Postgres pool, schema.sql, startup migrations
-    ├── cleanup.js        # hourly stale-data cleanup
+    ├── cleanup.js        # data-retention rules + the 5-minute sweep that enforces them
     └── uploads/          # Uploaded photos (gitignored)
 ```

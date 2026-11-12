@@ -91,6 +91,16 @@ export function setVisibility(is_active) {
   return postJson('/profiles/me/visibility', { is_active });
 }
 
+// Tell the server we're going (the page is closing) so it drops our tag now
+// instead of waiting for it to age out. `keepalive` lets the request finish
+// after the page is gone. Best-effort: there's nobody left to show an error to.
+export function leaveRoom() {
+  if (!getToken()) return;
+  fetch(`${BASE}/profiles/me/leave`, {
+    method: 'POST', keepalive: true, headers: { Authorization: `Bearer ${getToken()}` },
+  }).catch(() => {});
+}
+
 export function getNearby() {
   return request('/profiles/nearby');
 }

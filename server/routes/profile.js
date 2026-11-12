@@ -4,7 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 const db = require('../db');
 const auth = require('../middleware/auth');
-const { deletePhotoFile, CLEAR_PROFILE_SET } = require('../cleanup');
+const { deletePhotoFile, wipeProfile, PARTY_CODE_HOURS, STALE_MINUTES } = require('../cleanup');
 
 // Async route errors propagate to the global error handler in app.js (Express 5
 // forwards rejected promises automatically), which returns 500 'Server error'.
@@ -30,6 +30,20 @@ function normalizePartyCode(code) {
   if (typeof code !== 'string') return null;
   return code.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, PARTY_CODE_MAX) || null;
 }
+
+// When a party code was entered. The device remembers this and sends it back
+// when it restores a tag, so restoring doesn't restart the clock; a missing,
+// unreadable or future time counts as "now".
+const PARTY_CODE_MS = PARTY_CODE_HOURS * 60 * 60 * 1000;
+function partyCodeSetAt(value) {
+  const t = Date.parse(value);
+  return new Date(Number.isNaN(t) ? Date.now() : Math.min(t, Date.now()));
+}
+const partyExpired = (setAt) => !!setAt && Date.now() - new Date(setAt).getTime() > PARTY_CODE_MS;
+
+// Stored coordinates are rounded to 4 decimal places (about 11 m): plenty to
+// tell who is in the same room, less exact than a GPS fix if the data leaked.
+const roundCoord = (n) => Math.round(n * 1e4) / 1e4;
 
 // Uploaded photos are served back as static files, so the stored extension
 // decides the Content-Type a browser sees. Derive it from an allowlist of image
@@ -78,7 +92,10 @@ router.get('/me', auth, async (req, res) => {
 
 // CREATE or UPDATE profile
 router.put('/me', auth, upload.single('photo'), async (req, res) => {
-  const { display_name, pronouns, radius_meters, always_visible, tag_color, stickers, tagline, party_code } = req.body;
+  const {
+    display_name, pronouns, radius_meters, always_visible, tag_color, stickers, tagline,
+    party_code, party_code_set_at,
+  } = req.body;
   const photo_path = req.file ? `/uploads/${req.file.filename}` : undefined;
   const str = (v) => (typeof v === 'string' ? v : '');
   const cleanName = str(display_name).trim().slice(0, NAME_MAX);
@@ -95,14 +112,22 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
   const stickersVal = str(stickers).slice(0, STICKERS_MAX) || null;
   const taglineVal = str(tagline).slice(0, TAGLINE_MAX) || null;
   const partyCodeVal = normalizePartyCode(party_code);
+  // Sent by the app when it restores a tag; otherwise the clock starts now —
+  // or carries on, if this is the code the profile already has (see the UPDATE).
+  const partySetAtGiven = !Number.isNaN(Date.parse(party_code_set_at));
+  const partySetAt = partyCodeVal ? partyCodeSetAt(party_code_set_at) : null;
+  if (partyExpired(partySetAt)) {
+    await deletePhotoFile(photo_path);
+    return res.status(409).json({ error: 'That party code has expired', partyExpired: true });
+  }
 
   const existing = await fetchProfilePhoto(req.user.userId);
 
   if (!existing) {
     await db.query(
-      `INSERT INTO profiles (user_id, display_name, pronouns, photo_path, radius_meters, always_visible, tag_color, stickers, tagline, party_code)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-      [req.user.userId, cleanName, cleanPronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal, taglineVal, partyCodeVal]
+      `INSERT INTO profiles (user_id, display_name, pronouns, photo_path, radius_meters, always_visible, tag_color, stickers, tagline, party_code, party_code_set_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [req.user.userId, cleanName, cleanPronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal, taglineVal, partyCodeVal, partySetAt]
     );
   } else {
     // Delete old photo from disk when a new one is uploaded
@@ -119,10 +144,14 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
         tag_color = $7,
         stickers = $8,
         tagline = $9,
-        party_code = $10,
+        party_code = $10::varchar,
+        party_code_set_at = CASE
+          WHEN $12::boolean OR party_code IS DISTINCT FROM $10::varchar OR party_code_set_at IS NULL
+            THEN $11::timestamptz
+          ELSE party_code_set_at END,
         updated_at = NOW()
        WHERE user_id = $1`,
-      [req.user.userId, cleanName, cleanPronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal, taglineVal, partyCodeVal]
+      [req.user.userId, cleanName, cleanPronouns, photo_path || null, radius, alwaysVisible, tagColor, stickersVal, taglineVal, partyCodeVal, partySetAt, partySetAtGiven]
     );
   }
 
@@ -148,7 +177,8 @@ router.post('/me/photo', auth, upload.single('photo'), async (req, res) => {
   res.json({ photo_path });
 });
 
-// Update location (stores plain lat/lng — no PostGIS needed)
+// Update location (stores plain lat/lng — no PostGIS needed). Only for someone
+// who is visible: a location sent while invisible is not stored at all.
 router.post('/me/location', auth, async (req, res) => {
   const { latitude, longitude } = req.body;
   if (latitude == null || longitude == null) {
@@ -159,31 +189,37 @@ router.post('/me/location', auth, async (req, res) => {
     return res.status(400).json({ error: 'latitude and longitude must be valid coordinates' });
   }
 
-  await db.query(
+  const { rows } = await db.query(
     `UPDATE profiles
      SET lat = $2, lng = $3,
          location_updated_at = NOW(),
          is_active = TRUE
-     WHERE user_id = $1`,
-    [req.user.userId, latitude, longitude]
+     WHERE user_id = $1 AND always_visible = TRUE
+     RETURNING display_name IS NOT NULL AS has_tag`,
+    [req.user.userId, roundCoord(latitude), roundCoord(longitude)]
   );
+  // has_tag tells the app whether the server still holds its tag; if it was
+  // wiped (the app was away a while), the app puts it back from the device.
+  res.json({ ok: true, has_tag: !!rows?.[0]?.has_tag });
+});
+
+// Leaving — the app is being closed. Takes the tag (name, photo, location) off
+// the server straight away but keeps the visibility choice, so opening the app
+// again puts you back on the wall from the copy on your device.
+router.post('/me/leave', auth, async (req, res) => {
+  await wipeProfile(req.user.userId);
   res.json({ ok: true });
 });
 
-// Set visibility — going invisible deletes photo and clears location. It also
-// records the choice (always_visible = FALSE) so invisibility survives a reload
-// or a new session: you stay hidden until you choose to be seen again.
+// Set visibility — going invisible takes the tag off the server (name, photo,
+// location, party code) and records the choice (always_visible = FALSE), so
+// invisibility survives a reload or a new session: you stay hidden until you
+// choose to be seen again.
 router.post('/me/visibility', auth, async (req, res) => {
   const { is_active } = req.body;
   const newActive = !!is_active;
   if (!newActive) {
-    // Privacy: delete server-side photo and NULL location when going invisible
-    const profile = await fetchProfilePhoto(req.user.userId);
-    await deletePhotoFile(profile?.photo_path);
-    await db.query(
-      `UPDATE profiles SET ${CLEAR_PROFILE_SET}, always_visible = FALSE WHERE user_id = $1`,
-      [req.user.userId]
-    );
+    await wipeProfile(req.user.userId, { stayHidden: true });
   } else {
     await db.query(
       'UPDATE profiles SET is_active = TRUE WHERE user_id = $1',
@@ -205,12 +241,19 @@ router.delete('/me', auth, async (req, res) => {
 // GET nearby profiles — Haversine distance, no PostGIS
 router.get('/nearby', auth, async (req, res) => {
   const myProfile = await db.query(
-    'SELECT lat, lng, radius_meters, party_code FROM profiles WHERE user_id = $1',
+    'SELECT lat, lng, radius_meters, party_code, party_code_set_at FROM profiles WHERE user_id = $1',
     [req.user.userId]
   );
   const me = myProfile.rows[0];
   if (me?.lat == null || me?.lng == null) {
     return res.status(400).json({ error: 'Share your location first' });
+  }
+
+  // The party is over: its members go invisible (the cleanup sweep does the
+  // same within minutes; this catches a request that arrives first).
+  if (me.party_code && partyExpired(me.party_code_set_at)) {
+    await wipeProfile(req.user.userId, { stayHidden: true });
+    return res.status(409).json({ error: 'That party code has expired', partyExpired: true });
   }
 
   const { lat, lng, party_code } = me;
@@ -220,9 +263,11 @@ router.get('/nearby', auth, async (req, res) => {
   const latDelta = radius_meters / 111320.0;
   const lngDelta = radius_meters / (111320.0 * Math.cos((lat * Math.PI) / 180));
 
-  // Haversine formula in SQL — exact distance in metres
+  // Haversine formula in SQL. The distance is used to filter and to order
+  // nearest-first, but is deliberately NOT returned: an exact distance to each
+  // person, taken from a few made-up positions, would pinpoint where they are.
   const result = await db.query(
-    `SELECT * FROM (
+    `SELECT id, display_name, pronouns, photo_path, tag_color, stickers, tagline FROM (
        SELECT
          p.id,
          p.display_name,
@@ -241,7 +286,8 @@ router.get('/nearby', auth, async (req, res) => {
          AND p.lat IS NOT NULL
          AND p.lng IS NOT NULL
          AND (p.always_visible = TRUE OR p.is_active = TRUE)
-         AND p.location_updated_at > NOW() - INTERVAL '30 minutes'
+         AND p.location_updated_at > NOW() - $10::interval
+         AND (p.party_code IS NULL OR p.party_code_set_at > NOW() - $11::interval)
          AND p.lat BETWEEN $4 AND $5
          AND p.lng BETWEEN $6 AND $7
          AND p.display_name IS NOT NULL
@@ -256,6 +302,8 @@ router.get('/nearby', auth, async (req, res) => {
       lng - lngDelta, lng + lngDelta,
       radius_meters,
       party_code || null,
+      `${STALE_MINUTES} minutes`,
+      `${PARTY_CODE_HOURS} hours`,
     ]
   );
 

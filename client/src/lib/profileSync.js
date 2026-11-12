@@ -3,7 +3,7 @@
 // you're visible (it is wiped when you go invisible or go stale). Every screen
 // that writes a tag goes through here, so that rule lives in one place.
 import { getMyProfile, updateProfile, setVisibility } from './api';
-import { normalizeProfileFields, toProfileFormData } from './profile';
+import { normalizeProfileFields, toProfileFormData, stampPartyCode } from './profile';
 import { persistProfileLocally, readLocalProfile, loadLocalPhotoFile } from './profileStorage';
 
 // Save an edited tag (My tag, onboarding). `fields` come from
@@ -14,7 +14,8 @@ import { persistProfileLocally, readLocalProfile, loadLocalPhotoFile } from './p
 //                        asked to be off it
 //   invisible, no row  → create the row so the choice is recorded, then take
 //                        the tag straight back off the server
-export async function saveProfile(fields, photoFile, { serverHasRow = true } = {}) {
+export async function saveProfile(edited, photoFile, { serverHasRow = true } = {}) {
+  const fields = stampPartyCode(edited, await readLocalProfile());
   if (fields.always_visible) {
     await updateProfile(toProfileFormData(fields, photoFile));
   } else if (!serverHasRow) {
@@ -36,7 +37,7 @@ export async function pushProfile(overrides = {}) {
     const merged = { ...base, ...overrides };
     if (!merged.display_name || !merged.pronouns) return false;
 
-    const fields = normalizeProfileFields(merged);
+    const fields = stampPartyCode(normalizeProfileFields(merged), base);
     await persistProfileLocally(fields);
     await updateProfile(toProfileFormData(fields, await loadLocalPhotoFile()));
     return true;

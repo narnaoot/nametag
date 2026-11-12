@@ -63,6 +63,9 @@ export const STICKER_LABELS = Object.fromEntries(
 export const MAX_STICKERS = 3;
 
 // Party code: "six to ten characters. Capitals and hyphens don't matter."
+// A party code runs out this long after it's entered; its members then go
+// invisible. Keep in step with PARTY_CODE_HOURS in server/cleanup.js.
+export const PARTY_CODE_HOURS = 4;
 export const PARTY_CODE_MIN = 6;
 export const PARTY_CODE_MAX = 10;
 

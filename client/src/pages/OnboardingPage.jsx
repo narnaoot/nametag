@@ -64,9 +64,14 @@ export default function OnboardingPage({ onDone }) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    const { dataUrl, file: prepared } = await preparePickedPhoto(file);
-    setPhotoPreview(dataUrl);
-    setPhotoFile(prepared);
+    try {
+      const { dataUrl, file: prepared } = await preparePickedPhoto(file);
+      setPhotoPreview(dataUrl);
+      setPhotoFile(prepared);
+      setError('');
+    } catch {
+      setError('We couldn’t read that photo — try a different one.');
+    }
   }
   function handleVisibility(next, { partyCode: code = '' }) {
     setVisMode(next);

@@ -1,34 +1,43 @@
 import { useState, useEffect } from 'react';
 import { getMyProfile } from '../lib/api';
-import { PLACE_FALLBACK } from '../lib/constants';
+import { PLACE_FALLBACK, PARTY_CODE_HOURS } from '../lib/constants';
 import { profileSaveSettled } from '../lib/profile';
 import PolicyDocument from './PolicyDocument';
 
 // Privacy is a top-level tab, not a settings row, so it can be read before
 // anyone is asked to be visible. It opens with what is true right now (current
-// visibility, with the way to change it in the same card) and answers with four
+// visibility, with the way to change it in the same card) and answers with a few
 // plain statements about what is true always — no tint coding, because these
 // are not categories and colouring them would imply a ranking.
 
-// These four statements describe the app's ACTUAL behaviour (server routes +
+// These statements describe the app's ACTUAL behaviour (server routes +
 // cleanup.js + on-device storage), not aspirations. If you change how data is
-// stored, change these too. See REDESIGN_QUESTIONS.md for the audit.
+// stored, change these too — and PolicyDocument.jsx / PRIVACY_POLICY.md with
+// them. The audit behind each claim is PRIVACY_REVIEW.md.
 const STATEMENTS = [
   {
-    claim: 'Your tag only lives on our server while you’re visible',
-    detail: 'Your name, one line, current location, and a photo — cropped to a small circle on your phone before it’s sent — are kept just long enough to show you to people nearby. Go invisible and they’re deleted right away; leave them a day without opening the app and they’re deleted for you.',
+    claim: 'Your tag lives on your phone, and on our server only while you’re on the wall',
+    detail: `Your name, one line, a photo — cropped to a small circle on your phone before it’s sent — and a rounded location are held on our server just long enough to show you to people nearby. Go invisible and they’re deleted at once. Close the app and they’re deleted straight away where we can, and otherwise within about half an hour. Your phone keeps your tag and puts it back when you return.`,
+  },
+  {
+    claim: 'Nobody is told where you are',
+    detail: 'Other people see your tag, never your location or how far away you are. We store one rounded position, good to about ten metres, and only while you’re visible — never a history of where you’ve been.',
   },
   {
     claim: 'There’s no feed, no history, no messages',
-    detail: 'Nametag doesn’t record where you’ve been, who you saw, or who saw you. There’s nothing to scroll back through — the room is only ever right now.',
+    detail: 'Nametag doesn’t record who you saw or who saw you. There’s nothing to scroll back through — the room is only ever right now.',
+  },
+  {
+    claim: `A party code runs out after ${PARTY_CODE_HOURS} hours`,
+    detail: 'When it does, the party is over: you go invisible and your tag is deleted from our server, rather than being shown to everyone nearby.',
   },
   {
     claim: 'Names you save stay on your phone',
-    detail: 'When you remember a name, it’s copied to your device and never sent to us. The other person is never told.',
+    detail: 'When you remember a name or hide someone, it’s kept on your device and never sent to us. The other person is never told.',
   },
   {
     claim: 'Your account is only an email and a password',
-    detail: 'We keep your email and an encrypted password so you can sign back in. Delete your account and everything — your email, your tag, and your photo — is erased right away.',
+    detail: 'We keep your email, a scrambled password we can’t read, and whether you last chose to be invisible, so you can sign back in. Delete your account and everything — your email, your tag, and your photo — is erased from our server and from this device.',
   },
 ];
 

@@ -6,7 +6,29 @@ Paste this into Claude Code at the start of a new session to get up to speed qui
 
 ---
 
-## 🧽 Latest: client simplification (Nov 2026)
+## 🔒 Latest: privacy pass — minimal cloud (Nov 2026)
+
+Goal from Nabil: nothing saved in the cloud, everything on the device. A server
+is unavoidable for matching, so this pass makes it hold a tag only while its
+owner is on the wall. Verified in a browser with two users against a real
+Postgres (the DB was inspected after each step); 132 server tests.
+
+- **Leave signal** — `POST /me/leave` on `pagehide` wipes the tag when the app is
+  closed; the device restores it on return.
+- **30 minutes, not 24 hours** — the stale wipe now matches the point at which
+  others stop seeing you; the sweep runs every 5 minutes.
+- **Location** rounded to 4 decimals at rest; not stored while invisible.
+- **No distances** from `/nearby` (they allowed pinpointing).
+- **Party codes expire after 4 hours** — members go invisible; the code is wiped
+  with the tag. The device remembers the start time so restoring doesn't reset it.
+- **Records purged** — spent/expired email links, never-verified sign-ups.
+- **Photos** — an uncroppable photo is rejected rather than uploaded in full.
+- **Keep-awake ping** — `.github/workflows/keep-awake.yml` hits `/api/health`
+  every 5 minutes so the sweep runs on time on Render's free plan.
+- **Privacy tab, in-app policy, `PRIVACY_POLICY.md`, `PRIVACY_REVIEW.md`**
+  rewritten to match; `PRIVACY_REVIEW.md` §4 lists what is still imperfect.
+
+## 🧽 Earlier: client simplification (Nov 2026)
 
 Behaviour-preserving refactor, checked against before/after screenshots of every
 screen at phone / tablet / desktop sizes plus the two-user browser scenarios:
@@ -147,18 +169,33 @@ frontend-UI details are historical.
 
 ---
 
-## Core privacy principle — minimise server-side data
+## Core privacy principle — the tag lives on the device
 
-**The server is a relay, not a data store.** User photos and location must live on the server for the shortest time possible — only while actively needed — and be deleted as soon as they are not. This is non-negotiable: it's both a privacy commitment to users and a cost constraint.
+**The device is the home of your tag; the server is a relay.** The goal is
+"nothing saved in the cloud". A server is unavoidable for matching people in the
+same place, so the rule is: it holds a tag **only while its owner is on the
+wall**, and deletes it within minutes of them leaving. This is non-negotiable.
+The rules live in one file, `server/cleanup.js`:
 
-What this means concretely:
+- **What the server may keep permanently:** email, password hash, and the
+  visibility setting. Nothing else.
+- **The tag** (name, pronouns, line, stickers, colour, photo, location, party
+  code) is wiped: at once on going invisible; at once on closing the app
+  (`POST /me/leave`, web `pagehide`); after `STALE_MINUTES` = 30 without a
+  location refresh; when a party code is `PARTY_CODE_HOURS` = 4 old (the member
+  goes invisible); on account deletion.
+- **Location** — one point, rounded to 4 decimals, never a history, not stored
+  at all while invisible. `/nearby` never returns coordinates or distances.
+- **While invisible nothing is re-uploaded** — edits stay on the device.
+- **The device restores the tag** when the app returns (`pushProfile` in
+  `client/src/lib/profileSync.js`); `/me/location` replies `has_tag: false` to
+  tell it to.
+- **Records** — spent/expired email links and never-verified sign-ups are deleted
+  by the sweep.
 
-- **Photos** — primary copy lives on-device (Capacitor Filesystem). The server copy exists only to serve nearby users while the owner is visible. It must be deleted when the user goes invisible, when their location hasn't been refreshed in X hours (TBD, probably 24h), or when they delete their account.
-- **Location** — never stored as history. The DB holds only the single most-recent lat/lng, overwritten on each refresh. Already enforced by the schema (one row per user, no history table). Location should be cleared (set to NULL) when a user goes invisible or goes stale.
-- **Account deletion** — must be a hard, immediate delete of everything: user row, profile row, photo file on disk. Cascade is already in the schema; the route needs to exist and the UI needs to expose it.
-- **No server-side caching** of data beyond the immediate request.
-
-**All four items are now implemented** — see the commit "Implement privacy data-minimisation".
+If you change any of this, update the in-app Privacy tab
+(`PrivacyPage.jsx`), the in-app policy (`PolicyDocument.jsx`),
+`PRIVACY_POLICY.md` and `PRIVACY_REVIEW.md` in the same change.
 
 ---
 
@@ -183,7 +220,7 @@ Everything below is **done and on `main`** (105 server tests passing):
 - Full auth flow: register → **email verification** → login, forgot/reset password. Emails send via **Resend's HTTPS API** in production (logs the link to console in dev when no provider is set). Login is gated on `email_verified`; JWTs are revocable via `token_version` (a reset revokes existing sessions; client auto-signs-out on a 401).
 - Privacy/security hardening: unguessable photo filenames, auth rate-limiting, self-hosted fonts, CORS allowlist, helmet headers, hashed reset/verification tokens. Full audit in `PRIVACY_REVIEW.md`; user-facing policy in `PRIVACY_POLICY.md` + the in-app `PolicyDocument.jsx`.
 - Profile editor: display name, pronouns, tagline, photo, nametag color, emoji stickers (up to 3), radius, always-visible toggle
-- Nearby grid: Haversine distance in SQL (no PostGIS), 30-min activity window, bounding-box pre-filter
+- Nearby grid: Haversine distance in SQL (no PostGIS) used to filter and order only — never returned; 30-min activity window, bounding-box pre-filter
 - Location + visibility: `is_active` toggle on the grid screen; auto-refresh every 60s
 - First-time UX: new users land on the profile tab automatically
 - iOS / Capacitor: app builds and runs natively; `@capacitor/geolocation` wired up; photo URLs work in both web and native builds
@@ -198,22 +235,23 @@ Everything below is **done and on `main`** (105 server tests passing):
 - The tag components (`Tag`, `MyTagPreview`) accept a single `person` prop object built by `toBadgePerson` in `lib/colors.js` (not many individual props); sticker JSON is parsed there and memoized in `GridPage` with `useMemo`
 - Error handling: background location refresh surfaces errors to the UI; profile load failure shows a message in the form; `api.js` URL stripping uses an end-anchored regex (`/\/api$/`)
 - Privacy data-minimisation implemented:
-  - `server/cleanup.js` — `runCleanup()` runs hourly; finds profiles stale >24h, deletes photo files, NULLs location
-  - `POST /me/visibility` going invisible: deletes server photo, NULLs location immediately
+  - `server/cleanup.js` — `runCleanup()` runs every 5 min: wipes tags not refreshed in 30 min, ends parties older than 4 h, deletes spent email links and never-verified sign-ups
+  - `POST /me/visibility` going invisible: wipes the tag (incl. photo, location, party code) immediately and records the choice
+  - `POST /me/leave`: wipes the tag when the app is closed, keeping the visibility choice
   - `DELETE /me`: hard-deletes user + profile (cascade) + photo file
   - `POST /me/photo`: standalone photo re-upload for going-visible flow
   - `ProfilePage`: saves photo to Capacitor Filesystem on-device; loads local copy on mount
   - `useNearbyPeople`: re-uploads local photo when going visible or when server copy is missing
   - "Delete account" UI in ProfilePage with two-step confirmation
 - `@capacitor/filesystem` installed; `LOCAL_PHOTO_PATH` constant in `constants.js`
-- 116 server tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
+- 132 server tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
 
 ---
 
 ## What still needs doing
 
 **Privacy — remaining (all optional / lower priority):**
-1. **L3 — coordinate precision** — truncate stored lat/lng to ~3–4 decimals at rest (still fine for "same room," less precise if the DB leaks).
+1. **Residual privacy risks** — listed in `PRIVACY_REVIEW.md` §4. The 30-minute wipe only runs while the API process is awake; `.github/workflows/keep-awake.yml` pings it every 5 minutes to keep Render's free plan from sleeping.
 2. **Data-export endpoint** — a formal GDPR/CCPA "access" request path (deletion already exists via `DELETE /me`).
 3. **Harden photo serving (H1 residual, optional)** — photo files are unguessable random URLs now, but still public bearer capabilities; auth-gated or signed URLs are optional further hardening.
 
@@ -279,7 +317,7 @@ server/
   db/migrate.js          — idempotent migrations run on startup
   middleware/auth.js     — JWT verification + token_version revocation check
   middleware/tokenVersion.js — the revocation lookup (mockable in tests)
-  cleanup.js             — hourly stale-data + photo cleanup
+  cleanup.js             — the data-retention rules + the 5-minute sweep that enforces them
   __tests__/             — Jest + Supertest suite (105 tests)
 ```
 

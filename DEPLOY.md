@@ -100,6 +100,17 @@ For testing purposes, the free Render disk (1GB) is configured in `render.yaml` 
 
 ---
 
+## Keeping the API awake
+
+Render's free plan stops the API after ~15 minutes without traffic. The API runs
+the privacy clean-up (it deletes a tag 30 minutes after its owner leaves), so it
+needs to stay awake. `.github/workflows/keep-awake.yml` requests `/api/health`
+every 5 minutes to do that — check **GitHub → Actions → "Keep API awake"** shows
+green runs. If the API moves to a different URL, update the URL in that file. On
+a paid always-on instance the workflow isn't needed and can be deleted.
+
+---
+
 ## Local development
 
 ```bash

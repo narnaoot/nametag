@@ -20,35 +20,26 @@ implemented and match the canvas.
   (it's the app's), and your own tag on the wall is marked with the orchid "you"
   ring instead of by being coral.
 
-## Actual privacy practices (audited from the server code)
+## Actual privacy practices
 
-Your stated goal was **on-device-only** storage. That is **not** the case today,
-and it can't fully be for a "who's near me" app — the server has to know people's
-locations to match co-present users. Here's the real split:
+Your stated goal is **on-device-only** storage. The app is built around that —
+the device holds the lasting copy of a tag — but it is **not** cloud-free, and
+can't be for a "who's near me" app: a server has to know two people are in the
+same place to introduce them. The split today (Nov 2026):
 
-- **On our server, persistently:** your **email** + a bcrypt **password hash**
-  (until you delete the account) + short-lived password-reset tokens.
-- **On our server, only while you're visible:** name, pronouns, one line,
-  stickers, colour, **photo file**, and your **single latest lat/lng** (+ a
-  timestamp; no history). Deleted the instant you go invisible, and auto-deleted
-  after 24 h without a refresh (`server/cleanup.js`). Account deletion hard-wipes
-  the row + photo file.
-- **On your device only (never sent to us):** your login token, a local copy of
-  your photo + profile (to restore your tag after cleanup), **remembered names**,
-  and **hidden people**.
+- **On our server, permanently:** your **email**, a bcrypt **password hash**, and
+  a visibility setting. Nothing else.
+- **On our server, only while you're on the wall:** name, pronouns, one line,
+  stickers, colour, **photo file**, a **rounded** latest position (no history),
+  and any party code. Deleted the instant you go invisible, when you close the
+  app, after 30 minutes without the app checking in, or when a party code turns
+  4 hours old. Account deletion hard-wipes everything.
+- **On your device only (never sent to us):** your sign-in token, the lasting
+  copy of your tag and photo, **remembered names**, and **hidden people**.
 
-Hardening:
+Other people are shown your tag — never your location or your distance.
 
-1. ~~**Photos aren't cropped client-side.**~~ → **Done (Aug 2026).** Picked
-   photos are now cropped to a centered square and downscaled to a 320px JPEG
-   **on-device before upload** (`client/src/lib/imageCrop.js`), so the tag's small
-   circle is all that's ever sent (a 1200×800 pick → ~2 KB). The Privacy copy now
-   truthfully says the photo is cropped on your phone before it's sent.
-2. ~~**Photo files are served at public, guessable `/uploads/user_<id>_<ts>` URLs.**~~
-   → **Hardened (H1, Aug 2026).** Filenames are now unguessable 128-bit random
-   tokens, so URLs can't be enumerated. They're still public *bearer* URLs while
-   the file exists; signed/expiring or auth-gated serving is optional further
-   hardening for launch. See `PRIVACY_REVIEW.md` → H1.
+The full audit, including what is still imperfect, is **`PRIVACY_REVIEW.md`**.
 
 ## Decisions I made (please confirm)
 
