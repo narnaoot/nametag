@@ -80,9 +80,8 @@ export default function PolicyDocument({ onBack }) {
         <Bullets items={[
           <><B>Your tag lives on your device.</B> A copy is held on our server only while you’re on the wall. Go invisible and it’s deleted at once; close the app and it’s deleted straight away where we can, and otherwise within about half an hour.</>,
           <><B>Nobody is told where you are.</B> Other people see your tag — never your location, and never how far away you are.</>,
-          <><B>There’s no feed, no history, and no messages.</B> We don’t record where you’ve been, who you saw, or who saw you.</>,
+          <><B>There’s no feed, no history, and no messages.</B> We don’t record where you’ve been, who you saw, or who saw you — and the app keeps no list of other people on your device either.</>,
           <><B>Party codes run out after four hours.</B> You then go invisible and your tag is deleted from our server.</>,
-          <><B>Names you save stay on your phone</B> and are never sent to us.</>,
           <><B>Your account is just an email and a password,</B> and you can delete everything at any time.</>,
           <><B>We don’t sell your data, show ads, or use third-party tracking or analytics.</B></>,
         ]} />
@@ -105,10 +104,10 @@ export default function PolicyDocument({ onBack }) {
           <><B>Location:</B> your device’s current position, so we can show you people nearby and show your tag to them. We round it to about ten metres before storing it, and keep only your single most recent position — there is no location history. While you’re invisible we don’t store a location at all. You control this through your device’s location permission and the app’s visibility control.</>,
           <><B>Basic technical data:</B> like any website, our hosting providers automatically process standard request information (e.g. IP address, browser type) to serve the app and keep it secure.</>,
         ]} />
-        <Sub>Stored only on your device (never sent to us)</Sub>
+        <Sub>Kept on your device</Sub>
         <Bullets items={[
-          <>The names you choose to <B>remember</B> and the people you <B>hide</B>.</>,
           <>Your sign-in token, and the lasting copy of your own tag and photo — this is what puts your tag back on the wall when you return. (On the web, “your device” means this browser’s storage.)</>,
+          <>Nothing about other people. You can look at the tags around you, but the app has no way to save, list or keep them.</>,
         ]} />
         <P>We do <B>not</B> use analytics or advertising SDKs, and we do not track you across other apps or websites.</P>
 
@@ -135,7 +134,7 @@ export default function PolicyDocument({ onBack }) {
           <><B>Party codes</B> last <B>4 hours</B> from when you enter them. After that you go invisible and your tag is deleted from our server.</>,
           <><B>Your account</B> (email, password hash and visibility setting) is kept until you delete your account. If you sign up but never confirm your email, the sign-up is deleted after 2 days.</>,
           <><B>Email links:</B> confirmation links last 24 hours and password-reset links one hour; each works once. Our record of a link is deleted once it’s used or expired.</>,
-          <><B>Names you remember, people you hide, and your own tag</B> stay on your device until you delete your account, sign in as someone else on that device, or clear the app’s storage.</>,
+          <><B>Your own tag</B> stays on your device until you delete your account, sign in as someone else on that device, or clear the app’s storage. The app keeps nothing about other people on your device.</>,
         ]} />
         <P>Two honest caveats. The automatic clean-up runs every few minutes; if our server is ever restarting or briefly unavailable, it finishes as soon as the server is back — nobody can see your tag in the meantime. And once we delete something, traces may remain for a limited time in our providers’ routine backups and logs, which we don’t control directly.</P>
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Preferences } from '@capacitor/preferences';
 import { setToken as setApiToken, setUnauthorizedHandler, deleteAccount as deleteAccountApi } from '../lib/api';
 import { AuthContext } from './useAuth';
-import { claimLocalData, clearLocalData } from '../lib/profileStorage';
+import { claimLocalData, clearLocalData, purgeRetiredData } from '../lib/profileStorage';
 
 // The account id inside a JWT (unverified read — only used to label which
 // account the on-device data belongs to).
@@ -22,6 +22,7 @@ export function AuthProvider({ children }) {
   // Preferences is async, so load the token before rendering children
   useEffect(() => {
     Preferences.get({ key: TOKEN_KEY }).then(async ({ value }) => {
+      await purgeRetiredData();
       if (value) await claimLocalData(userIdOf(value));
       setToken(value);
       setApiToken(value);

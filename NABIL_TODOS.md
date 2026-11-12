@@ -44,24 +44,19 @@ confirmed their email are deleted; existing party codes start their 4-hour clock
 
 ---
 
-## 🐞 Bug sweep (Nov 2026) — decisions needed from you
+## 🐞 Bug sweep (Nov 2026) — decisions, all settled
 
-A hands-on test pass fixed the clear-cut bugs (summary at the top of
-`RESTART_PROMPT.md`). These need your call before anything changes:
-
-1. **Pronouns "skip" saves `they/them`.** Onboarding offers "skip", but the
-   server requires pronouns, so skippers are labelled they/them. Allow a tag
-   with no pronouns, or remove the skip chip?
-2. **Sign-in rate limit vs. a room full of people.** `/api/auth/*` allows 50
-   requests per 15 min per IP. Everyone on one venue Wi-Fi shares an IP, and a
-   signup costs 2–4 requests — about 15 people signing up together get "Too
-   many attempts". Raise it, or limit per email instead of per IP?
-3. **"Remember the name" has nowhere to look.** Names are saved on the device
-   but no screen lists them. **"Hide from me" is permanent** — no un-hide.
-4. **Password reset on an unverified account** succeeds but sign-in still says
-   "verify your email". Treat a completed reset as verification?
-5. **Behaviour change to confirm:** Invisible is now persistent — you stay
-   hidden across reloads/sessions until you pick Nearby or Party code again.
+1. **Pronouns "skip" saves `they/them`** — you chose to leave it as is.
+2. **Sign-in rate limit** — raised. A room on one Wi-Fi shares an IP, so the
+   per-IP limit is now a loose backstop (600 per 15 min); guessing one account's
+   password is limited to 10 failed tries per 15 min, and emails to one address
+   to 5 per 15 min.
+3. **"Remember the name" and "Hide from me"** — removed entirely, at your
+   request. Opening someone's tag now just shows it. Saved names and hidden
+   lists already on people's devices are deleted the next time they open the app.
+4. **Password reset on an unverified account** — a completed reset now counts as
+   verifying the email.
+5. **Invisible is persistent** — confirmed.
 
 ---
 

@@ -22,10 +22,10 @@ name tags, so you can go say hello.
 - **Nobody is told where you are.** Other people see your tag — never your
   location, and never how far away you are.
 - **There's no feed, no history, and no messages.** We don't record where you've
-  been, who you saw, or who saw you.
+  been, who you saw, or who saw you — and the app keeps no list of other people
+  on your device either.
 - **Party codes run out after four hours.** You then go invisible and your tag is
   deleted from our server.
-- **Names you save stay on your phone** and are never sent to us.
 - **Your account is just an email and a password**, and you can delete everything
   at any time.
 - **We don't sell your data, show ads, or use third-party tracking or analytics.**
@@ -70,11 +70,12 @@ describes that copy and how quickly it's deleted.
   process standard request information (e.g. IP address, browser type) to serve
   the app and keep it secure.
 
-**Stored only on your device (never sent to us)**
-- The names you choose to **remember** and the people you **hide**.
+**Kept on your device**
 - Your sign-in token, and the lasting copy of your own tag and photo — this is
   what puts your tag back on the wall when you return. (On the web, "your device"
   means this browser's storage.)
+- Nothing about other people. You can look at the tags around you, but the app
+  has no way to save, list or keep them.
 
 We do **not** use analytics or advertising SDKs, and we do not track you across
 other apps or websites.
@@ -121,9 +122,9 @@ advertising.
   sign-up is deleted after 2 days.
 - **Email links:** confirmation links last 24 hours and password-reset links one
   hour; each works once. Our record of a link is deleted once it's used or expired.
-- **Names you remember, people you hide, and your own tag** stay on your device
-  until you delete your account, sign in as someone else on that device, or clear
-  the app's storage.
+- **Your own tag** stays on your device until you delete your account, sign in as
+  someone else on that device, or clear the app's storage. The app keeps nothing
+  about other people on your device.
 
 Two honest caveats. The automatic clean-up runs every few minutes; if our server
 is ever restarting or briefly unavailable, it finishes as soon as the server is

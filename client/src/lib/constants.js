@@ -34,10 +34,10 @@ export const ACCENT_REMAP = { orchid: 'citron' };
 export const LOCAL_PHOTO_PATH = 'profile_photo';
 // Capacitor Preferences key for the user's full profile data (on-device copy).
 export const LOCAL_PROFILE_KEY = 'profile_data';
-// Names you remember are kept on the device only (Privacy screen promises this).
-export const LOCAL_REMEMBERED_KEY = 'remembered_names';
-// People you hide from are filtered client-side, persisted on the device.
-export const LOCAL_HIDDEN_KEY = 'hidden_people';
+// Preferences keys from features that no longer exist ("remember the name" and
+// "hide from me"). Nothing reads them; they're listed only so the app can delete
+// what earlier versions left on people's devices.
+export const RETIRED_LOCAL_KEYS = ['remembered_names', 'hidden_people'];
 
 // Stickers are Unicode emoji paired with a word, so a tag reads if the picture
 // doesn't. Selection is stored as an array of emoji (compatible with the

@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNearbyPeople } from '../hooks/useNearbyPeople';
-import {
-  loadLocalPhoto, getRememberedNames, rememberName, hidePerson,
-} from '../lib/profileStorage';
+import { loadLocalPhoto } from '../lib/profileStorage';
 import { toBadgePerson, personTrio } from '../lib/colors';
 import { Avatar } from '../components/Avatar';
 import { Eyebrow } from '../components/TagBits';
@@ -37,7 +35,7 @@ const BOARD = {
   },
 };
 
-const CLOSING_NOTE = 'Nothing is kept once you leave — no messages, no history. Names you remember stay on your phone.';
+const CLOSING_NOTE = 'Nothing is kept once you leave — no messages, no history, no list of who you met.';
 
 function CenteredState({ children }) {
   return (
@@ -132,14 +130,12 @@ function WallSkeleton({ columns = 2 }) {
 export default function GridPage({ onEditTag, layout = 'phone' }) {
   const {
     nearby, myProfile, profileChecked, locationErrorKind, loading, lastUpdated, mode, endedParty,
-    hiddenIds, refresh, setVisibilityMode, reloadHidden,
+    refresh, setVisibilityMode,
   } = useNearbyPeople();
   const [selfPhoto, setSelfPhoto] = useState(null);
-  const [remembered, setRemembered] = useState([]);
   const [sel, setSel] = useState(null);
 
   useEffect(() => { loadLocalPhoto().then(setSelfPhoto); }, []);
-  useEffect(() => { getRememberedNames().then(setRemembered); }, []);
 
   const place = PLACE_FALLBACK;
   const b = BOARD[layout] || BOARD.phone;
@@ -149,8 +145,8 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
   const me = myProfile?.display_name ? toBadgePerson(myProfile, { selfPhoto, you: true }) : null;
   // The server sends people nearest-first, without saying how far away they are.
   const others = useMemo(
-    () => nearby.filter(p => !hiddenIds.includes(p.id)).map(p => toBadgePerson(p)),
-    [nearby, hiddenIds]
+    () => nearby.map(p => toBadgePerson(p)),
+    [nearby]
   );
   const visible = mode !== 'invisible';
   const needsTag = profileChecked && !loading && !myProfile?.display_name;
@@ -159,10 +155,6 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
   const count = others.length;
   const headLabel = loading ? 'Reading the room…'
     : `${count === 0 ? 'No' : count} ${count === 1 ? 'tag' : 'tags'}${place && place !== 'nearby' ? ` at ${place}` : isDesktop ? ' here' : ' nearby'}`;
-
-  async function handleRemember(person) { await rememberName(person); setRemembered(await getRememberedNames()); }
-  async function handleHide(person) { await hidePerson(person.id); await reloadHidden(); setSel(null); }
-  const isRemembered = (p) => remembered.some(r => String(r.id ?? r.name) === String(p?.id ?? p?.name));
 
   let wall;
   if (!visible) {
@@ -202,8 +194,7 @@ export default function GridPage({ onEditTag, layout = 'phone' }) {
 
   // The opened tag: a bottom sheet on phone and tablet, the right rail on desktop.
   const detail = sel && (
-    <TagDetail person={sel} index={all.findIndex(p => p.id === sel.id)} remembered={isRemembered(sel)}
-               onRemember={handleRemember} onHide={handleHide}
+    <TagDetail person={sel} index={all.findIndex(p => p.id === sel.id)}
                onEditTag={() => { setSel(null); onEditTag?.(); }}
                closingNote={isDesktop ? CLOSING_NOTE : undefined} />
   );

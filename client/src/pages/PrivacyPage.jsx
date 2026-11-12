@@ -25,15 +25,11 @@ const STATEMENTS = [
   },
   {
     claim: 'There’s no feed, no history, no messages',
-    detail: 'Nametag doesn’t record who you saw or who saw you. There’s nothing to scroll back through — the room is only ever right now.',
+    detail: 'Nametag doesn’t record who you saw or who saw you — not on our server, and not on your phone. There’s no way to save someone’s tag, and nothing to scroll back through. The room is only ever right now.',
   },
   {
     claim: `A party code runs out after ${PARTY_CODE_HOURS} hours`,
     detail: 'When it does, the party is over: you go invisible and your tag is deleted from our server, rather than being shown to everyone nearby.',
-  },
-  {
-    claim: 'Names you save stay on your phone',
-    detail: 'When you remember a name or hide someone, it’s kept on your device and never sent to us. The other person is never told.',
   },
   {
     claim: 'Your account is only an email and a password',

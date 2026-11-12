@@ -375,6 +375,19 @@ describe('POST /api/auth/reset-password', () => {
     expect(lookupParam).not.toBe('raw-token-abc');
   });
 
+  it('marks the email as verified, since the reset link proves ownership', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 1, user_id: 9 }] }); // token lookup
+    db.query.mockResolvedValueOnce({ rows: [] });                      // UPDATE users
+    db.query.mockResolvedValueOnce({ rows: [] });                      // mark token used
+
+    const res = await request(app)
+      .post('/api/auth/reset-password')
+      .send({ token: 'raw-token', password: 'newpassword1' });
+
+    expect(res.status).toBe(200);
+    expect(db.query.mock.calls[1][0]).toMatch(/email_verified = TRUE/);
+  });
+
   it('bumps token_version on reset so existing sessions are revoked', async () => {
     db.query
       .mockResolvedValueOnce({ rows: [{ id: 7, user_id: 99 }] }) // token lookup
