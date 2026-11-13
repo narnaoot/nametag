@@ -74,7 +74,7 @@ service the code calls is Resend, to send email.
 
 ## 2. When the server's copy of a tag is deleted
 
-All five paths run the same wipe (`CLEAR_PROFILE_SET` in `server/cleanup.js`):
+All six paths run the same wipe (`CLEAR_PROFILE_SET` in `server/cleanup.js`):
 name, pronouns, one line, colour, stickers, photo (file and path), location,
 timestamp, party code.
 
@@ -83,6 +83,7 @@ timestamp, party code.
 | **Go invisible** (`POST /me/visibility`) | Immediately | Stays invisible across reloads and sessions until the user chooses otherwise |
 | **Close the app** (`POST /me/leave`, sent on `pagehide`) | Immediately — best-effort, web only | Visibility choice kept; the device restores the tag on return |
 | **App not seen for 30 minutes** (sweep, every 5 min) | ≤ ~35 min after the last refresh | Same. Also the point at which others stop seeing the tag |
+| **Server shutting down** (last sweep on SIGTERM) | Tags idle 5+ minutes, at shutdown | Same |
 | **Party code is 4 hours old** (sweep, `/nearby`, and the app itself) | ≤ 4 h after entry | Moved to **invisible**, not to "visible to everyone" |
 | **Delete account** (`DELETE /me`) | Immediately | User row, profile row (cascade), photo file, link records; device copy cleared |
 
@@ -115,17 +116,26 @@ Ranked by how much they undercut the goal.
 
 **R1 — The 30-minute delete depends on the server being awake.** The sweep is a
 timer inside the API process, and Render's free plan stops the process after ~15
-minutes with no traffic. **Mitigated:** a scheduled GitHub Action
-(`.github/workflows/keep-awake.yml`) requests `/api/health` every 5 minutes,
-which keeps the process running; if it has slept anyway, that request wakes it
-and the sweep runs on startup. What's left:
-- The ping is outside the app. GitHub can run it late, and switches scheduled
-  workflows off after 60 days with no commits (it emails first). If it stops, the
-  delete goes back to "when the server next wakes". Nobody can *see* a stale tag
-  either way — `/nearby` filters on the same 30 minutes — but it would be stored.
-- It could not be tested from the development environment (no route to the live
-  server); confirm a green run in the Actions tab after merging.
-→ *Stronger fix:* an always-on Render instance, or a database-side scheduled job.
+minutes with no traffic — before the 30-minute rule fires.
+**Mitigated in code:** when the process is told to stop (SIGTERM) it runs a last
+sweep that wipes every tag not refreshed in the previous 5 minutes
+(`server/index.js`, `SHUTDOWN_STALE_MINUTES`), so nothing should sit in the
+database while the server sleeps. It also sweeps on every start-up. Tested
+locally with a real stop signal against Postgres.
+What's left:
+- **Unconfirmed on Render.** Render staff say the platform sends SIGTERM before
+  stopping a service, but that is a forum reply, not documentation, and idle
+  spin-down specifically isn't documented. Confirm by finding
+  `[shutdown] SIGTERM received` / `[shutdown] sweep finished` in the Render logs
+  after a quiet spell. The start command must be `node index.js` (not
+  `npm start`) for the signal to reach the server.
+- If the signal never arrives or the process is killed early, a stale tag stays
+  stored until the next wake-up. Nobody can *see* it — `/nearby` filters on the
+  same 30 minutes. The policy says this.
+- A scheduled GitHub Action was tried as a keep-awake ping and removed: GitHub
+  ran it 3 times in 24 hours instead of every 5 minutes.
+→ *Stronger fix:* an always-on (paid) Render instance, or an external uptime
+monitor pinging `/api/health` every 5 minutes.
 
 **R2 — Provider backups and logs.** "Deleted" means deleted from the live
 database and disk. Neon keeps point-in-time history, Resend keeps a log of sent
@@ -210,6 +220,8 @@ across many networks is slowed only by the password hashing.
     nothing about other people, and old lists are deleted on launch.
   - A completed password reset counts as verifying the email; sign-in limits
     reworked for shared networks (R9).
+  - A last sweep on shutdown, so tags don't sit in the database while the
+    server sleeps (R1).
 
 ---
 

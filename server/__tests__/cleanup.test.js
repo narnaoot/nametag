@@ -1,6 +1,6 @@
 const fs = require('fs');
 const db = require('../db');
-const { runCleanup } = require('../cleanup');
+const { runCleanup, SHUTDOWN_STALE_MINUTES } = require('../cleanup');
 
 // The sweep that enforces what the server is allowed to keep. Query order:
 // stale tags (SELECT [+ UPDATE]), ended parties (SELECT [+ UPDATE]), then three DELETEs.
@@ -31,6 +31,15 @@ describe('runCleanup', () => {
     expect(sqlOf(1)).toMatch(/party_code = NULL/);
     expect(sqlOf(1)).not.toMatch(/always_visible/);   // leaving isn't choosing to hide
     expect(db.query.mock.calls[1][1]).toEqual([[1, 2]]);
+  });
+
+  it('uses a much shorter cut-off for the last sweep before the server stops', async () => {
+    db.query.mockResolvedValue(nothing);
+
+    await runCleanup({ staleMinutes: SHUTDOWN_STALE_MINUTES });
+
+    expect(SHUTDOWN_STALE_MINUTES).toBeLessThan(15);   // an idle host stops us at ~15 min
+    expect(db.query.mock.calls[0][1]).toEqual([`${SHUTDOWN_STALE_MINUTES} minutes`]);
   });
 
   it('ends parties after 4 hours by moving their members to invisible', async () => {

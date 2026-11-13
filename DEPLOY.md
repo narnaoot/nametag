@@ -100,14 +100,15 @@ For testing purposes, the free Render disk (1GB) is configured in `render.yaml` 
 
 ---
 
-## Keeping the API awake
+## When the API goes to sleep
 
-Render's free plan stops the API after ~15 minutes without traffic. The API runs
-the privacy clean-up (it deletes a tag 30 minutes after its owner leaves), so it
-needs to stay awake. `.github/workflows/keep-awake.yml` requests `/api/health`
-every 5 minutes to do that — check **GitHub → Actions → "Keep API awake"** shows
-green runs. If the API moves to a different URL, update the URL in that file. On
-a paid always-on instance the workflow isn't needed and can be deleted.
+Render's free plan stops the API after ~15 minutes without traffic. The API is
+what deletes a tag 30 minutes after its owner leaves, so it runs a last sweep as
+it shuts down (`server/index.js`) and another on every start-up. For that to
+work the service's **Start Command** must be `node index.js` rather than
+`npm start`, so the stop signal reaches the server. To check it on the live
+service, look in the logs after a quiet spell for `[shutdown] SIGTERM received`
+and `[shutdown] sweep finished`.
 
 ---
 

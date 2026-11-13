@@ -19,14 +19,21 @@ is outside the code:
    - **Resend** — how long sent-email logs are kept (they hold the recipient
      address and the link).
    - **Render** and **Vercel** — request-log retention (they hold IP addresses).
-2. **Check the keep-awake ping is running.** The "deleted after 30 minutes"
-   sweep runs inside the API, and Render's free plan puts it to sleep after ~15
-   quiet minutes. A GitHub Action now pings the server every 5 minutes to keep it
-   awake. After merging, open **GitHub → Actions → "Keep API awake"** and confirm
-   the runs are green. Two things to know: GitHub turns scheduled jobs off after
-   60 days with no commits (it emails you; one click re-enables it), and a failed
-   ping emails you too — a string of them means Render is down. If you ever move
-   to a paid always-on instance, delete `.github/workflows/keep-awake.yml`.
+2. **Confirm the shutdown clean-up runs on Render.** Render's free plan puts the
+   server to sleep after ~15 quiet minutes, which is before the 30-minute delete
+   would fire. The server now clears out leftover tags as it shuts down instead.
+   Two things for you:
+   - In the Render dashboard, set the service's **Start Command** to
+     `node index.js` (it is probably `npm start`). Without this the stop signal
+     may not reach the server.
+   - After the next quiet spell, open the service's **Logs** and look for
+     `[shutdown] SIGTERM received` followed by `[shutdown] sweep finished`. If
+     they're there, the 30-minute promise holds. If they never appear, tell
+     Claude — the fallback is a free uptime monitor (UptimeRobot or cron-job.org
+     pinging `https://nametag.onrender.com/api/health` every 5 minutes) or a paid
+     always-on instance.
+   (The GitHub ping from the previous change was removed: GitHub only ran it
+   3 times in 24 hours.)
 3. **Check whether Render really has a photo disk.** `server/render.yaml` asks
    for one on the free plan, which Render may not grant. Look for a Disk on the
    service's page. Either answer is fine for privacy; it's about knowing.
