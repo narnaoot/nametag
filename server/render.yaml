@@ -4,7 +4,9 @@ services:
     runtime: node
     plan: free
     buildCommand: npm install
-    startCommand: npm start
+    # Run node directly (not via npm) so the stop signal reaches the server and
+    # its shutdown sweep runs — see server/index.js.
+    startCommand: node index.js
     envVars:
       - key: DATABASE_URL
         sync: false       # paste your Neon/Supabase URL in the Render dashboard

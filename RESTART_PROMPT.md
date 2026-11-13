@@ -39,8 +39,10 @@ Postgres (the DB was inspected after each step); 132 server tests.
   with the tag. The device remembers the start time so restoring doesn't reset it.
 - **Records purged** — spent/expired email links, never-verified sign-ups.
 - **Photos** — an uncroppable photo is rejected rather than uploaded in full.
-- **Keep-awake ping** — `.github/workflows/keep-awake.yml` hits `/api/health`
-  every 5 minutes so the sweep runs on time on Render's free plan.
+- **Shutdown sweep** — Render's free plan sleeps before the 30 minutes are up,
+  so the server wipes tags idle 5+ minutes when it receives SIGTERM
+  (`server/index.js`). (A GitHub-Actions keep-awake ping was tried first and
+  removed — GitHub ran it 3 times in 24 hours.)
 - **Privacy tab, in-app policy, `PRIVACY_POLICY.md`, `PRIVACY_REVIEW.md`**
   rewritten to match; `PRIVACY_REVIEW.md` §4 lists what is still imperfect.
 
@@ -196,7 +198,7 @@ The rules live in one file, `server/cleanup.js`:
 - **The tag** (name, pronouns, line, stickers, colour, photo, location, party
   code) is wiped: at once on going invisible; at once on closing the app
   (`POST /me/leave`, web `pagehide`); after `STALE_MINUTES` = 30 without a
-  location refresh; when a party code is `PARTY_CODE_HOURS` = 4 old (the member
+  location refresh (5 if the server is shutting down); when a party code is `PARTY_CODE_HOURS` = 4 old (the member
   goes invisible); on account deletion.
 - **Location** — one point, rounded to 4 decimals, never a history, not stored
   at all while invisible. `/nearby` never returns coordinates or distances.
@@ -258,14 +260,14 @@ Everything below is **done and on `main`** (105 server tests passing):
   - `useNearbyPeople`: re-uploads local photo when going visible or when server copy is missing
   - "Delete account" UI in ProfilePage with two-step confirmation
 - `@capacitor/filesystem` installed; `LOCAL_PHOTO_PATH` constant in `constants.js`
-- 136 server tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
+- 137 server tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
 
 ---
 
 ## What still needs doing
 
 **Privacy — remaining (all optional / lower priority):**
-1. **Residual privacy risks** — listed in `PRIVACY_REVIEW.md` §4. The 30-minute wipe only runs while the API process is awake; `.github/workflows/keep-awake.yml` pings it every 5 minutes to keep Render's free plan from sleeping.
+1. **Residual privacy risks** — listed in `PRIVACY_REVIEW.md` §4. The 30-minute wipe only runs while the API process is awake, so the server does a last sweep on SIGTERM (`server/index.js`); whether Render delivers that signal on idle spin-down is still to be confirmed from its logs.
 2. **Data-export endpoint** — a formal GDPR/CCPA "access" request path (deletion already exists via `DELETE /me`).
 3. **Harden photo serving (H1 residual, optional)** — photo files are unguessable random URLs now, but still public bearer capabilities; auth-gated or signed URLs are optional further hardening.
 

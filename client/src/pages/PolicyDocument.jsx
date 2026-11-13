@@ -136,7 +136,7 @@ export default function PolicyDocument({ onBack }) {
           <><B>Email links:</B> confirmation links last 24 hours and password-reset links one hour; each works once. Our record of a link is deleted once it’s used or expired.</>,
           <><B>Your own tag</B> stays on your device until you delete your account, sign in as someone else on that device, or clear the app’s storage. The app keeps nothing about other people on your device.</>,
         ]} />
-        <P>Two honest caveats. The automatic clean-up runs every few minutes; if our server is ever restarting or briefly unavailable, it finishes as soon as the server is back — nobody can see your tag in the meantime. And once we delete something, traces may remain for a limited time in our providers’ routine backups and logs, which we don’t control directly.</P>
+        <P>Two honest caveats. The automatic clean-up runs every few minutes while our server is running. When nobody has used Nametag for a while the server goes to sleep; it clears out leftover tags as it shuts down, and checks again the moment it wakes. If a shutdown is ever cut short, a tag could stay stored until that next wake-up — nobody can see it in the meantime. And once we delete something, traces may remain for a limited time in our providers’ routine backups and logs, which we don’t control directly.</P>
 
         <H>Deleting your data</H>
         <P>You can delete your entire account from within the app (<B>My tag → Delete account</B>). This immediately and permanently removes your account, your tag, and your photo from our server, and clears the copy on that device. Going <B>invisible</B> removes your tag, photo, location and party code from our server without deleting your account.</P>

@@ -2,7 +2,8 @@
 // the sweep that enforces them. Runs on startup and every few minutes.
 //
 // The server holds a tag only while its owner is in the room:
-//   - a tag nobody has refreshed in STALE_MINUTES is wiped (you left)
+//   - a tag nobody has refreshed in STALE_MINUTES is wiped (you left) — and
+//     sooner than that if the server itself is about to stop
 //   - a party code is good for PARTY_CODE_HOURS; after that the party is over
 //     and its members go invisible
 //   - spent or expired email links, and accounts that never verified, are deleted
@@ -17,6 +18,10 @@ const db = require('./db');
 // (the app refreshes every minute while open), and is deleted at the same point:
 // there's no reason to keep what nobody can see.
 const STALE_MINUTES = 30;
+// When the server is shutting down (index.js) it can't wait out the 30 minutes,
+// so it drops every tag that hasn't refreshed in this long. Anyone actively
+// using the app refreshes every minute and is left alone.
+const SHUTDOWN_STALE_MINUTES = 5;
 const PARTY_CODE_HOURS = 4;
 const UNVERIFIED_ACCOUNT_DAYS = 2;   // the verification link itself lasts 24h
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
@@ -65,12 +70,14 @@ function wipeProfile(userId, { stayHidden = false } = {}) {
   return wipeProfiles('user_id = $1', [userId], stayHidden ? ', always_visible = FALSE' : '');
 }
 
-async function runCleanup() {
+// `staleMinutes` is how long a tag may go without a refresh before it's wiped —
+// 30 normally, much shorter for the last sweep before the server stops.
+async function runCleanup({ staleMinutes = STALE_MINUTES } = {}) {
   const steps = {
     // People who left: no location refresh (or, if never located, no edit) lately.
     stale: () => wipeProfiles(
       `COALESCE(location_updated_at, updated_at) < NOW() - $1::interval AND ${HOLDS_TAG_DATA}`,
-      [`${STALE_MINUTES} minutes`]
+      [`${staleMinutes} minutes`]
     ),
     // Parties that are over: members go invisible rather than suddenly
     // becoming visible to the whole room.
@@ -105,5 +112,5 @@ async function runCleanup() {
 
 module.exports = {
   runCleanup, deletePhotoFile, wipeProfile, CLEAR_PROFILE_SET,
-  STALE_MINUTES, PARTY_CODE_HOURS,
+  STALE_MINUTES, SHUTDOWN_STALE_MINUTES, PARTY_CODE_HOURS,
 };
