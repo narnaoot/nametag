@@ -1,0 +1,12 @@
+{
+  "name": "nametag-e2e",
+  "private": true,
+  "description": "Browser tests: real people using the real app against a real database.",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

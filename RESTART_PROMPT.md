@@ -6,7 +6,29 @@ Paste this into Claude Code at the start of a new session to get up to speed qui
 
 ---
 
-## ✂️ Latest: decisions applied (Nov 2026)
+## 🧪 Latest: real tests in the repo (Nov 2026)
+
+Refactor step 1 of 4. Until now the only repo tests mocked the database, and the
+browser checks that actually caught bugs lived in a scratch folder.
+
+- **Integration tests** — `server/__tests__/integration/` run the API against a
+  real Postgres (`npm run test:integration`).
+- **Browser tests** — `e2e/` (Playwright): two people using the real app, with
+  the server's database checked after each step (`cd e2e && npm test`).
+- **CI** — `.github/workflows/tests.yml` runs unit, integration, lint/build and
+  browser tests on every pull request and on `main`.
+- **`TESTING.md`** explains the layers and how to run them. Both real-database
+  suites wipe their database and refuse any name without "test" in it.
+
+**When you change what the server stores or deletes, or how a tag moves between
+device and server, add or update an integration or browser test.**
+
+Still to do in this refactor: (2) collapse the two visibility flags
+(`always_visible`, `is_active`) into one; (3) untangle `ProfilePage`'s save
+logic; (4) trim this file and remove leftovers (unused `POST /me/photo`, the
+"visible N min" label that can never show).
+
+## ✂️ Earlier: decisions applied (Nov 2026)
 
 Nabil's calls on the open questions from the bug sweep:
 
@@ -290,10 +312,12 @@ Everything below is **done and on `main`** (105 server tests passing):
 
 ```bash
 git log --oneline -10       # see recent commits
-cd server && npm test       # run the 105-test suite
+cd server && npm test       # unit tests (database mocked)
 cd client && npm run build  # confirm the client builds
 git status                  # check for anything uncommitted
 ```
+
+The real-database and browser tests are described in `TESTING.md`.
 
 ---
 
@@ -334,7 +358,9 @@ server/
   middleware/auth.js     — JWT verification + token_version revocation check
   middleware/tokenVersion.js — the revocation lookup (mockable in tests)
   cleanup.js             — the data-retention rules + the 5-minute sweep that enforces them
-  __tests__/             — Jest + Supertest suite (105 tests)
+  __tests__/             — Jest + Supertest unit suite (mocked DB); integration/ runs against real Postgres
+
+e2e/                     — Playwright browser tests (see TESTING.md)
 ```
 
 ---

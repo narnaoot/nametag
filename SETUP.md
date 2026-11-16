@@ -44,6 +44,11 @@ Open http://localhost:5173
 > the extra columns/tables (email verification, token revocation) are set up for
 > you after the initial `schema.sql` load.
 
+## Tests
+
+`cd server && npm test` runs the unit tests. The real-database and browser tests
+are described in [`TESTING.md`](TESTING.md).
+
 ## How it works
 
 1. **Register / sign in** with email + password
