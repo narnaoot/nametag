@@ -137,6 +137,8 @@ async function joinParty(page, code) {
 // ── what's on screen ───────────────────────────────────────────────────────
 const tagOf = (page, name) => page.locator('.nt-tappable', { hasText: name });
 const headline = (page, text) => page.locator('.t-h2', { hasText: text });   // "You’re invisible", "The party’s over"…
+// The copy of your own tag that the device keeps.
+const deviceTag = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('CapacitorStorage.profile_data')));
 const onDevice = (page) => page.evaluate(() => Object.keys(localStorage).map(k => k.replace('CapacitorStorage.', '')).sort());
 
 // A name people nearby can see, re-reading the room until it shows (or doesn't).
@@ -159,5 +161,5 @@ module.exports = {
   SAME_ROOM, WIPED, sql, emptyRoom, serverCopy, backdate, sweep, emailedLink,
   device, createAccount, signUp, join, signIn,
   onTheWall, goTo, refresh, choose, joinParty,
-  tagOf, headline, onDevice, sees, doesNotSee, rename, doneButton,
+  tagOf, headline, deviceTag, onDevice, sees, doesNotSee, rename, doneButton,
 };

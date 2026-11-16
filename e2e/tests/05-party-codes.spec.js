@@ -55,6 +55,8 @@ test('a party code runs out after four hours: you go invisible and your tag is d
   await ada.getByRole('button', { name: 'Refresh' }).click();
   await expect(app.headline(ada, 'The party’s over')).toBeVisible();
   await expect.poll(() => app.serverCopy('ada@example.com')).toMatchObject({ ...app.WIPED, visible: false });
+  // …and the device has recorded it too (the server hears first, by a moment)
+  await expect.poll(() => app.deviceTag(ada)).toMatchObject({ always_visible: false, party_code: '' });
 
   await ada.reload();
   await expect(app.headline(ada, 'You’re invisible')).toBeVisible();
