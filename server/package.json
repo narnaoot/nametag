@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "test": "jest --forceExit"
+    "test": "jest --forceExit",
+    "test:integration": "jest --config jest.integration.config.js --runInBand --forceExit"
   },
   "jest": {
     "testEnvironment": "node",
@@ -15,7 +16,8 @@
     ],
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/__tests__/setup\\.js$"
+      "/__tests__/setup\\.js$",
+      "/__tests__/integration/"
     ]
   },
   "keywords": [],
