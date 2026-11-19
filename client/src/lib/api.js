@@ -105,12 +105,6 @@ export function getNearby() {
   return request('/profiles/nearby');
 }
 
-export function uploadPhoto(photoFile) {
-  const fd = new FormData();
-  fd.append('photo', photoFile);
-  return request('/profiles/me/photo', { method: 'POST', body: fd });
-}
-
 export function deleteAccount() {
   return request('/profiles/me', { method: 'DELETE' });
 }

@@ -1,150 +1,83 @@
 # Your To-Do List
 
-Things that require you (not Claude) to act — accounts, hardware, credentials, decisions.
-Updated at the end of every session.
-
-> **Codebase status (March 2026):** Web app is feature-complete and cleaned up — consistent theme system, no magic values, proper error handling. Ready for native iOS work whenever you have a Mac + Apple Developer account.
+Things only you can do — accounts, settings, hardware, decisions. Claude keeps
+this file up to date at the end of every session. How the app works today is in
+`RESTART_PROMPT.md`; what it stores and why is in `PRIVACY_REVIEW.md`.
 
 ---
 
-## 🔒 Privacy pass (Nov 2026) — things only you can do
+## ✅ Do soon
 
-Your goal is "nothing saved in the cloud". The code now holds a tag on the
-server only while you're on the wall (details: `PRIVACY_REVIEW.md`). What's left
-is outside the code:
-
-1. **Turn down retention at each provider.** "Deleted" only means deleted from
-   the live database and disk. Set each of these to the shortest option offered:
-   - **Neon** — history / point-in-time-restore window.
-   - **Resend** — how long sent-email logs are kept (they hold the recipient
-     address and the link).
-   - **Render** and **Vercel** — request-log retention (they hold IP addresses).
-2. **Confirm the shutdown clean-up runs on Render.** Render's free plan puts the
-   server to sleep after ~15 quiet minutes, which is before the 30-minute delete
-   would fire. The server now clears out leftover tags as it shuts down instead.
-   Two things for you:
+1. **Smoke-test the live app** at [nametag.n4bil.com](https://nametag.n4bil.com):
+   - Create an account → "Check your email" → click the link → onboarding.
+   - Make a tag with a photo, see the wall.
+   - Go **Invisible**, reload: you should stay invisible.
+   - Close the tab, reopen: your tag should come back.
+   - Forgot password → reset by email → older sessions are signed out.
+   - Delete the account, then register again with the same email: nothing
+     carries over.
+   If anything looks wrong, tell Claude what you see.
+2. **Render: confirm the shutdown clean-up.** Render's free plan puts the server
+   to sleep after ~15 quiet minutes — before the 30-minute delete would fire —
+   so the server clears out leftover tags as it shuts down.
    - In the Render dashboard, set the service's **Start Command** to
-     `node index.js` (it is probably `npm start`). Without this the stop signal
-     may not reach the server.
-   - After the next quiet spell, open the service's **Logs** and look for
-     `[shutdown] SIGTERM received` followed by `[shutdown] sweep finished`. If
-     they're there, the 30-minute promise holds. If they never appear, tell
-     Claude — the fallback is a free uptime monitor (UptimeRobot or cron-job.org
-     pinging `https://nametag.onrender.com/api/health` every 5 minutes) or a paid
-     always-on instance.
-   (The GitHub ping from the previous change was removed: GitHub only ran it
-   3 times in 24 hours.)
-3. **Check whether Render really has a photo disk.** `server/render.yaml` asks
-   for one on the free plan, which Render may not grant. Look for a Disk on the
-   service's page. Either answer is fine for privacy; it's about knowing.
+     `node index.js` (it is probably `npm start`); otherwise the stop signal may
+     not reach the server.
+   - After a quiet spell, open **Logs** and look for `[shutdown] SIGTERM
+     received` followed by `[shutdown] sweep finished`. If they never appear,
+     tell Claude: the fallback is a free uptime monitor (UptimeRobot or
+     cron-job.org pinging `https://nametag.onrender.com/api/health` every 5
+     minutes) or a paid always-on instance.
+3. **Read the privacy wording** — the Privacy tab and "Read the whole policy" in
+   the app (same text as `PRIVACY_POLICY.md`). It's a public promise.
 4. **Confirm the numbers** — 30 minutes (left the room), 4 hours (party code),
-   2 days (sign-up never confirmed). They're three constants at the top of
-   `server/cleanup.js`; if you change one, the policy text changes with it.
-5. **Read the new privacy wording** — the Privacy tab and "Read the whole
-   policy" in the app (same text as `PRIVACY_POLICY.md`). It's a public promise.
-6. Still open from before: **`privacy@n4bil.com` forwarding** and a **legal read**.
+   2 days (sign-up never confirmed). They're constants at the top of
+   `server/cleanup.js`; changing one changes the policy text too.
 
-**What happens when this deploys:** every tag that hasn't checked in for 30
-minutes is wiped from the server on the first sweep (people's devices put theirs
-back when they next open the app); sign-ups older than 2 days that never
-confirmed their email are deleted; existing party codes start their 4-hour clock.
+## ⚙️ Provider settings
 
----
+5. **Turn retention down at each provider.** "Deleted" means deleted from the
+   live database and disk; providers keep their own copies for a while. Set each
+   to the shortest option offered:
+   - **Neon** — history / point-in-time-restore window.
+   - **Resend** — sent-email logs (they hold the address and the link).
+   - **Render** and **Vercel** — request logs (they hold IP addresses).
+6. **Check whether Render gave you a photo disk.** `server/render.yaml` asks for
+   one on the free plan, which Render may not grant — look for a Disk on the
+   service's page. Either answer is fine for privacy; without one, photos vanish
+   on restart and the app re-uploads them.
+7. **Set up `privacy@n4bil.com`** forwarding (Namecheap Email Forwarding) so the
+   policy's contact address receives mail.
 
-## 🐞 Bug sweep (Nov 2026) — decisions, all settled
+## 📜 Before real users
 
-1. **Pronouns "skip" saves `they/them`** — you chose to leave it as is.
-2. **Sign-in rate limit** — raised. A room on one Wi-Fi shares an IP, so the
-   per-IP limit is now a loose backstop (600 per 15 min); guessing one account's
-   password is limited to 10 failed tries per 15 min, and emails to one address
-   to 5 per 15 min.
-3. **"Remember the name" and "Hide from me"** — removed entirely, at your
-   request. Opening someone's tag now just shows it. Saved names and hidden
-   lists already on people's devices are deleted the next time they open the app.
-4. **Password reset on an unverified account** — a completed reset now counts as
-   verifying the email.
-5. **Invisible is persistent** — confirmed.
+8. **A legal read** of `PRIVACY_POLICY.md`. The owner name, contact address,
+   minimum age (16) and date are in `POLICY_META` at the top of
+   `client/src/pages/PolicyDocument.jsx`.
+9. *(Optional)* **A public policy URL** — an App Store listing needs one; the
+   in-app screen covers the app itself.
 
----
+## 🤔 Open design questions
 
-## 🎨 UI redesign — "nearby name tags" (Aug 2026, MERGED to `main` — PR #16)
+From the redesign (`REDESIGN_QUESTIONS.md`), still running on best guesses:
+- **Venue / place name** — the wall says "nearby"; there's no venue lookup.
+- **Party hosting** — anyone can type any code; there's no "host" who creates one.
+- **Radius** — fixed at 100 m with no control in the UI.
 
-The whole client was rebuilt to the Claude Design canvas (design source
-formerly in `redesign/`, since removed — in git history)
-(Libre Caslon + Nunito; orchid = the app; the wall of hand-tilted tags;
-three-way visibility control; new Privacy tab; two-step onboarding; party
-code sheet; responsive tablet/desktop; you pick your own tag colour, with the
-orchid "you" ring marking your own tag). Backend untouched; 80 server tests still
-pass. It's deployed and **live at https://nametag.n4bil.com** (custom domain via
-Namecheap CNAME → Vercel; Render `APP_URL` set to match).
-Details in `client/REDESIGN.md`.
+## ✔️ Decided (for reference)
 
-**Follow-up pass done** (Aug 2026) — your three calls are handled:
+- Visibility: Invisible is persistent until you choose Nearby or Party code.
+- Party codes last 4 hours, then you go invisible.
+- Closing the app deletes your tag from the server; it comes back when you return.
+- No remembering or hiding people — the app keeps nothing about others.
+- Pronoun "skip" in onboarding saves they/them.
+- Sign in with Apple dropped for the web prototype; add it back when native.
+- You pick your own tag colour (coral by default); the orchid ring marks you.
 
-- **Privacy copy rewritten to match what the code actually does.** (Rewritten
-  again in Nov 2026 — see the privacy section at the top of this file and
-  [`PRIVACY_REVIEW.md`](PRIVACY_REVIEW.md).)
-- **Sign in with Apple: dropped** for the web prototype (needs a paid Apple
-  Developer account + domain/secret setup). Sign-in is now a single "Continue
-  with email". Add Apple back when you go native.
-- **Tag colour: people pick their own again** (coral default; your tag gets the
-  orchid "you" ring on the wall so you can still spot yourself).
-
-Still open (best-guess shipped, see the questions file): venue/place name,
-mutual-context row, party hosting, and radius UI. (The "Read the whole policy"
-link is now wired to a full in-app policy screen — done.)
-
-### Privacy — status
-
-Superseded by the **Privacy pass (Nov 2026)** section at the top of this file.
-The earlier review fixes (unguessable photo URLs, email via Resend, auth rate
-limiting, non-enumerating sign-up, revocable sessions, self-hosted fonts) are all
-shipped; `PRIVACY_REVIEW.md` §6 lists them. The policy's owner, contact address,
-minimum age and date are set in `POLICY_META` at the top of
-`client/src/pages/PolicyDocument.jsx`.
-
-Still optional: a **public policy URL** for an App Store listing (the in-app
-screen covers the app itself).
-
-**Deploy note (CORS):** the API now allowlists origins. Defaults cover
-`nametag.n4bil.com`, `n4bil.com`, `www.n4bil.com`, `*.vercel.app` previews, and
-native/localhost. If the live app ever can't reach the API after a deploy, set
-`CORS_ORIGINS` (comma-separated) on Render to your exact frontend origin.
-
-**Remaining lower-priority items:** a data-export endpoint, and refresh-token
-rotation to shorten the 30-day sign-in token. Neither is a blocker.
-
----
-
-## ✅ Test the live app (do this soon)
-
-The codebase has had significant refactoring and new features added. Before going further, do a quick end-to-end smoke test on the live deployment:
-
-1. Go to [nametag.n4bil.com](https://nametag.n4bil.com) (or the underlying [nametag-pi.vercel.app](https://nametag-pi.vercel.app))
-2. Register a new account → you should land on a **"Check your email"** screen (registration no longer logs you straight in)
-3. Open the **verification email** (from Resend) and click the link → you should be signed in and dropped into onboarding
-4. Fill in your profile — name, pronouns, photo, color, stickers
-5. Check the nearby grid loads (it'll be empty if no one else is around, that's fine)
-6. Test forgot password — enter your email, receive the **reset email**, use the link. After resetting, confirm any older session is signed out (token revocation).
-7. Test "Delete account" — the button is in the My tag page
-8. **Account re-use after deletion** — register + verify, fill a profile, delete the account, then register again with the same email. Confirm no old data carries over.
-
-If anything looks broken, tell Claude what you see.
-
----
-
-## 🔒 Privacy decisions — settled
-
-- **How long is "stale"?** 30 minutes without the app checking in (was 24 hours).
-- **Going invisible** deletes your tag, photo, location and party code from the
-  server at once, and you stay invisible until you choose otherwise. Your device
-  keeps the tag and re-uploads it when you go visible.
-- **Closing the app** deletes the server's copy straight away on the web.
-- **Party codes** last 4 hours.
-- **Privacy policy** — written, shown in the app, mirrored in `PRIVACY_POLICY.md`.
-- **Right to erasure** — My tag → Delete account.
-
-What still needs you is at the top of this file.
+**Deploy note (CORS):** the API allowlists origins (`nametag.n4bil.com`,
+`n4bil.com`, `www.n4bil.com`, `*.vercel.app` previews, native, localhost). If
+the live app ever can't reach the API after a deploy, set `CORS_ORIGINS`
+(comma-separated) on Render to the exact frontend origin.
 
 ---
 
@@ -221,9 +154,9 @@ Once you're happy with TestFlight:
 
 ---
 
-## 📧 Real email (password reset) — ✅ DONE (Aug 2026)
+## 📧 Email — ✅ done (reference)
 
-Reset emails now send in production via **Resend**. Render's free tier blocks
+Verification and reset emails send in production via **Resend**. Render's free tier blocks
 outbound SMTP, so the server calls Resend's **HTTPS API** directly
 (`server/routes/auth.js`), reusing the Resend key. Verified sending domain:
 `send.n4bil.com`. Verified end-to-end (a real reset email was received).
@@ -237,9 +170,9 @@ build the reset link).
 
 ## 📸 Photo storage
 
-Photos currently live on Render's disk (`/uploads`). The privacy principle says server-side photos are temporary — deleted when you go invisible, close the app, or haven't checked in for 30 minutes. So a fancy CDN/S3 setup is less critical than it first appeared, since files shouldn't accumulate.
-
-The main risk right now: free Render instances can lose disk contents on redeploy. This is acceptable during development. Once real users are involved, revisit — but the solution may simply be "upload fresh each time you go visible" rather than persistent cloud storage.
+Photos live on Render's disk only while their owner is on the wall, so files
+don't accumulate and a CDN/S3 setup isn't needed. If Render has no persistent
+disk (item 6), a restart loses them and the app re-uploads from the device.
 
 ---
 

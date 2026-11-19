@@ -47,11 +47,11 @@ belongs to the app).
   `STICKER_LABELS`), pronoun options, length limits, and the on-device storage
   keys (photo, profile). (The brightened
   orchid accent lives only as the `--brand` CSS var in `index.css`.)
-- **`src/lib/colors.js`** — pure helpers: `resolveAccentKey` (you → coral; others →
-  stored `tag_color` remapped, else a stable hash of their id),
-  `accentTrio`/`personTrio` (→ `{hue, tint, deep}` CSS-var refs),
-  `visibleMinutes`/`visibleLabel` ("visible N min"), `initials`, and
-  `toBadgePerson` (server row → tag "person" shape). Distance and waves are gone.
+- **`src/lib/colors.js`** — pure helpers: `accentTrio`/`personTrio` (a person →
+  `{hue, tint, deep}` CSS-var refs: their stored `tag_color`, else coral for you
+  and a stable hash of their id for others), `initials`, and `toBadgePerson`
+  (server row → tag "person" shape). No distance and no "visible N min": the
+  server deliberately sends neither.
 
 ## Components
 
@@ -111,7 +111,7 @@ actions. Nothing about other people is stored, on the server or the device.
 ## Data mapping
 
 The tag "person" shape `{ id, name, pronouns, tagline, accent, stickers[], photo,
-visibleSince, you }` maps onto the backend:
+you }` maps onto the backend:
 
 | person field | server field | notes |
 |---|---|---|
@@ -119,9 +119,7 @@ visibleSince, you }` maps onto the backend:
 | accent | `tag_color` | the colour you picked (coral by default); others derived from id if unset/legacy |
 | stickers[] | `stickers` | emoji array in a JSON string; word looked up via `STICKER_LABELS` |
 | photo | `photo_path` | via `photoUrl()`; your own also from Capacitor Filesystem |
-| visibleSince | `location_updated_at` | drives "visible N min" |
 
-Backend routes, schema, and tests are **unchanged**.
 
 ## Responsive — tablet (12g) & desktop (12h)
 
@@ -148,9 +146,9 @@ The wall (`components/Wall.jsx`) takes a column count that grows with width:
 ## Not done yet / follow-ups
 
 - **Privacy hardening** — photos are now cropped + downscaled on-device before
-  upload (`src/lib/imageCrop.js`, wired into onboarding + My tag). Still open: photo
-  files sit at public `/uploads/...` URLs. See `../REDESIGN_QUESTIONS.md`.
-- **Venue detection, mutual context, party hosting, radius UI** — best-guess
+  upload (`src/lib/imageCrop.js`, wired into onboarding + My tag). Photo files
+  are served from unguessable random URLs (see `../PRIVACY_REVIEW.md` R5).
+- **Venue detection, party hosting, radius UI** — best-guess
   decisions / out of scope, all in `../REDESIGN_QUESTIONS.md`. Sign in with Apple
   was dropped for the web prototype (add it back with a native app + dev account).
 - **Real photography** — the sign-in hero uses three illustrated character

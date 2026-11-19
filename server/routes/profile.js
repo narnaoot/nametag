@@ -59,7 +59,7 @@ const PHOTO_EXTENSIONS = {
 };
 
 // Fetch just a user's stored photo path — the row before deleting or replacing
-// the file, or undefined when the profile doesn't exist yet. Shared by the four
+// the file, or undefined when the profile doesn't exist yet. Shared by the
 // routes that touch the on-disk photo.
 async function fetchProfilePhoto(userId) {
   const { rows } = await db.query('SELECT photo_path FROM profiles WHERE user_id = $1', [userId]);
@@ -157,24 +157,6 @@ router.put('/me', auth, upload.single('photo'), async (req, res) => {
 
   const result = await db.query('SELECT * FROM profiles WHERE user_id = $1', [req.user.userId]);
   res.json(result.rows[0]);
-});
-
-// Upload or replace photo only — called when re-establishing visibility
-router.post('/me/photo', auth, upload.single('photo'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No photo provided' });
-  const photo_path = `/uploads/${req.file.filename}`;
-  const existing = await fetchProfilePhoto(req.user.userId);
-  if (!existing) {
-    // No profile row to attach it to — don't keep an orphaned file.
-    await deletePhotoFile(photo_path);
-    return res.status(400).json({ error: 'Create your tag first' });
-  }
-  await deletePhotoFile(existing.photo_path);
-  await db.query(
-    'UPDATE profiles SET photo_path = $2, updated_at = NOW() WHERE user_id = $1',
-    [req.user.userId, photo_path]
-  );
-  res.json({ photo_path });
 });
 
 // Update location (stores plain lat/lng — no PostGIS needed). Only for someone

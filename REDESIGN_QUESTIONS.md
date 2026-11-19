@@ -70,10 +70,9 @@ The full audit, including what is still imperfect, is **`PRIVACY_REVIEW.md`**.
    so the header reads "N tags nearby" and copy uses "nearby". Want venue
    detection (needs a places API + backend), or keep it generic?
 
-7. **Mutual-context row (12e).** "Theo is here too — you were both at the same
-   open mic last week." No backend produces this, so the row only renders when
-   context data is supplied (never, in production, right now). Is a
-   mutual-context feature planned, or should I drop the row?
+7. ~~**Mutual-context row (12e).**~~ → **Dropped (Nov 2026).** "You were both at
+   the same open mic last week" needs a record of who was where, which the
+   privacy rules forbid. The row and its code were removed.
 
 8. **Party code has no "create/host" flow.** 13a assumes a host tells you a code
    out loud. Party code just filters the existing nearby query. Hosting is
