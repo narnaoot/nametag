@@ -74,7 +74,7 @@ belongs to the app).
 | `pages/AuthPage.jsx` | 12a | Sign in — "Put a name to the room." landing (hero tags) → email/password flow. Registration sends a **verification email** and shows a "Check your email" panel (with resend); `?verify=<token>` confirms + signs in + onboards. Also forgot/reset + `?reset=` deep link, and a "link expired" state. |
 | `pages/OnboardingPage.jsx` | 12b, 12c | Two steps with a two-dash indicator. Step 1: type onto the coral tag + pronouns + one line. Step 2: photo + stickers + who-can-see-you. |
 | `pages/GridPage.jsx` | 12d, 12g, 12h | The wall — responsive by viewport (see below). Header ("N tags nearby/here", Nearby, Refresh, your orchid-ringed avatar), the visibility control, and the tilted tag wall. Opening a tag → DetailSheet (phone/tablet) or the right rail (desktop); choosing Party code → PartyCodeSheet. |
-| `pages/ProfilePage.jsx` | 12f | My tag — coral preview, the visibility control above three tap-to-edit rows (Name+pronouns / One line / Stickers), auto-save, on-device photo, sign out + delete. |
+| `pages/ProfilePage.jsx` | 12f | My tag — coral preview, the visibility control above tap-to-edit rows (Name+pronouns / One line / Stickers / Colour), sign out, delete. Layout only: loading, editing and the queued auto-save live in `hooks/useTagEditor.js`. |
 | `pages/PrivacyPage.jsx` | 14a | Privacy tab — sage "Right now" card + plain statement cards (kept in step with the actual server behaviour — see `../PRIVACY_REVIEW.md`) + "Read the whole policy" → opens `PolicyDocument.jsx`. |
 | `pages/PolicyDocument.jsx` | — | The full privacy policy rendered in-app (mirrors `../PRIVACY_POLICY.md`); the four fillable values live in one `POLICY_META` block. |
 

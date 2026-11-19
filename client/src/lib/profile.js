@@ -37,15 +37,18 @@ export function toProfileFormData(fields, photoFile) {
   return fd;
 }
 
-// The My-tag editor saves in the background, and can still be mid-save when you
-// switch tabs. Screens that read the profile right after (the wall, Privacy)
-// wait for that save first, so they don't show the tag from before the edit.
-let pendingSave = Promise.resolve();
-export function trackProfileSave(promise) {
-  pendingSave = Promise.resolve(promise).catch(() => {});
-  return promise;
+// Writes to the server from My tag go through one queue, so they run one at a
+// time in the order they were made: an older edit can't land after a newer one,
+// or after "go invisible". `task` is a function that starts the write.
+// Screens that read the profile right after (the wall, Privacy) wait for the
+// queue first, so they don't show the tag from before the edit.
+let queue = Promise.resolve();
+export function queueProfileSave(task) {
+  const run = queue.then(task);
+  queue = run.catch(() => {});
+  return run;
 }
-export function profileSaveSettled() { return pendingSave; }
+export function profileSaveSettled() { return queue; }
 
 // Party codes are said out loud: capitals, hyphens and spaces don't matter, so
 // compare (and store) letters and digits only. Mirrors the server.
