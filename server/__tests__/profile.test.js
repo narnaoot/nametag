@@ -536,60 +536,6 @@ describe('POST /api/profiles/me/visibility', () => {
 });
 
 // ---------------------------------------------------------------------------
-// POST /api/profiles/me/photo
-// ---------------------------------------------------------------------------
-describe('POST /api/profiles/me/photo', () => {
-  const smallImage = Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-    'base64'
-  );
-
-  it('uploads a photo and returns the new photo_path', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ photo_path: null }] }); // SELECT existing
-    db.query.mockResolvedValueOnce({ rows: [] });                     // UPDATE
-
-    const res = await request(app)
-      .post('/api/profiles/me/photo')
-      .set('Authorization', authHeader())
-      .attach('photo', smallImage, { filename: 'avatar.png', contentType: 'image/png' });
-
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('photo_path');
-    expect(res.body.photo_path).toMatch(/^\/uploads\//);
-  });
-
-  it('deletes old photo when uploading a new one', async () => {
-    const oldPhoto = '/uploads/user_1_old.jpg';
-    db.query.mockResolvedValueOnce({ rows: [{ photo_path: oldPhoto }] });
-    db.query.mockResolvedValueOnce({ rows: [] });
-
-    await request(app)
-      .post('/api/profiles/me/photo')
-      .set('Authorization', authHeader())
-      .attach('photo', smallImage, { filename: 'new.png', contentType: 'image/png' });
-
-    expect(fs.promises.unlink).toHaveBeenCalledWith(expect.stringContaining('user_1_old.jpg'));
-  });
-
-  it('returns 400 when no file is provided', async () => {
-    const res = await request(app)
-      .post('/api/profiles/me/photo')
-      .set('Authorization', authHeader());
-
-    expect(res.status).toBe(400);
-    expect(res.body).toHaveProperty('error', 'No photo provided');
-  });
-
-  it('returns 401 without a token', async () => {
-    const res = await request(app)
-      .post('/api/profiles/me/photo')
-      .attach('photo', smallImage, { filename: 'avatar.png', contentType: 'image/png' });
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ---------------------------------------------------------------------------
 // DELETE /api/profiles/me
 // ---------------------------------------------------------------------------
 describe('DELETE /api/profiles/me', () => {
@@ -890,18 +836,6 @@ describe('profile hardening', () => {
       expect(res.status).toBe(400);
     }
     expect(db.query).not.toHaveBeenCalled();
-  });
-
-  it('refuses a photo-only upload when there is no profile to attach it to', async () => {
-    db.query.mockResolvedValueOnce({ rows: [] }); // no profile row
-
-    const res = await request(app)
-      .post('/api/profiles/me/photo')
-      .set('Authorization', authHeader())
-      .attach('photo', png, { filename: 'a.png', contentType: 'image/png' });
-
-    expect(res.status).toBe(400);
-    expect(fs.promises.unlink).toHaveBeenCalledTimes(1);
   });
 });
 

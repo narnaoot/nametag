@@ -20,7 +20,7 @@ function hash(str) {
 // stored tag_color wins (orchid maps to citron — orchid is the app's). With no
 // choice, you default to coral and everyone else gets a stable colour derived
 // from their identity, so the same person always looks the same.
-export function resolveAccentKey(person, index = 0) {
+function resolveAccentKey(person, index = 0) {
   const stored = person?.accent;
   if (stored) {
     const remapped = ACCENT_REMAP[stored] || stored;
@@ -48,29 +48,9 @@ export function initials(name) {
   return (parts[0]?.[0] || '?').toUpperCase();
 }
 
-// "visible 12 min" — the only honest number left on a tag (distance is gone,
-// because everyone here is within a room's width). Derived from when the
-// person's location was last refreshed.
-export function visibleMinutes(since) {
-  if (!since) return null;
-  const t = typeof since === 'number' ? since : Date.parse(since);
-  if (Number.isNaN(t)) return null;
-  return Math.max(0, Math.floor((Date.now() - t) / 60000));
-}
-
-export function visibleLabel(since) {
-  const m = visibleMinutes(since);
-  if (m == null) return null;
-  if (m < 1) return 'visible just now';
-  if (m < 60) return `visible ${m} min`;
-  const h = Math.floor(m / 60);
-  const rem = m % 60;
-  return rem ? `visible ${h} hr ${rem} min` : `visible ${h} hr`;
-}
-
 // ── Server profile row → tag "person" shape ───────────────────────────────
-// { id, name, pronouns, tagline, accent (paintbox key), stickers[], photo,
-//   visibleSince, you }. Distance and waves are gone in the redesign.
+// { id, name, pronouns, tagline, accent (paintbox key), stickers[], photo, you }.
+// No distance and no "when they arrived": the server deliberately sends neither.
 export function toBadgePerson(profile, { selfPhoto, you = false } = {}) {
   if (!profile) return null;
   let stickers = [];
@@ -83,7 +63,6 @@ export function toBadgePerson(profile, { selfPhoto, you = false } = {}) {
     accent: profile.tag_color || null,
     stickers,
     photo: selfPhoto || (profile.photo_path ? photoUrl(profile.photo_path) : null),
-    visibleSince: profile.location_updated_at || null,
     you,
   };
 }

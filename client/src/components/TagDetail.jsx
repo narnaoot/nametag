@@ -6,7 +6,7 @@
 // the wall.
 import { Avatar } from './Avatar';
 import { Eyebrow, Pill } from './TagBits';
-import { personTrio, visibleLabel } from '../lib/colors';
+import { personTrio } from '../lib/colors';
 import { STICKER_LABELS } from '../lib/constants';
 
 function nameSize(name, base) {
@@ -23,7 +23,6 @@ export default function TagDetail({
   if (!person) return null;
   const you = !!person.you;
   const trio = personTrio(person, index);
-  const vis = you ? 'this is you' : visibleLabel(person.visibleSince);
 
   return (
     <>
@@ -53,10 +52,10 @@ export default function TagDetail({
             ))}
           </div>
         )}
-        {vis && (
+        {you && (
           <div style={{ marginTop: 10, paddingTop: 14, borderTop: '1.5px solid var(--border)', width: '100%', textAlign: 'center' }}>
             <span style={{ fontWeight: 800, fontSize: 11, letterSpacing: '.13em', textTransform: 'uppercase',
-                  color: 'var(--muted)' }}>{vis}</span>
+                  color: 'var(--muted)' }}>this is you</span>
           </div>
         )}
       </div>

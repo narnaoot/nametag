@@ -32,7 +32,7 @@ async function decode(source) {
 
 // Returns { dataUrl, file } — a centered-square, downscaled JPEG. `file` is ready
 // to upload; `dataUrl` is for the live preview and the on-device copy.
-export async function cropToSquare(source, { size = OUT_SIZE, quality = QUALITY, type = OUT_TYPE } = {}) {
+async function cropToSquare(source, { size = OUT_SIZE, quality = QUALITY, type = OUT_TYPE } = {}) {
   const { img, cleanup } = await decode(source);
   try {
     const w = img.width, h = img.height;

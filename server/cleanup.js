@@ -110,6 +110,6 @@ async function runCleanup({ staleMinutes = STALE_MINUTES } = {}) {
 }
 
 module.exports = {
-  runCleanup, deletePhotoFile, wipeProfile, CLEAR_PROFILE_SET,
+  runCleanup, deletePhotoFile, wipeProfile,
   STALE_MINUTES, SHUTDOWN_STALE_MINUTES, PARTY_CODE_HOURS,
 };
