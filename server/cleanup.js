@@ -32,8 +32,7 @@ const UPLOADS_DIR = path.join(__dirname, 'uploads');
 const CLEAR_PROFILE_SET = `display_name = NULL, pronouns = NULL, tagline = NULL,
       tag_color = NULL, stickers = NULL, photo_path = NULL,
       lat = NULL, lng = NULL, location_updated_at = NULL,
-      party_code = NULL, party_code_set_at = NULL,
-      is_active = FALSE`;
+      party_code = NULL, party_code_set_at = NULL`;
 
 // True for a row that still holds something CLEAR_PROFILE_SET would remove.
 const HOLDS_TAG_DATA = `(display_name IS NOT NULL OR photo_path IS NOT NULL

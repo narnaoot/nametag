@@ -147,13 +147,13 @@ describe('coming off the wall', () => {
     await share(ada);
     const { photo_path } = await row(ada);
 
-    await post('/api/profiles/me/visibility', { is_active: false }, ada.token);
+    await post('/api/profiles/me/visibility', { visible: false }, ada.token);
 
     expect(photoOnDisk(photo_path)).toBe(false);
     expect(await row(ada)).toMatchObject({
       display_name: null, pronouns: null, tagline: null, photo_path: null,
       lat: null, lng: null, location_updated_at: null, party_code: null,
-      always_visible: false, is_active: false,
+      always_visible: false,
     });
 
     // a location sent while invisible is not stored at all
@@ -173,6 +173,28 @@ describe('coming off the wall', () => {
 
     // coming back: the server says it has no tag, the device puts it back
     expect((await share(ada)).body.has_tag).toBe(false);
+    await saveTag(ada, { display_name: 'Ada' });
+    expect((await share(ada)).body.has_tag).toBe(true);
+    expect(await nearbyNames(otto)).toEqual(['Ada']);
+  });
+});
+
+describe('visibility is one setting', () => {
+  it('the old "on the wall right now" flag is gone from the database', async () => {
+    const { rows } = await db.query(
+      `SELECT column_name FROM information_schema.columns WHERE table_name = 'profiles'`);
+    const columns = rows.map(r => r.column_name);
+    expect(columns).toContain('always_visible');
+    expect(columns).not.toContain('is_active');
+  });
+
+  it('choosing visible again lets your location and tag back on the wall', async () => {
+    const ada = await arrive('ada@example.com', 'Ada');
+    const otto = await arrive('otto@example.com', 'Otto');
+    await post('/api/profiles/me/visibility', { visible: false }, ada.token);
+    expect(await nearbyNames(otto)).toEqual([]);
+
+    await post('/api/profiles/me/visibility', { visible: true }, ada.token);
     await saveTag(ada, { display_name: 'Ada' });
     expect((await share(ada)).body.has_tag).toBe(true);
     expect(await nearbyNames(otto)).toEqual(['Ada']);

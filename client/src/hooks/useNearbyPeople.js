@@ -10,7 +10,7 @@ import { pushProfile } from '../lib/profileSync';
 function deriveMode(profile) {
   if (!profile) return 'nearby';
   return visibilityMode({
-    alwaysVisible: profile.always_visible !== false || profile.is_active,
+    alwaysVisible: profile.always_visible !== false,
     partyCode: profile.party_code,
   });
 }
@@ -74,7 +74,7 @@ export function useNearbyPeople() {
     await setVisibility(false);
     await patchLocalProfile(OFF_THE_WALL);
     setMyProfile(prev => (prev
-      ? { ...prev, is_active: false, always_visible: false, photo_path: null, party_code: null } : prev));
+      ? { ...prev, always_visible: false, photo_path: null, party_code: null } : prev));
   }, [applyMode]);
 
   // A party code lasts a few hours. When it runs out the party is over, and

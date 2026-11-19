@@ -6,7 +6,27 @@ Paste this into Claude Code at the start of a new session to get up to speed qui
 
 ---
 
-## 🧪 Latest: real tests in the repo (Nov 2026)
+## 🎚️ Latest: one visibility setting (Nov 2026)
+
+Refactor step 2 of 4. Visibility was two flags — `always_visible` (your choice)
+and `is_active` (on the wall right now) — and the two disagreeing caused most of
+the visibility bugs. `is_active` only ever mirrored "has a tag and a location
+from the last 30 minutes", so it's gone:
+
+- `always_visible` is the one setting: TRUE = on the wall (nearby or party),
+  FALSE = chose invisible. The name is historical; a comment in `schema.sql`
+  says so.
+- The migration drops `is_active` (`DROP COLUMN IF EXISTS`, tested against the
+  old schema).
+- `POST /me/visibility` takes `{ visible }` (was `{ is_active }`). An app from
+  before the change sends `{ is_active: false }`, which still reads as "go
+  invisible" — the only value old apps ever sent.
+
+Still to do in this refactor: (3) untangle `ProfilePage`'s save logic;
+(4) trim this file and remove leftovers (unused `POST /me/photo`, the
+"visible N min" label that can never show).
+
+## 🧪 Earlier: real tests in the repo (Nov 2026)
 
 Refactor step 1 of 4. Until now the only repo tests mocked the database, and the
 browser checks that actually caught bugs lived in a scratch folder.
@@ -23,10 +43,7 @@ browser checks that actually caught bugs lived in a scratch folder.
 **When you change what the server stores or deletes, or how a tag moves between
 device and server, add or update an integration or browser test.**
 
-Still to do in this refactor: (2) collapse the two visibility flags
-(`always_visible`, `is_active`) into one; (3) untangle `ProfilePage`'s save
-logic; (4) trim this file and remove leftovers (unused `POST /me/photo`, the
-"visible N min" label that can never show).
+(Steps 2–4 of this refactor follow in later sections.)
 
 ## ✂️ Earlier: decisions applied (Nov 2026)
 
@@ -86,8 +103,7 @@ screen at phone / tablet / desktop sizes plus the two-user browser scenarios:
 - Dead props/exports and stale comments removed.
 
 **Not done, worth considering:** `PUT /profiles/me` could be a single upsert
-(the tests are coupled to its three-query sequence); the two visibility flags
-(`always_visible`, `is_active`) could become one `visibility` column; and
+(the tests are coupled to its three-query sequence); and
 "visible N min" on an opened tag never shows because `/nearby` doesn't return
 `location_updated_at`.
 
@@ -257,9 +273,9 @@ Everything below is **done and on `main`** (105 server tests passing):
 
 - Full auth flow: register → **email verification** → login, forgot/reset password. Emails send via **Resend's HTTPS API** in production (logs the link to console in dev when no provider is set). Login is gated on `email_verified`; JWTs are revocable via `token_version` (a reset revokes existing sessions; client auto-signs-out on a 401).
 - Privacy/security hardening: unguessable photo filenames, auth rate-limiting, self-hosted fonts, CORS allowlist, helmet headers, hashed reset/verification tokens. Full audit in `PRIVACY_REVIEW.md`; user-facing policy in `PRIVACY_POLICY.md` + the in-app `PolicyDocument.jsx`.
-- Profile editor: display name, pronouns, tagline, photo, nametag color, emoji stickers (up to 3), radius, always-visible toggle
+- Profile editor: display name, pronouns, tagline, photo, nametag color, emoji stickers (up to 3), and the three-way visibility control
 - Nearby grid: Haversine distance in SQL (no PostGIS) used to filter and order only — never returned; 30-min activity window, bounding-box pre-filter
-- Location + visibility: `is_active` toggle on the grid screen; auto-refresh every 60s
+- Location + visibility: the three-way control (invisible / nearby / party) on the wall, backed by the single `always_visible` setting; auto-refresh every 60s
 - First-time UX: new users land on the profile tab automatically
 - iOS / Capacitor: app builds and runs natively; `@capacitor/geolocation` wired up; photo URLs work in both web and native builds
 - Photo upload: uses standard `<input type="file">` on web (Capacitor Camera removed from ProfilePage — was breaking in browsers); Capacitor Camera still available for native iOS if needed
@@ -282,7 +298,7 @@ Everything below is **done and on `main`** (105 server tests passing):
   - `useNearbyPeople`: re-uploads local photo when going visible or when server copy is missing
   - "Delete account" UI in ProfilePage with two-step confirmation
 - `@capacitor/filesystem` installed; `LOCAL_PHOTO_PATH` constant in `constants.js`
-- 137 server tests passing (Jest + Supertest, mocked DB + fs.promises.unlink)
+- 138 server unit tests (mocked DB), plus integration and browser suites — see `TESTING.md`
 
 ---
 

@@ -192,8 +192,7 @@ router.post('/me/location', auth, async (req, res) => {
   const { rows } = await db.query(
     `UPDATE profiles
      SET lat = $2, lng = $3,
-         location_updated_at = NOW(),
-         is_active = TRUE
+         location_updated_at = NOW()
      WHERE user_id = $1 AND always_visible = TRUE
      RETURNING display_name IS NOT NULL AS has_tag`,
     [req.user.userId, roundCoord(latitude), roundCoord(longitude)]
@@ -211,20 +210,16 @@ router.post('/me/leave', auth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// Set visibility — going invisible takes the tag off the server (name, photo,
-// location, party code) and records the choice (always_visible = FALSE), so
-// invisibility survives a reload or a new session: you stay hidden until you
-// choose to be seen again.
+// Set visibility, body { visible: boolean }. Going invisible takes the tag off
+// the server (name, photo, location, party code) and records the choice
+// (always_visible = FALSE), so it survives a reload or a new session: you stay
+// hidden until you choose to be seen again. Going visible only records the
+// choice; the app then sends the tag itself (PUT /me) from the device.
 router.post('/me/visibility', auth, async (req, res) => {
-  const { is_active } = req.body;
-  const newActive = !!is_active;
-  if (!newActive) {
-    await wipeProfile(req.user.userId, { stayHidden: true });
+  if (req.body.visible === true) {
+    await db.query('UPDATE profiles SET always_visible = TRUE WHERE user_id = $1', [req.user.userId]);
   } else {
-    await db.query(
-      'UPDATE profiles SET is_active = TRUE WHERE user_id = $1',
-      [req.user.userId]
-    );
+    await wipeProfile(req.user.userId, { stayHidden: true });
   }
   res.json({ ok: true });
 });
@@ -285,7 +280,7 @@ router.get('/nearby', auth, async (req, res) => {
        WHERE p.user_id != $3
          AND p.lat IS NOT NULL
          AND p.lng IS NOT NULL
-         AND (p.always_visible = TRUE OR p.is_active = TRUE)
+         AND p.always_visible = TRUE
          AND p.location_updated_at > NOW() - $10::interval
          AND (p.party_code IS NULL OR p.party_code_set_at > NOW() - $11::interval)
          AND p.lat BETWEEN $4 AND $5

@@ -87,8 +87,8 @@ export function updateLocation(latitude, longitude) {
   return postJson('/profiles/me/location', { latitude, longitude });
 }
 
-export function setVisibility(is_active) {
-  return postJson('/profiles/me/visibility', { is_active });
+export function setVisibility(visible) {
+  return postJson('/profiles/me/visibility', { visible });
 }
 
 // Tell the server we're going (the page is closing) so it drops our tag now

@@ -38,7 +38,7 @@ const STATEMENTS = [
 ];
 
 function stateCopy(profile, place) {
-  const active = profile ? (profile.always_visible !== false || profile.is_active) : true;
+  const active = profile ? profile.always_visible !== false : true;
   if (!active) {
     return { title: 'Invisible', line: 'No one nearby can see your tag right now.' };
   }

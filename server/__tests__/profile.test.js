@@ -334,7 +334,6 @@ describe('Profile persistence across sessions', () => {
       photo_path: '/uploads/user_7_1700000000000.jpg',
       radius_meters: 200,
       always_visible: false,
-      is_active: true,
       tag_color: '#7C3AED',
       stickers: JSON.stringify(['🌟', '🎸']),
       lat: 51.5074,
@@ -453,20 +452,33 @@ describe('POST /api/profiles/me/location', () => {
 // POST /api/profiles/me/visibility
 // ---------------------------------------------------------------------------
 describe('POST /api/profiles/me/visibility', () => {
-  it('sets is_active to true and returns ok:true', async () => {
+  it('going visible records the choice and returns ok:true', async () => {
     // Going visible: single UPDATE query
     db.query.mockResolvedValueOnce({ rows: [] });
 
     const res = await request(app)
       .post('/api/profiles/me/visibility')
       .set('Authorization', authHeader())
-      .send({ is_active: true });
+      .send({ visible: true });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true });
+    expect(db.query.mock.calls[0][0]).toMatch(/SET always_visible = TRUE/);
   });
 
-  it('sets is_active to false, deletes photo file, and clears location', async () => {
+  it('an app from before the rename (sending is_active: false) still goes invisible', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ photo_path: null }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app)
+      .post('/api/profiles/me/visibility')
+      .set('Authorization', authHeader())
+      .send({ is_active: false });
+
+    expect(db.query.mock.calls[1][0]).toMatch(/always_visible = FALSE/);
+  });
+
+  it('going invisible deletes the photo file and clears location', async () => {
     const photo = '/uploads/user_1_old.jpg';
     // Going invisible: SELECT photo_path, then UPDATE
     db.query.mockResolvedValueOnce({ rows: [{ photo_path: photo }] });
@@ -475,7 +487,7 @@ describe('POST /api/profiles/me/visibility', () => {
     const res = await request(app)
       .post('/api/profiles/me/visibility')
       .set('Authorization', authHeader())
-      .send({ is_active: false });
+      .send({ visible: false });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true });
@@ -496,7 +508,7 @@ describe('POST /api/profiles/me/visibility', () => {
     const res = await request(app)
       .post('/api/profiles/me/visibility')
       .set('Authorization', authHeader())
-      .send({ is_active: false });
+      .send({ visible: false });
 
     expect(res.status).toBe(200);
     expect(fs.promises.unlink).not.toHaveBeenCalled();
@@ -505,7 +517,7 @@ describe('POST /api/profiles/me/visibility', () => {
   it('returns 401 without a token', async () => {
     const res = await request(app)
       .post('/api/profiles/me/visibility')
-      .send({ is_active: true });
+      .send({ visible: true });
 
     expect(res.status).toBe(401);
   });
@@ -516,7 +528,7 @@ describe('POST /api/profiles/me/visibility', () => {
     const res = await request(app)
       .post('/api/profiles/me/visibility')
       .set('Authorization', authHeader())
-      .send({ is_active: true });
+      .send({ visible: true });
 
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty('error', 'Server error');
@@ -864,7 +876,7 @@ describe('profile hardening', () => {
     await request(app)
       .post('/api/profiles/me/visibility')
       .set('Authorization', authHeader())
-      .send({ is_active: false });
+      .send({ visible: false });
 
     expect(db.query.mock.calls[1][0]).toMatch(/always_visible = FALSE/);
   });
@@ -1029,7 +1041,7 @@ describe('data minimisation', () => {
     await request(app)
       .post('/api/profiles/me/visibility')
       .set('Authorization', authHeader())
-      .send({ is_active: false });
+      .send({ visible: false });
 
     expect(db.query.mock.calls[1][0]).toMatch(/party_code = NULL, party_code_set_at = NULL/);
   });
