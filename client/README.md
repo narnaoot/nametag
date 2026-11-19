@@ -60,5 +60,5 @@ src/
 │   └── profileStorage.js # on-device profile + photo persistence
 ├── components/       # Avatar, Tag, DetailSheet, TabBar, VisibilityControl, …
 ├── pages/            # AuthPage, OnboardingPage, GridPage (Nearby), ProfilePage (My Tag)
-└── hooks/            # useNearbyPeople, useViewport
+└── hooks/            # useNearbyPeople, useTagEditor (My tag), useViewport
 ```

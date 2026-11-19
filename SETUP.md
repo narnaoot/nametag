@@ -66,7 +66,7 @@ nametag/
 │       ├── App.jsx       # App shell + tab navigation
 │       ├── pages/        # Auth, Onboarding, Grid (the wall), Profile (My tag), Privacy, Policy
 │       ├── components/   # Tag, Wall, VisibilityControl, Sheet, pickers…
-│       ├── hooks/        # useNearbyPeople, useViewport
+│       ├── hooks/        # useNearbyPeople, useTagEditor, useViewport
 │       ├── auth/         # AuthContext + useAuth
 │       └── lib/          # api, profile, profileSync, profileStorage, colors, constants, imageCrop
 └── server/               # Node.js + Express backend

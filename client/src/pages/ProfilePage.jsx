@@ -1,20 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
-import { getMyProfile, photoUrl, setVisibility } from '../lib/api';
+import { useState, useRef } from 'react';
 import { useAuth } from '../auth/useAuth';
-import { loadLocalPhoto, readLocalProfile, persistProfileLocally } from '../lib/profileStorage';
-import { preparePickedPhoto } from '../lib/imageCrop';
-import { normalizeProfileFields, visibilityMode, trackProfileSave, isPartyExpired } from '../lib/profile';
-import { saveProfile } from '../lib/profileSync';
+import { useTagEditor, pronounsOf } from '../hooks/useTagEditor';
+import { visibilityMode } from '../lib/profile';
 import MyTagPreview from '../components/MyTagPreview';
 import VisibilityControl from '../components/VisibilityControl';
 import StickerPicker from '../components/StickerPicker';
 import PronounChips from '../components/PronounChips';
 import PaintboxPicker from '../components/PaintboxPicker';
 import {
-  PRONOUN_OPTIONS, NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, MAX_STICKERS,
-  DEFAULT_RADIUS, PLACE_FALLBACK, TAG_COLORS,
+  PRONOUN_OPTIONS, NAME_MAX, PRONOUNS_MAX, TAGLINE_MAX, MAX_STICKERS, PLACE_FALLBACK,
 } from '../lib/constants';
 
+// My tag — the editor for your own tag. Loading, editing and saving live in
+// useTagEditor; this file is layout.
 const COLOR_NAMES = {
   coral: 'Coral', lavender: 'Lavender', mustard: 'Mustard', sage: 'Sage',
   denim: 'Denim', blush: 'Blush', citron: 'Citron', teal: 'Teal',
@@ -47,156 +45,38 @@ function EditRow({ label, value, open, onToggle, children }) {
 
 export default function ProfilePage({ onDone }) {
   const { deleteAccount, signOut } = useAuth();
-  const [displayName, setDisplayName] = useState('');
-  const [pronounSelect, setPronounSelect] = useState('they/them');
-  const [customPronouns, setCustomPronouns] = useState('');
-  const [tagline, setTagline] = useState('');
-  const [radius, setRadius] = useState(DEFAULT_RADIUS);
-  const [accentKey, setAccentKey] = useState('coral');
-  const [alwaysVisible, setAlwaysVisible] = useState(true);
-  const [partyCode, setPartyCode] = useState('');
-  const [photoPreview, setPhotoPreview] = useState(null);
-  const [photoFile, setPhotoFile] = useState(null);
-  const [selectedStickers, setSelectedStickers] = useState([]);
-  const [editing, setEditing] = useState(null);        // 'name' | 'line' | 'stickers'
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [saved, setSaved] = useState(false);
+  const editor = useTagEditor();
+  const { tag, edit } = editor;
+  const [open, setOpen] = useState(null);        // the expanded row: 'name' | 'line' | 'stickers' | 'colour'
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const fileInputRef = useRef(null);
-  const loadedRef = useRef(false);
-  const autoSaveTimerRef = useRef(null);
-  const dirtyRef = useRef(false);        // an edit is waiting on the auto-save timer
-  const saveRef = useRef(null);          // the latest doSave, for the unmount flush
-  const hasServerRowRef = useRef(false); // a profile row exists on the server
 
-  useEffect(() => {
-    function applyProfile(src) {
-      setDisplayName(src.display_name || '');
-      const known = PRONOUN_OPTIONS.slice(0, -1).includes(src.pronouns);
-      if (known) setPronounSelect(src.pronouns);
-      else { setPronounSelect('custom'); setCustomPronouns(src.pronouns || ''); }
-      setTagline(src.tagline || '');
-      setRadius(src.radius_meters || DEFAULT_RADIUS);
-      if (src.tag_color && TAG_COLORS.includes(src.tag_color)) setAccentKey(src.tag_color);
-      setAlwaysVisible(src.always_visible !== false);
-      if (src.stickers) { try { setSelectedStickers(JSON.parse(src.stickers)); } catch { /* ignore */ } }
-      if (src.party_code !== undefined) setPartyCode(src.party_code || '');
-    }
-    async function load() {
-      const localPhoto = await loadLocalPhoto();
-      if (localPhoto) setPhotoPreview(localPhoto);
-      let p = await readLocalProfile();
-      if (isPartyExpired(p)) {
-        // The party code ran out while the app was away: the party is over, so
-        // come off the wall (the same thing the wall and the server do).
-        p = { ...p, always_visible: false, party_code: '', party_code_set_at: '' };
-        await persistProfileLocally(p);
-        trackProfileSave(setVisibility(false)).catch(() => {});
-      }
-      if (p) applyProfile(p);
-      try {
-        const profile = await getMyProfile();
-        if (!profile) return;
-        hasServerRowRef.current = true;
-        if (!p) applyProfile(profile);
-        // Visibility is the one thing the server is the authority on: it may
-        // have been changed on the wall or on another device.
-        else setAlwaysVisible(profile.always_visible !== false);
-        if (profile.photo_path && !localPhoto) setPhotoPreview(photoUrl(profile.photo_path));
-      } catch {
-        if (!p) setError('Couldn’t load your tag. Pull to refresh.');
-      }
-    }
-    load().then(() => { loadedRef.current = true; });
-  }, []);
+  if (!editor.ready) return null;   // reading the device's copy takes a moment
 
-  const pronouns = pronounSelect === 'custom' ? customPronouns.trim() : pronounSelect;
-  const visMode = visibilityMode({ alwaysVisible, partyCode });
+  const toggle = (row) => setOpen(o => (o === row ? null : row));
+  const visMode = visibilityMode({ alwaysVisible: tag.visible, partyCode: tag.partyCode });
+  const error = editor.error || deleteError;
+  const place = PLACE_FALLBACK;
+  const preview = {
+    name: tag.name || ' ', pronouns: pronounsOf(tag), tagline: tag.tagline,
+    stickers: tag.stickers, photo: editor.photoPreview, accent: tag.color, you: true,
+  };
 
-  function handlePickPhoto() { fileInputRef.current?.click(); }
-  async function handleFileChange(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = '';
-    try {
-      const { dataUrl, file: prepared } = await preparePickedPhoto(file);
-      setPhotoPreview(dataUrl);
-      setPhotoFile(prepared);
-      setError('');
-    } catch {
-      setError('We couldn’t read that photo — try a different one.');
-    }
-  }
-
-  function handleVisibility(next, { partyCode: code = '' }) {
-    setAlwaysVisible(next !== 'invisible');
-    if (next === 'invisible') {
-      // delete the server's copy (name, photo, location, party code) now, and
-      // record the choice
-      setPartyCode('');
-      trackProfileSave(setVisibility(false)).catch(() => {});
-    } else {
-      setPartyCode(code);
-    }
-  }
-
-  // Returns true when the tag was saved (or there was nothing invalid to save).
-  async function doSave({ silent = false } = {}) {
-    dirtyRef.current = false;
-    const name = displayName.trim();
-    if (!name || !pronouns) { if (!silent) setError('Add your name and pronouns.'); return false; }
-    if (name.length > NAME_MAX) { if (!silent) setError(`Name must be ${NAME_MAX} characters or fewer.`); return false; }
-    if (pronouns.length > PRONOUNS_MAX) { if (!silent) setError(`Pronouns must be ${PRONOUNS_MAX} characters or fewer.`); return false; }
-    if (tagline.trim().length > TAGLINE_MAX) { if (!silent) setError(`One line must be ${TAGLINE_MAX} characters or fewer.`); return false; }
-
-    setError(''); setLoading(true);
-    const fields = normalizeProfileFields({
-      display_name: name, pronouns, tagline, radius_meters: radius,
-      always_visible: alwaysVisible, tag_color: accentKey,
-      stickers: selectedStickers, party_code: partyCode,
-    });
-    try {
-      // While invisible this keeps the edit on the device only (see saveProfile).
-      await trackProfileSave(saveProfile(fields, photoFile, { serverHasRow: hasServerRowRef.current }));
-      hasServerRowRef.current = true;
-      setSaved(true); setTimeout(() => setSaved(false), 2000);
-      return true;
-    } catch (err) { setError(err.message); return false; }
-    finally { setLoading(false); }
-  }
-  saveRef.current = doSave;
-
-  // Leaving the screen — Done, or a tab switch — must not drop an edit that's
-  // still waiting on the auto-save timer.
   async function handleDone() {
-    clearTimeout(autoSaveTimerRef.current);
-    if (dirtyRef.current && !(await doSave())) return;   // stay to show what's wrong
-    onDone();
+    if (await editor.finish()) onDone();
   }
-  useEffect(() => () => { if (dirtyRef.current) saveRef.current({ silent: true }); }, []);
-
-  useEffect(() => {
-    if (!loadedRef.current) return;
-    clearTimeout(autoSaveTimerRef.current);
-    dirtyRef.current = true;
-    autoSaveTimerRef.current = setTimeout(() => doSave({ silent: true }), 700);
-    return () => clearTimeout(autoSaveTimerRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayName, pronounSelect, customPronouns, tagline, radius, accentKey, alwaysVisible, selectedStickers, partyCode, photoFile]);
-
+  function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) editor.pickPhoto(file);
+  }
   async function handleDeleteAccount() {
     setDeleting(true);
     try { await deleteAccount(); }
-    catch (err) { setError(err.message); setConfirmDelete(false); setDeleting(false); }
+    catch (err) { setDeleteError(err.message); setConfirmDelete(false); setDeleting(false); }
   }
-
-  const preview = {
-    name: displayName || ' ', pronouns: pronouns || '', tagline,
-    stickers: selectedStickers, photo: photoPreview, accent: accentKey, you: true,
-  };
-  const place = PLACE_FALLBACK;
 
   return (
     <div className="no-sb na-screen" style={{ padding: '0 0 96px' }}>
@@ -214,13 +94,13 @@ export default function ProfilePage({ onDone }) {
         <button onClick={handleDone} className="na-textbtn" style={{
               fontWeight: 800, fontSize: 13, color: 'var(--orchid-dk)',
               display: 'flex', alignItems: 'center', gap: 6 }}>
-          {loading ? 'Saving…' : saved ? 'Saved ✓' : 'Done'}
+          {editor.saving ? 'Saving…' : editor.saved ? 'Saved ✓' : 'Done'}
         </button>
       </div>
 
       {/* live preview */}
       <div style={{ padding: '12px 26px 0' }}>
-        <MyTagPreview person={preview} onPhotoClick={handlePickPhoto} />
+        <MyTagPreview person={preview} onPhotoClick={() => fileInputRef.current?.click()} />
         <div style={{ textAlign: 'center', fontSize: 11.5, color: 'var(--muted)', marginTop: 8 }}>
           This is exactly what the room sees.
         </div>
@@ -230,46 +110,43 @@ export default function ProfilePage({ onDone }) {
       {/* visibility control — above the rows, because it's the only control that
           changes who can see you */}
       <div style={{ padding: '14px 22px 0' }}>
-        <VisibilityControl value={visMode} onChange={handleVisibility} place={place}
-          partyCode={partyCode} note={visMode === 'nearby'
+        <VisibilityControl value={visMode} onChange={editor.setVisibilityMode} place={place}
+          partyCode={tag.partyCode} note={visMode === 'nearby'
             ? { lead: 'Visible to people nearby.', rest: ' Close the app and your tag is deleted from our server within half an hour.' } : undefined} />
       </div>
 
       {/* edit rows */}
       <div style={{ padding: '12px 22px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <EditRow label="Name" value={displayName || 'Add your name'}
-                 open={editing === 'name'} onToggle={() => setEditing(e => e === 'name' ? null : 'name')}>
-          <input className="na-field" value={displayName} maxLength={NAME_MAX}
-                 onChange={e => setDisplayName(e.target.value)} placeholder="What people call you"
+        <EditRow label="Name" value={tag.name || 'Add your name'} open={open === 'name'} onToggle={() => toggle('name')}>
+          <input className="na-field" value={tag.name} maxLength={NAME_MAX}
+                 onChange={e => edit({ name: e.target.value })} placeholder="What people call you"
                  style={{ marginTop: 12 }} />
           <div className="t-label" style={{ margin: '14px 0 8px' }}>Pronouns</div>
-          <PronounChips options={PRONOUN_OPTIONS} value={pronounSelect} onChange={setPronounSelect} />
-          {pronounSelect === 'custom' && (
-            <input className="na-field" style={{ marginTop: 10 }} value={customPronouns} maxLength={PRONOUNS_MAX}
-                   onChange={e => setCustomPronouns(e.target.value)} placeholder="e.g. xe/xem, fae/faer…" />
+          <PronounChips options={PRONOUN_OPTIONS} value={tag.pronounChoice} onChange={p => edit({ pronounChoice: p })} />
+          {tag.pronounChoice === 'custom' && (
+            <input className="na-field" style={{ marginTop: 10 }} value={tag.customPronouns} maxLength={PRONOUNS_MAX}
+                   onChange={e => edit({ customPronouns: e.target.value })} placeholder="e.g. xe/xem, fae/faer…" />
           )}
         </EditRow>
 
-        <EditRow label="One line about right now" value={tagline || 'Add a line'}
-                 open={editing === 'line'} onToggle={() => setEditing(e => e === 'line' ? null : 'line')}>
-          <input className="na-field" value={tagline} maxLength={TAGLINE_MAX} style={{ marginTop: 12 }}
-                 onChange={e => setTagline(e.target.value)} placeholder="Here for the oat cortado" />
+        <EditRow label="One line about right now" value={tag.tagline || 'Add a line'} open={open === 'line'} onToggle={() => toggle('line')}>
+          <input className="na-field" value={tag.tagline} maxLength={TAGLINE_MAX} style={{ marginTop: 12 }}
+                 onChange={e => edit({ tagline: e.target.value })} placeholder="Here for the oat cortado" />
           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
-            {tagline.length} of {TAGLINE_MAX} characters. This is the line under your name on the wall.
+            {tag.tagline.length} of {TAGLINE_MAX} characters. This is the line under your name on the wall.
           </div>
         </EditRow>
 
-        <EditRow label="Stickers" value={selectedStickers.length ? `${selectedStickers.length} of ${MAX_STICKERS} used` : 'None yet'}
-                 open={editing === 'stickers'} onToggle={() => setEditing(e => e === 'stickers' ? null : 'stickers')}>
+        <EditRow label="Stickers" value={tag.stickers.length ? `${tag.stickers.length} of ${MAX_STICKERS} used` : 'None yet'}
+                 open={open === 'stickers'} onToggle={() => toggle('stickers')}>
           <div style={{ marginTop: 12 }}>
-            <StickerPicker value={selectedStickers} onChange={setSelectedStickers} />
+            <StickerPicker value={tag.stickers} onChange={stickers => edit({ stickers })} />
           </div>
         </EditRow>
 
-        <EditRow label="Tag colour" value={COLOR_NAMES[accentKey] || 'Coral'}
-                 open={editing === 'colour'} onToggle={() => setEditing(e => e === 'colour' ? null : 'colour')}>
+        <EditRow label="Tag colour" value={COLOR_NAMES[tag.color] || 'Coral'} open={open === 'colour'} onToggle={() => toggle('colour')}>
           <div style={{ marginTop: 14 }}>
-            <PaintboxPicker value={accentKey} onChange={setAccentKey} />
+            <PaintboxPicker value={tag.color} onChange={color => edit({ color })} />
           </div>
         </EditRow>
       </div>

@@ -6,7 +6,32 @@ Paste this into Claude Code at the start of a new session to get up to speed qui
 
 ---
 
-## 🎚️ Latest: one visibility setting (Nov 2026)
+## 🏷️ Latest: My tag untangled (Nov 2026)
+
+Refactor step 3 of 4. `ProfilePage.jsx` had 16 pieces of state and six refs,
+most of them coordinating auto-save. Loading, editing and saving now live in
+**`hooks/useTagEditor.js`**; the page is layout and keeps only page-level state
+(which row is open, the delete confirmation).
+
+- The editor holds the tag as one object; `edit(patch)` shows a change and
+  schedules a save 700 ms later. Loading never triggers a save.
+- `finish()` (Done) saves a waiting edit and stays put if the tag can't be
+  saved; a tab switch saves it quietly.
+- **Saves are queued** (`queueProfileSave` in `lib/profile.js`, replacing
+  `trackProfileSave`): they run one at a time, in order.
+
+Three latent bugs fixed along the way, each with a browser test that fails on
+the old page:
+- a picked photo was re-uploaded with every later edit;
+- a slow save could land after "go invisible" and put the tag back on the
+  server (or an older edit could overwrite a newer one);
+- edits made while the page was still loading were never saved (the page now
+  appears once the device's copy is read).
+
+Still to do in this refactor: (4) trim this file and remove leftovers (unused
+`POST /me/photo`, the "visible N min" label that can never show).
+
+## 🎚️ Earlier: one visibility setting (Nov 2026)
 
 Refactor step 2 of 4. Visibility was two flags — `always_visible` (your choice)
 and `is_active` (on the wall right now) — and the two disagreeing caused most of
@@ -22,9 +47,7 @@ from the last 30 minutes", so it's gone:
   before the change sends `{ is_active: false }`, which still reads as "go
   invisible" — the only value old apps ever sent.
 
-Still to do in this refactor: (3) untangle `ProfilePage`'s save logic;
-(4) trim this file and remove leftovers (unused `POST /me/photo`, the
-"visible N min" label that can never show).
+(Steps 3–4 of this refactor follow in later sections.)
 
 ## 🧪 Earlier: real tests in the repo (Nov 2026)
 
@@ -357,11 +380,12 @@ client/src/
     AuthPage.jsx          — landing / login / register / verify / forgot / reset
     OnboardingPage.jsx    — two-step first-run (tag, then photo + stickers)
     GridPage.jsx          — the nearby wall (empty/error/skeleton states)
-    ProfilePage.jsx       — My tag editor (auto-save, on-device photo, delete)
+    ProfilePage.jsx       — My tag: layout only (editing/saving is useTagEditor)
     PrivacyPage.jsx       — Privacy tab (state + four statements + policy link)
     PolicyDocument.jsx    — the full in-app privacy policy screen
   hooks/
     useNearbyPeople.js    — readRoom() (location + nearby), 60s auto-refresh, visibility mode
+    useTagEditor.js       — My tag's load / edit / photo / queued auto-save
     useViewport.js        — phone / tablet / desktop breakpoint
 
 server/
