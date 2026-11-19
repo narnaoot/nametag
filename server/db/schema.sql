@@ -14,8 +14,11 @@ CREATE TABLE IF NOT EXISTS profiles (
   pronouns TEXT NOT NULL,
   photo_path TEXT,
   radius_meters INTEGER DEFAULT 100,
+  -- The one visibility setting: TRUE = on the wall (nearby or in a party),
+  -- FALSE = chose to be invisible. (The name is historical.) Whether someone is
+  -- on the wall *right now* isn't stored separately: it's having a tag and a
+  -- location refreshed in the last 30 minutes.
   always_visible BOOLEAN DEFAULT TRUE,
-  is_active BOOLEAN DEFAULT FALSE,
   lat DOUBLE PRECISION,
   lng DOUBLE PRECISION,
   location_updated_at TIMESTAMPTZ,

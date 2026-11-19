@@ -48,6 +48,11 @@ async function migrate() {
     )
   `);
 
+  // Visibility used to be two flags, always_visible (your choice) and is_active
+  // (on the wall right now). The second only ever mirrored "has a tag and a
+  // fresh location", and the two disagreeing caused bugs, so it's gone.
+  await db.query(`ALTER TABLE profiles DROP COLUMN IF EXISTS is_active`);
+
   console.log('Migration complete');
 }
 

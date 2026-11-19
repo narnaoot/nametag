@@ -82,15 +82,21 @@ belongs to the app).
 
 `invisible | nearby | party` is the app's one three-way control, shown in three
 places (onboarding step 2, the wall, My tag) as the same sage card; the Privacy
-tab shows the current state and links to the wall. It's
-mapped onto the existing backend fields without a schema change:
+tab shows the current state and links to the wall. It maps
+onto one server setting, `always_visible`, plus the party code:
 
 - **nearby** → `always_visible = true`, `party_code = ''`, location shared.
-- **party** → opens the code sheet first; on join, `party_code = <CODE>` (upper-
-  cased so matching is case-insensitive), `always_visible = true`.
-- **invisible** → `setVisibility(false)` (server NULLs photo + location + sets
-  `is_active = false`) and `always_visible = false` so refreshes don't flip you
-  back on. `useNearbyPeople` gates all location sharing on the mode.
+- **party** → opens the code sheet first; on join, `party_code = <CODE>`
+  (letters and digits only, upper-cased, so "summer-42" = "SUMMER42"),
+  `always_visible = true`. Runs out after 4 hours.
+- **invisible** → `setVisibility(false)`: the server deletes the tag, photo,
+  location and party code and sets `always_visible = false`, so you stay
+  invisible across reloads. `useNearbyPeople` gates all location sharing on
+  the mode.
+
+Whether someone is on the wall *right now* isn't stored: it's having a tag and
+a location refreshed in the last 30 minutes. (A second flag, `is_active`, used
+to track that separately and was dropped in Nov 2026.)
 
 `src/hooks/useNearbyPeople.js` owns the mode, derives it from the profile on
 load, and exposes `setVisibilityMode(next, { partyCode })`.

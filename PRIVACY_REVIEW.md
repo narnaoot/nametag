@@ -41,7 +41,7 @@ question to revisit when the iPhone app is built.
 | Email | Neon `users.email` | Account deletion. Never-verified sign-ups: deleted after 2 days |
 | Password | Neon `users.password_hash` (bcrypt) | Account deletion |
 | Account flags | `users.email_verified`, `token_version`, `created_at` | Account deletion |
-| Settings row | `profiles`: `always_visible` (did you choose invisible), `radius_meters`, `updated_at` | Account deletion — **this row persists even while invisible**, but holds nothing identifying |
+| Settings row | `profiles`: `always_visible` (the one visibility setting: did you choose invisible), `radius_meters`, `updated_at` | Account deletion — **this row persists even while invisible**, but holds nothing identifying |
 | Name, pronouns, one line, stickers, colour | `profiles.*` | **Only while on the wall** (see §2) |
 | Photo | Render disk, `/uploads/<32 random hex>.<ext>` | Same |
 | Location | `profiles.lat/lng`, rounded to 4 decimals (~11 m); one point, overwritten each refresh, no history. Not stored at all while invisible | Same |
